@@ -1,0 +1,9 @@
+{
+    "dispatchIntervalMinutes": 5,
+    "acceptWindowSeconds": 30,
+    "initialGraceSeconds": 45,
+    "postCompleteCooldownSeconds": 60,
+    "postDeclineCooldownSeconds": 45,
+    "postFailCooldownSeconds": 30,
+    "noCalloutRetrySeconds": 30
+}

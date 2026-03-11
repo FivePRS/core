@@ -1,0 +1,32 @@
+{
+    "patrol": {
+        "models": ["police", "police2"],
+        "primaryColor": 0,
+        "secondaryColor": 0,
+        "dirtLevel": 2,
+        "livery": 0,
+        "plateText": "",
+        "forcedExtras": [1, 2],
+        "disabledExtras": [5]
+    },
+    "senior": {
+        "models": ["police2", "police4"],
+        "primaryColor": 0,
+        "secondaryColor": 0,
+        "dirtLevel": 1,
+        "livery": 0,
+        "plateText": "",
+        "forcedExtras": [1, 2],
+        "disabledExtras": []
+    },
+    "command": {
+        "models": ["police3"],
+        "primaryColor": 111,
+        "secondaryColor": 111,
+        "dirtLevel": 0,
+        "livery": -1,
+        "plateText": "CMND",
+        "forcedExtras": [],
+        "disabledExtras": []
+    }
+}

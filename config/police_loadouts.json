@@ -1,0 +1,39 @@
+{
+    "recruit": {
+        "weapons": [
+            { "name": "WEAPON_NIGHTSTICK",  "ammo": 1 },
+            { "name": "WEAPON_FLASHLIGHT",  "ammo": 1 },
+            { "name": "WEAPON_STUNGUN",     "ammo": 5 },
+            { "name": "WEAPON_PISTOL",      "ammo": 250, "setCurrent": true }
+        ]
+    },
+    "officer": {
+        "weapons": [
+            { "name": "WEAPON_NIGHTSTICK",  "ammo": 1 },
+            { "name": "WEAPON_FLASHLIGHT",  "ammo": 1 },
+            { "name": "WEAPON_STUNGUN",     "ammo": 10 },
+            { "name": "WEAPON_PUMPSHOTGUN", "ammo": 50 },
+            { "name": "WEAPON_PISTOL",      "ammo": 250, "setCurrent": true }
+        ]
+    },
+    "senior": {
+        "weapons": [
+            { "name": "WEAPON_NIGHTSTICK",   "ammo": 1 },
+            { "name": "WEAPON_FLASHLIGHT",   "ammo": 1 },
+            { "name": "WEAPON_STUNGUN",      "ammo": 15 },
+            { "name": "WEAPON_PUMPSHOTGUN",  "ammo": 75 },
+            { "name": "WEAPON_CARBINERIFLE", "ammo": 200 },
+            { "name": "WEAPON_PISTOL",       "ammo": 500, "setCurrent": true }
+        ]
+    },
+    "command": {
+        "weapons": [
+            { "name": "WEAPON_NIGHTSTICK",   "ammo": 1 },
+            { "name": "WEAPON_FLASHLIGHT",   "ammo": 1 },
+            { "name": "WEAPON_STUNGUN",      "ammo": 15 },
+            { "name": "WEAPON_PUMPSHOTGUN",  "ammo": 75 },
+            { "name": "WEAPON_CARBINERIFLE", "ammo": 200 },
+            { "name": "WEAPON_PISTOL",       "ammo": 500, "setCurrent": true }
+        ]
+    }
+}

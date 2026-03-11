@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <LangVersion>10</LangVersion>
+    <Nullable>enable</Nullable>
+    <OutputType>Library</OutputType>
+    <RootNamespace>FivePRS.Server</RootNamespace>
+    <AssemblyName>FivePRS.Server</AssemblyName>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <!-- All server dlls land in bin/server/ for fxmanifest pickup -->
+    <OutputPath>$(SolutionDir)bin\server\</OutputPath>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      CitizenFX.Core.Server — FiveM Server Scripting API.
+      Source: https://nuget.pkg.github.com/citizenfx/index.json
+      Local fallback: set CITIZENFX_SERVER env var pointing to your server root,
+        then replace with: <HintPath>$(CITIZENFX_SERVER)\citizen\clr6\lib\net6.0\CitizenFX.Core.Server.dll</HintPath>
+    -->
+    <PackageReference Include="CitizenFX.Core.Server" Version="1.0.*">
+      <!-- FiveM injects this dll at runtime — don't copy it to output -->
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </PackageReference>
+
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.*" />
+
+    <!-- Async-first MySQL connector (MIT licensed, matches FiveM's async model) -->
+    <PackageReference Include="MySqlConnector" Version="2.*" />
+
+    <!-- Lightweight SQLite for zero-config local setups (similar to FivePD) -->
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="6.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FivePRS.Core\FivePRS.Core.csproj" />
+  </ItemGroup>
+
+</Project>
