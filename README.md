@@ -1,4 +1,4 @@
-![FivePRS Logo](https://cmap.pics/ibNxG/-orkh7.png/raw) 
+![FivePRS Logo](https://cmap.pics/ibNxG/uXr_2c.png/raw) 
 
 **FivePRS Core** is the primary framework engine designed for FiveM, providing a high performance, modular alternative for scripted emergency response gameplay.
 
