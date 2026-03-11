@@ -18,7 +18,7 @@ Only the latest release on the `main` branch receives security fixes. Older tags
 Report discovered vulnerabilities privately by emailing:
 
 ```
-security@codemeapixel.dev
+fiveprsteam@gmail.com
 ```
 
 Include as much of the following as possible:
