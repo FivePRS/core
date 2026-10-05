@@ -16,7 +16,5 @@ namespace FivePRS.Server.Database
         Task AddXPAsync(string license, int xpAmount);
 
         Task UpdateDepartmentAsync(string license, Department department);
-
-        Task<bool> TestConnectionAsync();
     }
 }

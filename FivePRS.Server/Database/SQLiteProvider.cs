@@ -129,19 +129,5 @@ namespace FivePRS.Server.Database
 
             await cmd.ExecuteNonQueryAsync();
         }
-
-        public async Task<bool> TestConnectionAsync()
-        {
-            try
-            {
-                using var conn = new SqliteConnection(_connectionString);
-                await conn.OpenAsync();
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
     }
 }

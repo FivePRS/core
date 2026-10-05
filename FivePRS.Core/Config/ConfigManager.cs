@@ -12,7 +12,7 @@ namespace FivePRS.Core.Config
 
         public static void LoadSettings(string? json)
         {
-            if (string.IsNullOrWhiteSpace(json)) return;
+            if (json is null || string.IsNullOrWhiteSpace(json)) return;
             try
             {
                 Settings = JsonConvert.DeserializeObject<ResourceSettings>(json) ?? new();
@@ -26,7 +26,7 @@ namespace FivePRS.Core.Config
 
         public static void LoadPoliceVehicles(string? json)
         {
-            if (string.IsNullOrWhiteSpace(json)) return;
+            if (json is null || string.IsNullOrWhiteSpace(json)) return;
             try
             {
                 PoliceVehicles = JsonConvert.DeserializeObject<PoliceVehiclesConfig>(json) ?? new();
@@ -40,7 +40,7 @@ namespace FivePRS.Core.Config
 
         public static void LoadPoliceLoadouts(string? json)
         {
-            if (string.IsNullOrWhiteSpace(json)) return;
+            if (json is null || string.IsNullOrWhiteSpace(json)) return;
             try
             {
                 PoliceLoadouts = JsonConvert.DeserializeObject<PoliceLoadoutsConfig>(json) ?? new();

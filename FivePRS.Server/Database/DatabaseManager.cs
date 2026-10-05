@@ -34,9 +34,6 @@ namespace FivePRS.Server.Database
                 _provider = new SQLiteProvider(connectionString ?? Path.Combine(resourcePath, "data", "fiveprs.db"));
             }
 
-            if (!await _provider.TestConnectionAsync())
-                throw new Exception($"[FivePRS] {dbType} connection test failed. Check convars.");
-
             await _provider.InitializeAsync();
             _ready = true;
 

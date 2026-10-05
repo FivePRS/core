@@ -128,19 +128,5 @@ namespace FivePRS.Server.Database
 
             await cmd.ExecuteNonQueryAsync();
         }
-
-        public async Task<bool> TestConnectionAsync()
-        {
-            try
-            {
-                using var conn = new MySqlConnection(_connectionString);
-                await conn.OpenAsync();
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
     }
 }

@@ -42,7 +42,7 @@ namespace FivePRS.Server
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[FivePRS] FATAL — DB init failed: {ex.Message}");
+                Debug.WriteLine($"[FivePRS] FATAL: DB init failed: {ex}");
             }
         }
 
