@@ -14,6 +14,8 @@ namespace FivePRS.Client.Dispatch
     {
         public static DispatchSnapshot Snapshot { get; private set; } = new();
 
+        public static event Action? SnapshotUpdated;
+
         public static UnitInfo? LocalUnit =>
             Snapshot.Units.FirstOrDefault(u => u.ServerId == Game.Player.ServerId);
 
@@ -49,6 +51,8 @@ namespace FivePRS.Client.Dispatch
                     API.SetNewWaypoint(call.X, call.Y);
             }
             _lastCallId = callId;
+
+            SnapshotUpdated?.Invoke();
         }
 
         private static void OnCallsCommand(int source, List<object> args, string raw)
