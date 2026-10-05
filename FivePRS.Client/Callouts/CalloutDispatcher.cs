@@ -4,7 +4,9 @@ using System.Threading.Tasks;
 using CitizenFX.Core;
 using CitizenFX.Core.Native;
 using FivePRS.Core.Config;
+using FivePRS.Core.Events;
 using FivePRS.Core.Models;
+using Newtonsoft.Json;
 
 namespace FivePRS.Client.Callouts
 {
@@ -13,9 +15,6 @@ namespace FivePRS.Client.Callouts
         internal static volatile bool AcceptPressed;
         internal static volatile bool DeclinePressed;
         internal static volatile bool EndCalloutPressed;
-
-        private static ResourceSettings Settings => ConfigManager.Settings;
-        private static int DispatchIntervalMs => Settings.DispatchIntervalMinutes * 60_000;
 
         private readonly Department _department;
         private readonly CalloutRegistry _registry;
@@ -38,17 +37,14 @@ namespace FivePRS.Client.Callouts
             _onEnded = onEnded;
         }
 
-        public void EndActiveCallout()
-        {
-            if (_activeCallout is not null)
-                EndCalloutPressed = true;
-        }
-
         public void Start()
         {
             if (_cts is not null) return;
             _cts = new CancellationTokenSource();
-            _ = DispatchLoopAsync(_cts.Token);
+
+            var definitions = _registry.GetDefinitions(_department);
+            BaseScript.TriggerServerEvent(EventNames.ServerRegisterCallouts, JsonConvert.SerializeObject(definitions));
+            Debug.WriteLine($"[CalloutDispatcher] Registered {definitions.Count} {_department} callout(s) with dispatch.");
         }
 
         public void Stop()
@@ -68,81 +64,50 @@ namespace FivePRS.Client.Callouts
             callout.Cleanup();
         }
 
-        public async Task HandleServerCalloutAsync(CalloutData data)
+        public async Task HandleOfferAsync(CalloutData data)
         {
             if (_cts is null || _busy)
             {
-                Debug.WriteLine($"[CalloutDispatcher] Server callout '{data.Name}' dropped: dispatcher busy or stopped.");
+                Respond(data.Id, OfferResponse.Unavailable, Vector3.Zero);
                 return;
             }
 
+            var callout = CreateCallout(data);
+            if (callout is null)
+            {
+                Respond(data.Id, OfferResponse.Unavailable, Vector3.Zero);
+                return;
+            }
+
+            _busy = true;
+            try
+            {
+                await RunCalloutAsync(callout, _cts.Token);
+            }
+            finally
+            {
+                _busy = false;
+            }
+        }
+
+        private CalloutBase? CreateCallout(CalloutData data)
+        {
             var entry = _registry.FindByName(data.Name);
             if (entry is null)
             {
-                Debug.WriteLine($"[CalloutDispatcher] No handler registered for server callout '{data.Name}'.");
-                return;
+                Debug.WriteLine($"[CalloutDispatcher] No handler registered for '{data.Name}'.");
+                return null;
             }
 
-            var callout = CreateCallout(entry);
-            if (callout is null) return;
-
-            callout.Data = data;
-            await RunCalloutAsync(callout, _cts.Token);
-        }
-
-        private async Task DispatchLoopAsync(CancellationToken ct)
-        {
-            if (!await Timing.TryWaitAsync(Settings.InitialGraceSeconds * 1000, ct)) return;
-
-            while (!ct.IsCancellationRequested)
-            {
-                if (_busy)
-                {
-                    if (!await Timing.TryWaitAsync(1000, ct)) return;
-                    continue;
-                }
-
-                var entry = _registry.PickCallout(_department);
-                var callout = entry is null ? null : CreateCallout(entry);
-
-                if (entry is null || callout is null)
-                {
-                    if (!await Timing.TryWaitAsync(Settings.NoCalloutRetrySeconds * 1000, ct)) return;
-                    continue;
-                }
-
-                callout.Data = new CalloutData
-                {
-                    Id = Guid.NewGuid().ToString(),
-                    Name = entry.Info.Name,
-                    Description = callout.Data.Description,
-                    Priority = entry.Info.Priority,
-                    RequiredDepartment = _department,
-                    XPReward = entry.Info.XPReward,
-                    LocationX = callout.Data.LocationX,
-                    LocationY = callout.Data.LocationY,
-                    LocationZ = callout.Data.LocationZ,
-                    Metadata = callout.Data.Metadata
-                };
-
-                var result = await RunCalloutAsync(callout, ct);
-
-                var nextDelay = result switch
-                {
-                    CalloutResult.Completed => Settings.PostCompleteCooldownSeconds * 1000 + DispatchIntervalMs,
-                    CalloutResult.Declined => Settings.PostDeclineCooldownSeconds * 1000,
-                    _ => Settings.PostFailCooldownSeconds * 1000 + DispatchIntervalMs
-                };
-
-                if (!await Timing.TryWaitAsync(nextDelay, ct)) return;
-            }
-        }
-
-        private static CalloutBase? CreateCallout(RegisteredCallout entry)
-        {
             try
             {
-                return (CalloutBase)Activator.CreateInstance(entry.Type);
+                var callout = (CalloutBase)Activator.CreateInstance(entry.Type);
+                if (!callout.CanBeDispatched()) return null;
+
+                if (string.IsNullOrEmpty(data.Description))
+                    data.Description = callout.Data.Description;
+                callout.Data = data;
+                return callout;
             }
             catch (Exception ex)
             {
@@ -151,20 +116,7 @@ namespace FivePRS.Client.Callouts
             }
         }
 
-        private async Task<CalloutResult> RunCalloutAsync(CalloutBase callout, CancellationToken ct)
-        {
-            _busy = true;
-            try
-            {
-                return await RunCalloutCoreAsync(callout, ct);
-            }
-            finally
-            {
-                _busy = false;
-            }
-        }
-
-        private async Task<CalloutResult> RunCalloutCoreAsync(CalloutBase callout, CancellationToken ct)
+        private async Task RunCalloutAsync(CalloutBase callout, CancellationToken ct)
         {
             callout.SetState(CalloutState.Dispatching);
 
@@ -181,6 +133,8 @@ namespace FivePRS.Client.Callouts
 
             if (!accepted)
             {
+                Respond(callout.Data.Id, OfferResponse.Declined, Vector3.Zero);
+
                 try { callout.OnCalloutDeclined(); }
                 catch (Exception ex) { Debug.WriteLine($"[CalloutDispatcher] OnCalloutDeclined threw: {ex.Message}"); }
                 callout.Cleanup();
@@ -188,14 +142,16 @@ namespace FivePRS.Client.Callouts
 
                 if (!ct.IsCancellationRequested)
                     ClientBrain.ShowNotification("~r~[ DISPATCH ]~w~ Callout declined.");
-                return CalloutResult.Declined;
+                return;
             }
+
+            Respond(callout.Data.Id, OfferResponse.Accepted, dispatchLoc);
 
             EndCalloutPressed = false;
             callout.SetState(CalloutState.Active);
             _activeCallout = callout;
 
-            ClientBrain.ShowNotification($"~g~[ DISPATCH ]~w~ Callout accepted: ~b~{callout.Data.Name}");
+            ClientBrain.ShowNotification($"~g~[ DISPATCH ]~w~ Call ~y~#{callout.Data.Id}~w~ accepted: ~b~{callout.Data.Name}");
 
             var finalResult = CalloutResult.Failed;
             using var calloutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -228,16 +184,21 @@ namespace FivePRS.Client.Callouts
             {
                 _activeCallout = null;
                 if (!ct.IsCancellationRequested)
+                {
+                    BaseScript.TriggerServerEvent(EventNames.ServerCalloutEnded, callout.Data.Id, (int)finalResult);
                     _onEnded(callout, finalResult);
+                }
             }
 
-            Debug.WriteLine($"[CalloutDispatcher] '{callout.Data.Name}' ended: {finalResult}");
-            return finalResult;
+            Debug.WriteLine($"[CalloutDispatcher] Call #{callout.Data.Id} '{callout.Data.Name}' ended: {finalResult}");
         }
+
+        private static void Respond(string callId, OfferResponse response, Vector3 location) =>
+            BaseScript.TriggerServerEvent(EventNames.ServerCalloutResponse, callId, (int)response, location.X, location.Y, location.Z);
 
         private static async Task<bool> RunAcceptWindowAsync(CancellationToken ct)
         {
-            var end = API.GetGameTimer() + Settings.AcceptWindowSeconds * 1000;
+            var end = API.GetGameTimer() + ConfigManager.Settings.AcceptWindowSeconds * 1000;
 
             while (!ct.IsCancellationRequested)
             {
@@ -307,7 +268,7 @@ namespace FivePRS.Client.Callouts
                 : "";
 
             ClientBrain.ShowNotification(
-                $"~y~[ DISPATCH ]~w~  {codeColor}Code {(int)data.Priority}~w~  ~b~{data.Name}~n~" +
+                $"~y~[ DISPATCH ]~w~  {codeColor}Code {(int)data.Priority}~w~  ~b~{data.Name}~w~ ~y~#{data.Id}~n~" +
                 $"{data.Description}~n~{distance}~g~/er_accept~w~   ~r~/er_decline");
         }
 

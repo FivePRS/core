@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using CitizenFX.Core;
 using CitizenFX.Core.Native;
+using FivePRS.Core.Config;
 using FivePRS.Core.Events;
 using FivePRS.Core.Interfaces;
 using FivePRS.Core.Models;
@@ -20,6 +21,9 @@ namespace FivePRS.Client.Agency
         public bool IsActive { get; private set; }
 
         protected static PlayerData CurrentPlayer => ClientBrain.LocalPlayerData;
+
+        protected string DisplayName =>
+            ConfigManager.Territories.FindAgency(CurrentPlayer.Agency)?.Name ?? AgencyName;
 
         public static bool IsDepartmentLoaded(Department department) => LoadedDepartments.Contains(department);
 

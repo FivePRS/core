@@ -12,5 +12,7 @@ namespace FivePRS.Server.Database
         Task SavePlayerAsync(PlayerData player);
 
         Task UpdateDutyStatusAsync(string license, bool isOnDuty);
+
+        Task AddAuditAsync(AuditEntry entry);
     }
 }

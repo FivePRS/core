@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CitizenFX.Core;
 using CitizenFX.Core.Native;
 using FivePRS.Client.Arrest;
 using FivePRS.Client.Tasks;
+using FivePRS.Core.Config;
+using FivePRS.Core.Jurisdiction;
 using FivePRS.Core.Models;
 
 namespace FivePRS.Client.Callouts
@@ -60,6 +63,20 @@ namespace FivePRS.Client.Callouts
             if (State != CalloutState.Active) return;
             State = CalloutState.Failed;
             Ended?.Invoke(this, CalloutResult.Failed);
+        }
+
+        protected static Vector3 PickLocation(IReadOnlyList<Vector3> locations, Random rng)
+        {
+            var map    = ConfigManager.Territories;
+            var player = ClientBrain.LocalPlayerData;
+            var agency = map.ResolveAgency(player.Department, player.Agency);
+
+            var local = locations
+                .Where(l => TerritoryMap.IsInJurisdiction(agency, map.Resolve(l.X, l.Y)?.Id))
+                .ToList();
+
+            var pool = local.Count > 0 ? local : locations;
+            return pool[rng.Next(pool.Count)];
         }
 
         protected async Task WaitForArrestAsync(Ped suspect, CancellationToken ct, string prompt = "Type ~b~/er_cuff~w~ to arrest the suspect")

@@ -1,4 +1,4 @@
-﻿namespace FivePRS.Client.Callouts
+namespace FivePRS.Client.Callouts
 {
     public enum CalloutState
     {
@@ -12,13 +12,6 @@
 
         Failed,
 
-        Declined
-    }
-
-    public enum CalloutResult
-    {
-        Completed,
-        Failed,
         Declined
     }
 }

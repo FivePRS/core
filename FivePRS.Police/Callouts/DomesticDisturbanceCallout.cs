@@ -33,6 +33,7 @@ namespace FivePRS.Police.Callouts
             new( 246.5f,  -593.0f, 43.2f),
             new(-187.0f,   499.0f, 68.3f),
             new( 104.0f,  6626.0f, 31.8f),
+            new(1973.0f,  3817.5f, 33.4f),
         };
 
         private static readonly string[] AggressorModels =
@@ -66,7 +67,7 @@ namespace FivePRS.Police.Callouts
         public DomesticDisturbanceCallout()
         {
             var rng      = new Random();
-            _scenePos    = SceneLocations[rng.Next(SceneLocations.Length)];
+            _scenePos    = PickLocation(SceneLocations, rng);
             _aggressorModel = AggressorModels[rng.Next(AggressorModels.Length)];
             _victimModel    = VictimModels[rng.Next(VictimModels.Length)];
             _threatWeapon   = ThreatWeapons[rng.Next(ThreatWeapons.Length)];

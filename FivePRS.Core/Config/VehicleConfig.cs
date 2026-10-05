@@ -1,4 +1,7 @@
-﻿using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Newtonsoft.Json;
 
 namespace FivePRS.Core.Config
 {
@@ -27,6 +30,18 @@ namespace FivePRS.Core.Config
 
         [JsonProperty("disabledExtras")]
         public int[] DisabledExtras { get; set; } = new int[0];
+    }
+
+    public sealed class AgencyVehicleDef
+    {
+        [JsonProperty("patrol", NullValueHandling = NullValueHandling.Ignore)]
+        public VehicleTierDef? Patrol { get; set; }
+
+        [JsonProperty("senior", NullValueHandling = NullValueHandling.Ignore)]
+        public VehicleTierDef? Senior { get; set; }
+
+        [JsonProperty("command", NullValueHandling = NullValueHandling.Ignore)]
+        public VehicleTierDef? Command { get; set; }
     }
 
     public sealed class PoliceVehiclesConfig
@@ -64,5 +79,52 @@ namespace FivePRS.Core.Config
             Livery         = -1,
             PlateText      = "CMND",
         };
+
+        [JsonProperty("agencies", ObjectCreationHandling = ObjectCreationHandling.Replace)]
+        public Dictionary<string, AgencyVehicleDef> Agencies { get; set; } = new()
+        {
+            ["bcso"] = new AgencyVehicleDef
+            {
+                Patrol = new VehicleTierDef
+                {
+                    Models         = new[] { "sheriff", "sheriff2" },
+                    PrimaryColor   = -1,
+                    SecondaryColor = -1,
+                    DirtLevel      = 3,
+                    Livery         = -1,
+                },
+                Senior = new VehicleTierDef
+                {
+                    Models         = new[] { "sheriff2" },
+                    PrimaryColor   = -1,
+                    SecondaryColor = -1,
+                    DirtLevel      = 1,
+                    Livery         = -1,
+                },
+                Command = new VehicleTierDef
+                {
+                    Models         = new[] { "sheriff2" },
+                    PrimaryColor   = -1,
+                    SecondaryColor = -1,
+                    DirtLevel      = 0,
+                    Livery         = -1,
+                    PlateText      = "BCSO",
+                },
+            },
+        };
+
+        public VehicleTierDef TierFor(string? agencyId, LoadoutTier tier)
+        {
+            var agency = agencyId is null
+                ? null
+                : Agencies.FirstOrDefault(a => string.Equals(a.Key, agencyId, StringComparison.OrdinalIgnoreCase)).Value;
+
+            return tier switch
+            {
+                LoadoutTier.Command => agency?.Command ?? Command,
+                LoadoutTier.Senior  => agency?.Senior  ?? Senior,
+                _                   => agency?.Patrol  ?? Patrol,
+            };
+        }
     }
 }

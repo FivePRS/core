@@ -1,0 +1,30 @@
+{
+    "territories": [
+        {
+            "id": "los_santos",
+            "name": "Los Santos",
+            "polygon": [[-4500, -4500], [4500, -4500], [4500, 1000], [-4500, 1000]]
+        },
+        {
+            "id": "blaine_county",
+            "name": "Blaine County",
+            "polygon": [[-4500, 1000], [4500, 1000], [4500, 8500], [-4500, 8500]]
+        }
+    ],
+    "agencies": [
+        {
+            "id": "lspd",
+            "name": "Los Santos Police Department",
+            "department": "Police",
+            "callsignPrefix": "LSPD",
+            "territories": ["los_santos"]
+        },
+        {
+            "id": "bcso",
+            "name": "Blaine County Sheriff's Office",
+            "department": "Police",
+            "callsignPrefix": "BCSO",
+            "territories": ["blaine_county"]
+        }
+    ]
+}

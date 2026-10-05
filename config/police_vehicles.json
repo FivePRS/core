@@ -28,5 +28,39 @@
         "plateText": "CMND",
         "forcedExtras": [],
         "disabledExtras": []
+    },
+    "agencies": {
+        "bcso": {
+            "patrol": {
+                "models": ["sheriff", "sheriff2"],
+                "primaryColor": -1,
+                "secondaryColor": -1,
+                "dirtLevel": 3,
+                "livery": -1,
+                "plateText": "",
+                "forcedExtras": [],
+                "disabledExtras": []
+            },
+            "senior": {
+                "models": ["sheriff2"],
+                "primaryColor": -1,
+                "secondaryColor": -1,
+                "dirtLevel": 1,
+                "livery": -1,
+                "plateText": "",
+                "forcedExtras": [],
+                "disabledExtras": []
+            },
+            "command": {
+                "models": ["sheriff2"],
+                "primaryColor": -1,
+                "secondaryColor": -1,
+                "dirtLevel": 0,
+                "livery": -1,
+                "plateText": "BCSO",
+                "forcedExtras": [],
+                "disabledExtras": []
+            }
+        }
     }
 }

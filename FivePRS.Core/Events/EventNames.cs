@@ -1,33 +1,29 @@
-﻿namespace FivePRS.Core.Events
+namespace FivePRS.Core.Events
 {
     public static class EventNames
     {
         public const string ClientReceivePlayerData = "FivePRS:Client:ReceivePlayerData";
-
         public const string ClientDutyStatusChanged = "FivePRS:Client:DutyStatusChanged";
-
-        public const string ClientCalloutStarted    = "FivePRS:Client:CalloutStarted";
-
-        public const string ClientCalloutEnded      = "FivePRS:Client:CalloutEnded";
-
-        public const string ClientRankedUp           = "FivePRS:Client:RankedUp";
+        public const string ClientCalloutOffered    = "FivePRS:Client:CalloutOffered";
+        public const string ClientDispatchSnapshot  = "FivePRS:Client:DispatchSnapshot";
+        public const string ClientRankedUp          = "FivePRS:Client:RankedUp";
+        public const string ClientNotify            = "FivePRS:Client:Notify";
+        public const string ClientEndCallout        = "FivePRS:Client:EndCallout";
 
         public const string ServerPlayerConnected   = "FivePRS:Server:PlayerConnected";
-
         public const string ServerToggleDuty        = "FivePRS:Server:ToggleDuty";
-
         public const string ServerSetDepartment     = "FivePRS:Server:SetDepartment";
-
-        public const string ServerCalloutCompleted  = "FivePRS:Server:CalloutCompleted";
+        public const string ServerSetAgency         = "FivePRS:Server:SetAgency";
+        public const string ServerRegisterCallouts  = "FivePRS:Server:RegisterCallouts";
+        public const string ServerCalloutResponse   = "FivePRS:Server:CalloutResponse";
+        public const string ServerCalloutEnded      = "FivePRS:Server:CalloutEnded";
+        public const string ServerSetUnitStatus     = "FivePRS:Server:SetUnitStatus";
+        public const string ServerAttachToCall      = "FivePRS:Server:AttachToCall";
 
         public const string LocalDutyChanged        = "FivePRS:Local:DutyChanged";
-
         public const string LocalCalloutReceived    = "FivePRS:Local:CalloutReceived";
-
         public const string LocalSuspectCuffed      = "FivePRS:Local:SuspectCuffed";
-
         public const string LocalSuspectUncuffed    = "FivePRS:Local:SuspectUncuffed";
-
         public const string LocalSuspectEscorted    = "FivePRS:Local:SuspectEscorted";
     }
 }

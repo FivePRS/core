@@ -144,7 +144,8 @@ namespace FivePRS.Client.VehicleSpawner
             vehicle.Repair();
             vehicle.FuelLevel = 100f;
 
-            API.SetVehicleColours(h, config.PrimaryColor, config.SecondaryColor);
+            if (config.PrimaryColor >= 0 && config.SecondaryColor >= 0)
+                API.SetVehicleColours(h, config.PrimaryColor, config.SecondaryColor);
 
             API.SetVehicleDirtLevel(h, config.DirtLevel);
 

@@ -11,24 +11,18 @@ namespace FivePRS.Client.Callouts
     {
         public Type Type { get; }
         public CalloutInfoAttribute Info { get; }
-        internal DateTime LastDispatchedUtc { get; set; } = DateTime.MinValue;
 
         internal RegisteredCallout(Type type, CalloutInfoAttribute info)
         {
             Type = type;
             Info = info;
         }
-
-        internal bool IsOnCooldown =>
-            Info.CooldownSeconds > 0 &&
-            (DateTime.UtcNow - LastDispatchedUtc).TotalSeconds < Info.CooldownSeconds;
     }
 
     public sealed class CalloutRegistry
     {
         private readonly List<RegisteredCallout> _entries = new();
         private readonly object _lock = new();
-        private readonly Random _rng = new();
 
         public int Count { get { lock (_lock) return _entries.Count; } }
 
@@ -90,42 +84,22 @@ namespace FivePRS.Client.Callouts
             }
         }
 
-        public RegisteredCallout? PickCallout(Department department)
+        public List<CalloutDefinition> GetDefinitions(Department department)
         {
             lock (_lock)
             {
-                var pool = _entries
-                    .Where(e => e.Info.Department == department && !e.IsOnCooldown)
+                return _entries
+                    .Where(e => e.Info.Department == department)
+                    .Select(e => new CalloutDefinition
+                    {
+                        Name            = e.Info.Name,
+                        Department      = e.Info.Department,
+                        Priority        = e.Info.Priority,
+                        Weight          = e.Info.Weight,
+                        CooldownSeconds = e.Info.CooldownSeconds,
+                        XPReward        = e.Info.XPReward,
+                    })
                     .ToList();
-
-                while (pool.Count > 0)
-                {
-                    var winner = WeightedRandom(pool);
-                    pool.Remove(winner);
-
-                    CalloutBase probe;
-                    try { probe = (CalloutBase)Activator.CreateInstance(winner.Type); }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"[CalloutRegistry] Probe instantiation failed for {winner.Type.Name}: {ex.Message}");
-                        continue;
-                    }
-
-                    bool dispatchable;
-                    try { dispatchable = probe.CanBeDispatched(); }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"[CalloutRegistry] CanBeDispatched threw in {winner.Type.Name}: {ex.Message}");
-                        continue;
-                    }
-
-                    if (!dispatchable) continue;
-
-                    winner.LastDispatchedUtc = DateTime.UtcNow;
-                    return winner;
-                }
-
-                return null;
             }
         }
 
@@ -136,17 +110,6 @@ namespace FivePRS.Client.Callouts
                 return _entries.FirstOrDefault(
                     e => string.Equals(e.Info.Name, name, StringComparison.OrdinalIgnoreCase));
             }
-        }
-
-        private RegisteredCallout WeightedRandom(List<RegisteredCallout> pool)
-        {
-            var roll = _rng.Next(pool.Sum(e => e.Info.Weight));
-            foreach (var entry in pool)
-            {
-                roll -= entry.Info.Weight;
-                if (roll < 0) return entry;
-            }
-            return pool[pool.Count - 1];
         }
     }
 }

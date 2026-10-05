@@ -5,7 +5,6 @@ using FivePRS.Client.Agency;
 using FivePRS.Client.Callouts;
 using FivePRS.Client.Loadout;
 using FivePRS.Client.VehicleSpawner;
-using FivePRS.Core.Events;
 using FivePRS.Core.Models;
 using FivePRS.Police.Config;
 
@@ -14,7 +13,7 @@ namespace FivePRS.Police
     public class PoliceAgency : BaseAgency
     {
         public override Department Department => Department.Police;
-        public override string AgencyName     => "Los Santos Police Department";
+        public override string AgencyName     => "Police Department";
 
         private readonly CalloutRegistry     _registry;
         private readonly CalloutDispatcher   _dispatcher;
@@ -32,10 +31,10 @@ namespace FivePRS.Police
         {
             await base.OnDuty(player);
 
-            var loadout = PoliceLoadouts.GetForRank(player.Rank);
+            var loadout = PoliceLoadouts.GetForRank(player.Rank, player.Agency);
             await LoadoutManager.ApplyAsync(loadout);
 
-            var vehicleConfig = PoliceVehicles.GetForRank(player.Rank);
+            var vehicleConfig = PoliceVehicles.GetForRank(player.Rank, player.Agency);
             var vehicle       = await _vehicleSpawner.SpawnAsync(vehicleConfig);
 
             _registry.DiscoverAll();
@@ -47,7 +46,7 @@ namespace FivePRS.Police
                 : "~r~Vehicle spawn failed~w~ — proceed on foot.";
 
             Notify(
-                $"~b~{AgencyName}~w~ | ~g~ON DUTY~w~ | " +
+                $"~b~{DisplayName}~w~ | ~g~ON DUTY~w~ | " +
                 $"{loadout.Name} loadout applied.~n~{vehicleMsg}");
         }
 
@@ -57,26 +56,21 @@ namespace FivePRS.Police
 
             _dispatcher.Stop();
             _vehicleSpawner.Despawn();
-            LoadoutManager.Strip();
+            await LoadoutManager.StripAsync();
 
-            Notify($"~b~{AgencyName}~w~ | ~r~OFF DUTY~w~. Loadout and vehicle removed.");
+            Notify($"~b~{DisplayName}~w~ | ~r~OFF DUTY~w~. Loadout and vehicle removed.");
         }
 
         public override async Task OnCalloutReceived(CalloutData callout)
         {
-            await _dispatcher.HandleServerCalloutAsync(callout);
+            await _dispatcher.HandleOfferAsync(callout);
         }
 
         private void OnCalloutEnded(CalloutBase callout, CalloutResult result)
         {
             if (result == CalloutResult.Completed)
             {
-                TriggerServerEvent(
-                    EventNames.ServerCalloutCompleted,
-                    callout.Data.Id,
-                    callout.Data.XPReward);
-
-                Notify($"~g~CALLOUT COMPLETE~w~ | ~y~+{callout.Data.XPReward} XP");
+                Notify("~g~CALLOUT COMPLETE~w~");
             }
             else if (result == CalloutResult.Failed)
             {

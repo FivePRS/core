@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace FivePRS.Client.Loadout
 {
@@ -11,6 +11,10 @@ namespace FivePRS.Client.Loadout
         public IReadOnlyList<ComponentEntry> Components { get; set; } = new List<ComponentEntry>();
 
         public IReadOnlyList<PropEntry> Props { get; set; } = new List<PropEntry>();
+
+        public string? MalePedModel { get; set; }
+
+        public string? FemalePedModel { get; set; }
     }
 
     public sealed class WeaponEntry

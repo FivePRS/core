@@ -47,5 +47,8 @@ namespace FivePRS.Server.Database
 
         public Task UpdateDutyStatusAsync(string license, bool isOnDuty)
             => _provider.UpdateDutyStatusAsync(license, isOnDuty);
+
+        public Task AddAuditAsync(AuditEntry entry)
+            => _provider.AddAuditAsync(entry);
     }
 }
