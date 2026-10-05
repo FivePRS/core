@@ -12,6 +12,8 @@ server_scripts {
     'server/FivePRS.Server.net.dll',
 }
 
+ui_page 'nui/index.html'
+
 client_scripts {
     'client/FivePRS.Client.net.dll',
     'client/FivePRS.Police.net.dll',
@@ -20,6 +22,9 @@ client_scripts {
 }
 
 files {
+    'nui/index.html',
+    'nui/style.css',
+    'nui/app.js',
     'client/FivePRS.Core.dll',
     'client/Newtonsoft.Json.dll',
     'plugins/*.dll',

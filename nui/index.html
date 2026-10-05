@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>FivePRS MDT</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="mdt" class="mdt" hidden>
+    <header class="mdt-header">
+      <div class="lightbar" aria-hidden="true"></div>
+      <div class="brand">
+        <span class="wordmark">five<span class="red">p</span><span class="blue">rs</span></span>
+        <span class="brand-label">Mobile Data Terminal</span>
+      </div>
+      <div class="header-meta">
+        <span id="clock" class="clock"></span>
+        <button id="close" class="icon-button" type="button" aria-label="Close MDT">&times;</button>
+      </div>
+    </header>
+
+    <main class="mdt-body">
+      <aside class="panel self">
+        <p class="panel-title">My unit</p>
+        <p id="self-callsign" class="callsign"></p>
+        <p id="self-name" class="muted"></p>
+        <p id="self-agency" class="muted"></p>
+
+        <dl class="facts">
+          <div><dt>Status</dt><dd id="self-status"></dd></div>
+          <div><dt>Area</dt><dd id="self-territory"></dd></div>
+          <div><dt>Assigned call</dt><dd id="self-call"></dd></div>
+        </dl>
+
+        <p class="panel-title">Set status</p>
+        <div class="status-buttons">
+          <button type="button" class="button" data-status="Available">Available</button>
+          <button type="button" class="button" data-status="Busy">Busy</button>
+        </div>
+        <p id="status-hint" class="hint"></p>
+      </aside>
+
+      <section class="panel calls">
+        <div class="panel-head">
+          <p class="panel-title">Active calls</p>
+          <span id="call-count" class="count"></span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Call</th><th>Type</th><th>Area</th><th>Units</th><th></th></tr>
+            </thead>
+            <tbody id="calls"></tbody>
+          </table>
+          <p id="calls-empty" class="empty" hidden>No active calls.</p>
+        </div>
+      </section>
+
+      <section class="panel units">
+        <div class="panel-head">
+          <p class="panel-title">Units</p>
+          <span id="unit-count" class="count"></span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Callsign</th><th>Officer</th><th>Area</th><th>Status</th></tr>
+            </thead>
+            <tbody id="units"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

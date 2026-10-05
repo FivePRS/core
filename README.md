@@ -45,6 +45,9 @@ Admin commands work from the server console or in game with `fiveprs.admin`:
 | `fprs_offduty <id>` | Force a player off duty |
 | `fprs_endcall <call id>` | Close an active call |
 
+## Mobile Data Terminal
+On-duty units open the MDT with `F7` or `/mdt`. It shows your unit and status, every active call with its territory and assigned units, and all units on duty. From the MDT you can set your status, attach to a call as backup and set a waypoint to a call. The interface lives in `nui/` as plain HTML, CSS and JavaScript, so it can be restyled without rebuilding the resource.
+
 ## Jurisdictions
 `config/jurisdictions.json` defines territories as map polygons and the agencies that patrol them. Players choose an agency within their department with `/setagency`, and dispatch only offers calls to units inside their agency's territory. An agency with no territories is unrestricted. The bundled split (Los Santos for LSPD, Blaine County for BCSO) is a coarse default; adjust the polygons to suit your server.
 
