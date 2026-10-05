@@ -35,5 +35,34 @@
             { "name": "WEAPON_CARBINERIFLE", "ammo": 200 },
             { "name": "WEAPON_PISTOL",       "ammo": 500, "setCurrent": true }
         ]
-    }
+    },
+    "uniform": {
+        "components": [
+            { "slot": 3,  "drawable": 4,  "texture": 0 },
+            { "slot": 4,  "drawable": 24, "texture": 0 },
+            { "slot": 6,  "drawable": 24, "texture": 0 },
+            { "slot": 8,  "drawable": 58, "texture": 0 },
+            { "slot": 9,  "drawable": 0,  "texture": 0 },
+            { "slot": 11, "drawable": 55, "texture": 0 }
+        ],
+        "props": [
+            { "slot": 0, "drawable": 46, "texture": 0 },
+            { "slot": 1, "drawable": -1, "texture": -1 }
+        ]
+    },
+    "commandUniform": {
+        "components": [
+            { "slot": 3,  "drawable": 4,  "texture": 0 },
+            { "slot": 4,  "drawable": 24, "texture": 0 },
+            { "slot": 6,  "drawable": 24, "texture": 0 },
+            { "slot": 8,  "drawable": 58, "texture": 0 },
+            { "slot": 9,  "drawable": 0,  "texture": 0 },
+            { "slot": 11, "drawable": 48, "texture": 0 }
+        ],
+        "props": [
+            { "slot": 0, "drawable": -1, "texture": -1 },
+            { "slot": 1, "drawable": -1, "texture": -1 }
+        ]
+    },
+    "agencies": {}
 }

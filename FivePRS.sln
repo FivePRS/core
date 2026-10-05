@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FivePRS.Client", "FivePRS.C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FivePRS.Police", "FivePRS.Police\FivePRS.Police.csproj", "{44444444-4444-4444-4444-444444444444}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FivePRS.Tests", "FivePRS.Tests\FivePRS.Tests.csproj", "{D0BF8CC2-F146-45FA-8EBD-B46E236B0B26}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{44444444-4444-4444-4444-444444444444}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{44444444-4444-4444-4444-444444444444}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{44444444-4444-4444-4444-444444444444}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D0BF8CC2-F146-45FA-8EBD-B46E236B0B26}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D0BF8CC2-F146-45FA-8EBD-B46E236B0B26}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D0BF8CC2-F146-45FA-8EBD-B46E236B0B26}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D0BF8CC2-F146-45FA-8EBD-B46E236B0B26}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

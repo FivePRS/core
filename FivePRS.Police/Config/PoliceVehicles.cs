@@ -1,27 +1,25 @@
-﻿using FivePRS.Client.VehicleSpawner;
+using FivePRS.Client.VehicleSpawner;
 using FivePRS.Core.Config;
 
 namespace FivePRS.Police.Config
 {
     public static class PoliceVehicles
     {
-        public static PatrolVehicleConfig GetForRank(int rank)
+        public static PatrolVehicleConfig GetForRank(int rank, string? agencyId)
         {
-            var cfg  = ConfigManager.PoliceVehicles;
-            var tier = rank >= 8 ? cfg.Command : rank >= 5 ? cfg.Senior : cfg.Patrol;
-            return ToConfig(tier);
-        }
+            var tier = ConfigManager.PoliceVehicles.TierFor(agencyId, PoliceLoadoutsConfig.TierForRank(rank));
 
-        private static PatrolVehicleConfig ToConfig(VehicleTierDef t) => new()
-        {
-            ModelPool      = t.Models,
-            PrimaryColor   = t.PrimaryColor,
-            SecondaryColor = t.SecondaryColor,
-            DirtLevel      = t.DirtLevel,
-            Livery         = t.Livery,
-            PlateText      = t.PlateText,
-            ForcedExtras   = t.ForcedExtras,
-            DisabledExtras = t.DisabledExtras,
-        };
+            return new PatrolVehicleConfig
+            {
+                ModelPool      = tier.Models,
+                PrimaryColor   = tier.PrimaryColor,
+                SecondaryColor = tier.SecondaryColor,
+                DirtLevel      = tier.DirtLevel,
+                Livery         = tier.Livery,
+                PlateText      = tier.PlateText,
+                ForcedExtras   = tier.ForcedExtras,
+                DisabledExtras = tier.DisabledExtras,
+            };
+        }
     }
 }

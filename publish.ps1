@@ -127,6 +127,7 @@ Write-Host "  1. Extract FivePRS.zip into your server resources\ directory." -Fo
 Write-Host "  2. Add to server.cfg:" -ForegroundColor Yellow
 Write-Host '       set fiveprs_db_type      "sqlite"   # or "mysql"' -ForegroundColor Gray
 Write-Host '       set fiveprs_db_connection ""         # MySQL only' -ForegroundColor Gray
+Write-Host '       set fiveprs_restrict_departments "false" # "true" to require ACE per department' -ForegroundColor Gray
 Write-Host "       ensure FivePRS" -ForegroundColor Gray
 Write-Host ""
 Write-Host "  plugins\   <- drop functionality extensions here" -ForegroundColor Yellow

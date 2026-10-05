@@ -12,6 +12,7 @@ namespace FivePRS.Client.Loadout
 
         private static List<ComponentEntry>? _savedComponents;
         private static List<PropEntry>?      _savedProps;
+        private static int                   _savedModel;
 
         public static LoadoutDefinition? Current { get; private set; }
 
@@ -22,6 +23,13 @@ namespace FivePRS.Client.Loadout
 
             if (_savedComponents is null)
                 SaveAppearance(ped.Handle);
+
+            var pedModel = API.IsPedMale(ped.Handle) ? loadout.MalePedModel : loadout.FemalePedModel;
+            if (pedModel is not null && await ChangeModelAsync(new Model(pedModel)))
+            {
+                ped = Game.PlayerPed;
+                API.SetPedDefaultComponentVariation(ped.Handle);
+            }
 
             API.RemoveAllPedWeapons(ped.Handle, true);
             await BaseScript.Delay(100);
@@ -37,42 +45,59 @@ namespace FivePRS.Client.Loadout
             if (currentWeaponHash != 0)
                 API.SetCurrentPedWeapon(ped.Handle, currentWeaponHash, true);
 
-            foreach (var comp in loadout.Components)
-            {
-                if (API.IsPedComponentVariationValid(ped.Handle, comp.ComponentId, comp.DrawableId, comp.TextureId))
-                    API.SetPedComponentVariation(ped.Handle, comp.ComponentId, comp.DrawableId, comp.TextureId, 0);
-            }
-
+            ApplyComponents(ped.Handle, loadout.Components);
             ApplyProps(ped.Handle, loadout.Props);
 
             Current = loadout;
             Debug.WriteLine($"[LoadoutManager] Applied loadout '{loadout.Name}'.");
         }
 
-        public static void Strip()
+        public static async Task StripAsync()
         {
             var ped = Game.PlayerPed;
             if (!ped.Exists()) return;
 
             API.RemoveAllPedWeapons(ped.Handle, true);
 
-            if (_savedComponents is not null)
+            if (_savedModel != 0 && API.GetEntityModel(ped.Handle) != _savedModel &&
+                await ChangeModelAsync(new Model(_savedModel)))
             {
-                foreach (var comp in _savedComponents)
-                    API.SetPedComponentVariation(ped.Handle, comp.ComponentId, comp.DrawableId, comp.TextureId, 0);
+                ped = Game.PlayerPed;
             }
+
+            if (_savedComponents is not null)
+                ApplyComponents(ped.Handle, _savedComponents);
 
             if (_savedProps is not null)
                 ApplyProps(ped.Handle, _savedProps);
 
             _savedComponents = null;
             _savedProps      = null;
+            _savedModel      = 0;
             Current          = null;
             Debug.WriteLine("[LoadoutManager] Loadout stripped.");
         }
 
+        private static async Task<bool> ChangeModelAsync(Model model)
+        {
+            if (!model.IsValid || !model.IsPed)
+            {
+                Debug.WriteLine($"[LoadoutManager] Ped model {model.Hash} is not a valid ped.");
+                return false;
+            }
+
+            var changed = await Game.Player.ChangeModel(model);
+            model.MarkAsNoLongerNeeded();
+
+            if (!changed)
+                Debug.WriteLine($"[LoadoutManager] Failed to change player model to {model.Hash}.");
+            return changed;
+        }
+
         private static void SaveAppearance(int ped)
         {
+            _savedModel = API.GetEntityModel(ped);
+
             _savedComponents = new List<ComponentEntry>();
             for (var slot = 0; slot < ComponentSlots; slot++)
             {
@@ -93,6 +118,15 @@ namespace FivePRS.Client.Loadout
                     DrawableId = API.GetPedPropIndex(ped, slot),
                     TextureId  = API.GetPedPropTextureIndex(ped, slot),
                 });
+            }
+        }
+
+        private static void ApplyComponents(int ped, IEnumerable<ComponentEntry> components)
+        {
+            foreach (var comp in components)
+            {
+                if (API.IsPedComponentVariationValid(ped, comp.ComponentId, comp.DrawableId, comp.TextureId))
+                    API.SetPedComponentVariation(ped, comp.ComponentId, comp.DrawableId, comp.TextureId, 0);
             }
         }
 

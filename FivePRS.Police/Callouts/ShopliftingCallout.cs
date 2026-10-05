@@ -25,6 +25,8 @@ namespace FivePRS.Police.Callouts
             new(-706.3f,  -913.3f, 19.2f),
             new( 545.0f,  2656.9f, 42.0f),
             new(-3040.3f, 584.2f,  7.9f),
+            new(1961.2f,  3740.5f, 32.3f),
+            new(1698.4f,  4924.6f, 42.1f),
         };
 
         private static readonly string[] SuspectModels =
@@ -45,7 +47,7 @@ namespace FivePRS.Police.Callouts
 
         public ShopliftingCallout()
         {
-            _storePosition    = StoreLocations[_rng.Next(StoreLocations.Length)];
+            _storePosition    = PickLocation(StoreLocations, _rng);
             _suspectModelName = SuspectModels[_rng.Next(SuspectModels.Length)];
 
             Data.Description = "Report of a shoplifter fleeing on foot from a convenience store. Suspect is considered non-violent.";

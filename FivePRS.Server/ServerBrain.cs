@@ -1,33 +1,62 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Threading.Tasks;
 using CitizenFX.Core;
 using CitizenFX.Core.Native;
+using FivePRS.Core.Config;
 using FivePRS.Core.Events;
 using FivePRS.Core.Models;
 using FivePRS.Server.Database;
+using FivePRS.Server.Dispatch;
+using FivePRS.Server.Permissions;
 using Newtonsoft.Json;
 
 namespace FivePRS.Server
 {
-    public class ServerBrain : BaseScript
+    public partial class ServerBrain : BaseScript
     {
-        private static readonly TimeSpan MinCalloutInterval = TimeSpan.FromSeconds(30);
+        private const int SnapshotIntervalMs = 5_000;
 
         private readonly ConcurrentDictionary<string, PlayerData> _cache = new();
-        private readonly ConcurrentDictionary<string, DateTime> _lastCalloutReward = new();
         private readonly DatabaseManager _db = new();
+        private readonly DispatchService _dispatch;
+        private readonly PermissionService _permissions;
+
+        private long _lastSnapshotAt;
 
         public ServerBrain()
         {
+            ConfigManager.Log = message => Debug.WriteLine(message);
+            var resource = API.GetCurrentResourceName();
+            ConfigManager.LoadSettings(API.LoadResourceFile(resource, "config/settings.json"));
+            ConfigManager.LoadJurisdictions(API.LoadResourceFile(resource, "config/jurisdictions.json"));
+
+            _dispatch    = new DispatchService(
+                () => DateTime.UtcNow,
+                () => ConfigManager.Settings,
+                () => ConfigManager.Territories,
+                new Random());
+            _permissions = new PermissionService(
+                (playerId, ace) => API.IsPlayerAceAllowed(playerId, ace),
+                () => API.GetConvar("fiveprs_restrict_departments", "false").Equals("true", StringComparison.OrdinalIgnoreCase));
+
             EventHandlers["playerConnecting"] += new Action<Player, string, dynamic, dynamic>(OnPlayerConnecting);
             EventHandlers["playerDropped"]    += new Action<Player, string>(OnPlayerDropped);
 
             EventHandlers[EventNames.ServerPlayerConnected]  += new Action<Player>(OnPlayerReady);
             EventHandlers[EventNames.ServerToggleDuty]       += new Action<Player>(OnToggleDuty);
             EventHandlers[EventNames.ServerSetDepartment]    += new Action<Player, int>(OnSetDepartment);
-            EventHandlers[EventNames.ServerCalloutCompleted] += new Action<Player, string, int>(OnCalloutCompleted);
+            EventHandlers[EventNames.ServerSetAgency]        += new Action<Player, string>(OnSetAgency);
+            EventHandlers[EventNames.ServerRegisterCallouts] += new Action<Player, string>(OnRegisterCallouts);
+            EventHandlers[EventNames.ServerCalloutResponse]  += new Action<Player, string, int, float, float, float>(OnCalloutResponse);
+            EventHandlers[EventNames.ServerCalloutEnded]     += new Action<Player, string, int>(OnCalloutEnded);
+            EventHandlers[EventNames.ServerSetUnitStatus]    += new Action<Player, int>(OnSetUnitStatus);
+            EventHandlers[EventNames.ServerAttachToCall]     += new Action<Player, string>(OnAttachToCall);
+
+            Tick += DispatchTickAsync;
+            RegisterAdminCommands();
 
             _ = InitDbAsync();
         }
@@ -88,10 +117,11 @@ namespace FivePRS.Server
 
         private void OnPlayerDropped([FromSource] Player player, string reason)
         {
+            _dispatch.SetOffDuty(ServerId(player));
+
             var license = GetLicense(player);
             if (license is null) return;
 
-            _lastCalloutReward.TryRemove(license, out _);
             if (_cache.TryRemove(license, out var data) && data.IsOnDuty)
                 _ = _db.UpdateDutyStatusAsync(license, false);
         }
@@ -122,16 +152,18 @@ namespace FivePRS.Server
             if (!TryGetCached(player, out var license, out var data)) return;
             if (!data.IsOnDuty && data.Department == Department.None) return;
 
-            data.IsOnDuty = !data.IsOnDuty;
+            var goingOnDuty = !data.IsOnDuty;
+            if (goingOnDuty && !_permissions.CanJoinDepartment(player.Handle, data.Department))
+            {
+                Notify(player, $"~r~You are not authorised to go on duty with {data.Department}.");
+                Audit(AuditActions.PermissionDenied, player, license, $"duty {data.Department}");
+                return;
+            }
 
             try
             {
-                await _db.UpdateDutyStatusAsync(license, data.IsOnDuty);
-
-                TriggerClientEvent(player, EventNames.ClientDutyStatusChanged,
-                    data.IsOnDuty, (int)data.Department);
-
-                Debug.WriteLine($"[FivePRS] {data.Name} is now {(data.IsOnDuty ? "ON" : "OFF")} duty.");
+                await SetDutyAsync(player, data, goingOnDuty);
+                Audit(goingOnDuty ? AuditActions.DutyOn : AuditActions.DutyOff, player, license, data.Department.ToString());
             }
             catch (Exception ex)
             {
@@ -142,19 +174,20 @@ namespace FivePRS.Server
         private async void OnSetDepartment([FromSource] Player player, int departmentId)
         {
             if (!Enum.IsDefined(typeof(Department), departmentId) || departmentId == (int)Department.None) return;
-            if (!TryGetCached(player, out _, out var data)) return;
+            if (!TryGetCached(player, out var license, out var data)) return;
+
+            var department = (Department)departmentId;
+            if (!_permissions.CanJoinDepartment(player.Handle, department))
+            {
+                Notify(player, $"~r~You are not authorised to join {department}.");
+                Audit(AuditActions.PermissionDenied, player, license, $"department {department}");
+                return;
+            }
 
             try
             {
-                if (data.IsOnDuty)
-                {
-                    data.IsOnDuty = false;
-                    TriggerClientEvent(player, EventNames.ClientDutyStatusChanged, false, (int)data.Department);
-                }
-
-                data.Department = (Department)departmentId;
-                await _db.SavePlayerAsync(data);
-                SendPlayerData(player, data);
+                await ChangeDepartmentAsync(player, data, department);
+                Audit(AuditActions.DepartmentSet, player, license, department.ToString());
             }
             catch (Exception ex)
             {
@@ -162,37 +195,191 @@ namespace FivePRS.Server
             }
         }
 
-        private async void OnCalloutCompleted([FromSource] Player player, string calloutId, int xpClaim)
+        private async void OnSetAgency([FromSource] Player player, string agencyId)
         {
-            if (!TryGetCached(player, out var license, out var data) || !data.IsOnDuty) return;
+            if (!TryGetCached(player, out var license, out var data)) return;
 
-            var now = DateTime.UtcNow;
-            if (_lastCalloutReward.TryGetValue(license, out var last) && now - last < MinCalloutInterval)
+            var agency = ConfigManager.Territories.FindAgency(agencyId);
+            if (agency is null || agency.Department != data.Department)
             {
-                Debug.WriteLine($"[FivePRS] Ignored callout reward from {player.Name}: too soon after the last one.");
+                Notify(player, $"~r~Unknown agency '{agencyId}' for {data.Department}.");
                 return;
             }
-            _lastCalloutReward[license] = now;
-
-            var awardedXP = (int)Math.Min(Math.Max(xpClaim * ReadXpMultiplier(), 0), ReadMaxXp());
 
             try
             {
-                var rankedUp = data.AddXP(awardedXP);
+                if (data.IsOnDuty)
+                    await SetDutyAsync(player, data, false);
+
+                data.Agency = agency.Id;
                 await _db.SavePlayerAsync(data);
-
                 SendPlayerData(player, data);
-                if (rankedUp)
-                {
-                    TriggerClientEvent(player, EventNames.ClientRankedUp, data.Rank);
-                    Debug.WriteLine($"[FivePRS] {data.Name} ranked up to Rank {data.Rank}.");
-                }
 
-                Debug.WriteLine($"[FivePRS] +{awardedXP} XP to {player.Name} (callout: {calloutId})");
+                Notify(player, $"~g~You are now with the {agency.Name}.");
+                Audit(AuditActions.AgencySet, player, license, agency.Id);
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[FivePRS] Error completing callout {calloutId}: {ex.Message}");
+                Debug.WriteLine($"[FivePRS] Error setting agency for {player.Name}: {ex.Message}");
+            }
+        }
+
+        private void OnRegisterCallouts([FromSource] Player player, string json)
+        {
+            if (!_dispatch.IsOnDuty(ServerId(player))) return;
+
+            try
+            {
+                var definitions = JsonConvert.DeserializeObject<List<CalloutDefinition>>(json);
+                if (definitions is null) return;
+
+                _dispatch.RegisterCallouts(definitions);
+                Debug.WriteLine($"[FivePRS] Dispatch catalog has {_dispatch.CatalogCount} callout(s).");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[FivePRS] Invalid callout catalog from {player.Name}: {ex.Message}");
+            }
+        }
+
+        private void OnCalloutResponse([FromSource] Player player, string callId, int response, float x, float y, float z)
+        {
+            if (!Enum.IsDefined(typeof(OfferResponse), response)) return;
+            _dispatch.Respond(ServerId(player), callId, (OfferResponse)response, x, y, z);
+        }
+
+        private async void OnCalloutEnded([FromSource] Player player, string callId, int result)
+        {
+            if (!Enum.IsDefined(typeof(CalloutResult), result)) return;
+
+            foreach (var award in _dispatch.End(ServerId(player), callId, (CalloutResult)result))
+                await AwardXpAsync(award.UnitId, award.Amount, callId);
+        }
+
+        private void OnSetUnitStatus([FromSource] Player player, int status)
+        {
+            if (!Enum.IsDefined(typeof(UnitStatus), status)) return;
+
+            if (!_dispatch.SetStatus(ServerId(player), (UnitStatus)status))
+                Notify(player, "~r~Status unchanged.~w~ End your active callout first.");
+        }
+
+        private void OnAttachToCall([FromSource] Player player, string callId)
+        {
+            Notify(player, _dispatch.Attach(ServerId(player), callId)
+                ? $"~g~Attached to call ~y~#{callId}~w~. Waypoint set."
+                : $"~r~Unable to attach to call #{callId}.~w~ Check the ID and your status.");
+        }
+
+        private async Task DispatchTickAsync()
+        {
+            await Delay(1_000);
+
+            foreach (var unitId in _dispatch.UnitIds)
+            {
+                var ped = API.GetPlayerPed(unitId.ToString());
+                if (ped == 0) continue;
+
+                var pos = API.GetEntityCoords(ped);
+                _dispatch.UpdatePosition(unitId, pos.X, pos.Y, pos.Z);
+            }
+
+            foreach (var offer in _dispatch.Tick())
+                TriggerClientEvent(Players[offer.UnitId], EventNames.ClientCalloutOffered, JsonConvert.SerializeObject(offer.Callout));
+
+            if (!_dispatch.IsDirty && API.GetGameTimer() - _lastSnapshotAt < SnapshotIntervalMs) return;
+
+            _lastSnapshotAt = API.GetGameTimer();
+            _dispatch.ClearDirty();
+            var snapshot = JsonConvert.SerializeObject(_dispatch.CreateSnapshot());
+            foreach (var unitId in _dispatch.UnitIds)
+                TriggerClientEvent(Players[unitId], EventNames.ClientDispatchSnapshot, snapshot);
+        }
+
+        private async Task AwardXpAsync(int unitId, int baseAmount, string callId)
+        {
+            var player = Players[unitId];
+            if (player is null || !TryGetCached(player, out _, out var data)) return;
+
+            var awardedXP = (int)Math.Min(Math.Max(baseAmount * ReadXpMultiplier(), 0), ReadMaxXp());
+
+            try
+            {
+                await GrantXpAsync(player, data, awardedXP);
+                Notify(player, $"~g~CALL #{callId} CLOSED~w~ | ~y~+{awardedXP} XP");
+                Audit(AuditActions.XpAwarded, player, data.License, $"+{awardedXP} call #{callId}");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[FivePRS] Error awarding XP for call #{callId}: {ex.Message}");
+            }
+        }
+
+        private async Task SetDutyAsync(Player player, PlayerData data, bool onDuty)
+        {
+            data.IsOnDuty = onDuty;
+
+            if (onDuty)
+                _dispatch.SetOnDuty(ServerId(player), data.Name, data.Department, data.Rank, data.Agency);
+            else
+                _dispatch.SetOffDuty(ServerId(player));
+
+            TriggerClientEvent(player, EventNames.ClientDutyStatusChanged, onDuty, (int)data.Department);
+            await _db.UpdateDutyStatusAsync(data.License, onDuty);
+
+            Debug.WriteLine($"[FivePRS] {data.Name} is now {(onDuty ? "ON" : "OFF")} duty.");
+        }
+
+        private async Task ChangeDepartmentAsync(Player player, PlayerData data, Department department)
+        {
+            if (data.IsOnDuty)
+                await SetDutyAsync(player, data, false);
+
+            data.Department = department;
+            data.Agency     = ConfigManager.Territories.DefaultAgency(department)?.Id ?? string.Empty;
+            await _db.SavePlayerAsync(data);
+            SendPlayerData(player, data);
+        }
+
+        private async Task GrantXpAsync(Player player, PlayerData data, int amount)
+        {
+            var rankedUp = data.AddXP(amount);
+            await _db.SavePlayerAsync(data);
+            SendPlayerData(player, data);
+
+            if (!rankedUp) return;
+
+            _dispatch.UpdateRank(ServerId(player), data.Rank);
+            TriggerClientEvent(player, EventNames.ClientRankedUp, data.Rank);
+            Audit(AuditActions.RankUp, player, data.License, $"rank {data.Rank}");
+            Debug.WriteLine($"[FivePRS] {data.Name} ranked up to Rank {data.Rank}.");
+        }
+
+        private void Audit(string action, Player? actor, string? targetLicense, string details)
+        {
+            var entry = new AuditEntry
+            {
+                Action        = action,
+                ActorLicense  = actor is null ? null : GetLicense(actor),
+                ActorName     = actor?.Name ?? "console",
+                TargetLicense = targetLicense,
+                Details       = details,
+            };
+
+            _ = WriteAuditAsync(entry);
+        }
+
+        private async Task WriteAuditAsync(AuditEntry entry)
+        {
+            if (!_db.IsReady) return;
+
+            try
+            {
+                await _db.AddAuditAsync(entry);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[FivePRS] Failed to write audit entry '{entry.Action}': {ex.Message}");
             }
         }
 
@@ -207,6 +394,7 @@ namespace FivePRS.Server
 
             data.Name     = playerName;
             data.IsOnDuty = false;
+            data.Agency   = ConfigManager.Territories.ResolveAgency(data.Department, data.Agency)?.Id ?? string.Empty;
             await _db.SavePlayerAsync(data);
 
             _cache[license] = data;
@@ -219,6 +407,11 @@ namespace FivePRS.Server
             data    = null!;
             return license.Length > 0 && _cache.TryGetValue(license, out data!);
         }
+
+        private static int ServerId(Player player) => int.Parse(player.Handle);
+
+        private void Notify(Player player, string message) =>
+            TriggerClientEvent(player, EventNames.ClientNotify, message);
 
         private void SendPlayerData(Player player, PlayerData data) =>
             TriggerClientEvent(player, EventNames.ClientReceivePlayerData, JsonConvert.SerializeObject(data));
