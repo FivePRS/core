@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
+using System.Globalization;
 using System.Threading.Tasks;
 using CitizenFX.Core;
 using CitizenFX.Core.Native;
@@ -12,7 +13,10 @@ namespace FivePRS.Server
 {
     public class ServerBrain : BaseScript
     {
+        private static readonly TimeSpan MinCalloutInterval = TimeSpan.FromSeconds(30);
+
         private readonly ConcurrentDictionary<string, PlayerData> _cache = new();
+        private readonly ConcurrentDictionary<string, DateTime> _lastCalloutReward = new();
         private readonly DatabaseManager _db = new();
 
         public ServerBrain()
@@ -61,34 +65,18 @@ namespace FivePRS.Server
                 return;
             }
 
-            var license = player.Identifiers["license"];
-            if (string.IsNullOrEmpty(license))
+            var license = GetLicense(player);
+            if (license is null)
             {
                 deferrals.done("A valid FiveM license identifier is required.");
                 return;
             }
 
-            deferrals.update($"Welcome back, {playerName}! Loading your ERS profile…");
+            deferrals.update($"Loading your FivePRS profile, {playerName}...");
 
             try
             {
-                var data = await _db.GetPlayerAsync(license);
-
-                if (data is null)
-                {
-                    data = new PlayerData { License = license, Name = playerName };
-                    await _db.UpsertPlayerAsync(data);
-                    Debug.WriteLine($"[FivePRS] New player registered: {playerName} ({license})");
-                }
-                else
-                {
-                    data.Name = playerName;
-                    await _db.UpsertPlayerAsync(data);
-                }
-
-                data.IsOnDuty = false;
-                _cache[license] = data;
-
+                await LoadProfileAsync(license, playerName);
                 deferrals.done();
             }
             catch (Exception ex)
@@ -100,23 +88,38 @@ namespace FivePRS.Server
 
         private void OnPlayerDropped([FromSource] Player player, string reason)
         {
-            var license = player.Identifiers["license"];
-            if (!string.IsNullOrEmpty(license) && _cache.TryRemove(license, out var data) && data.IsOnDuty)
+            var license = GetLicense(player);
+            if (license is null) return;
+
+            _lastCalloutReward.TryRemove(license, out _);
+            if (_cache.TryRemove(license, out var data) && data.IsOnDuty)
                 _ = _db.UpdateDutyStatusAsync(license, false);
         }
 
-        private void OnPlayerReady([FromSource] Player player)
+        private async void OnPlayerReady([FromSource] Player player)
         {
-            var license = player.Identifiers["license"];
-            if (string.IsNullOrEmpty(license) || !_cache.TryGetValue(license, out var data)) return;
+            var license = GetLicense(player);
+            if (license is null) return;
 
-            TriggerClientEvent(player, EventNames.ClientReceivePlayerData, JsonConvert.SerializeObject(data));
+            try
+            {
+                if (!_cache.TryGetValue(license, out var data))
+                {
+                    if (!_db.IsReady) return;
+                    data = await LoadProfileAsync(license, player.Name);
+                }
+
+                SendPlayerData(player, data);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[FivePRS] Error sending profile to {player.Name}: {ex.Message}");
+            }
         }
 
         private async void OnToggleDuty([FromSource] Player player)
         {
-            var license = player.Identifiers["license"];
-            if (string.IsNullOrEmpty(license) || !_cache.TryGetValue(license, out var data)) return;
+            if (!TryGetCached(player, out var license, out var data)) return;
             if (!data.IsOnDuty && data.Department == Department.None) return;
 
             data.IsOnDuty = !data.IsOnDuty;
@@ -139,22 +142,19 @@ namespace FivePRS.Server
         private async void OnSetDepartment([FromSource] Player player, int departmentId)
         {
             if (!Enum.IsDefined(typeof(Department), departmentId) || departmentId == (int)Department.None) return;
-
-            var license = player.Identifiers["license"];
-            if (string.IsNullOrEmpty(license) || !_cache.TryGetValue(license, out var data)) return;
+            if (!TryGetCached(player, out _, out var data)) return;
 
             try
             {
                 if (data.IsOnDuty)
                 {
                     data.IsOnDuty = false;
-                    await _db.UpdateDutyStatusAsync(license, false);
                     TriggerClientEvent(player, EventNames.ClientDutyStatusChanged, false, (int)data.Department);
                 }
 
                 data.Department = (Department)departmentId;
-                await _db.UpdateDepartmentAsync(license, data.Department);
-                TriggerClientEvent(player, EventNames.ClientReceivePlayerData, JsonConvert.SerializeObject(data));
+                await _db.SavePlayerAsync(data);
+                SendPlayerData(player, data);
             }
             catch (Exception ex)
             {
@@ -164,36 +164,76 @@ namespace FivePRS.Server
 
         private async void OnCalloutCompleted([FromSource] Player player, string calloutId, int xpClaim)
         {
-            var license = player.Identifiers["license"];
-            if (string.IsNullOrEmpty(license)) return;
+            if (!TryGetCached(player, out var license, out var data) || !data.IsOnDuty) return;
 
-            int.TryParse(API.GetConvar("fiveprs_max_xp", "500"), out var maxXp);
-            if (maxXp <= 0) maxXp = 500;
-            float.TryParse(API.GetConvar("fiveprs_xp_multiplier", "1.0"), out var xpMultiplier);
-            if (xpMultiplier <= 0) xpMultiplier = 1.0f;
-            var awardedXP = (int)Math.Min(Math.Max(xpClaim * xpMultiplier, 0), maxXp);
+            var now = DateTime.UtcNow;
+            if (_lastCalloutReward.TryGetValue(license, out var last) && now - last < MinCalloutInterval)
+            {
+                Debug.WriteLine($"[FivePRS] Ignored callout reward from {player.Name}: too soon after the last one.");
+                return;
+            }
+            _lastCalloutReward[license] = now;
+
+            var awardedXP = (int)Math.Min(Math.Max(xpClaim * ReadXpMultiplier(), 0), ReadMaxXp());
 
             try
             {
-                await _db.AddXPAsync(license, awardedXP);
+                var rankedUp = data.AddXP(awardedXP);
+                await _db.SavePlayerAsync(data);
 
-                if (_cache.TryGetValue(license, out var data))
+                SendPlayerData(player, data);
+                if (rankedUp)
                 {
-                    data.XP += awardedXP;
-                    if (data.TryRankUp())
-                    {
-                        await _db.UpsertPlayerAsync(data);
-                        TriggerClientEvent(player, EventNames.ClientRankedUp, data.Rank);
-                        Debug.WriteLine($"[FivePRS] {data.Name} ranked up to Rank {data.Rank}!");
-                    }
+                    TriggerClientEvent(player, EventNames.ClientRankedUp, data.Rank);
+                    Debug.WriteLine($"[FivePRS] {data.Name} ranked up to Rank {data.Rank}.");
                 }
 
-                Debug.WriteLine($"[FivePRS] +{awardedXP} XP → {player.Name} (callout: {calloutId})");
+                Debug.WriteLine($"[FivePRS] +{awardedXP} XP to {player.Name} (callout: {calloutId})");
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"[FivePRS] Error completing callout {calloutId}: {ex.Message}");
             }
         }
+
+        private async Task<PlayerData> LoadProfileAsync(string license, string playerName)
+        {
+            var data = await _db.GetPlayerAsync(license);
+            if (data is null)
+            {
+                data = new PlayerData { License = license };
+                Debug.WriteLine($"[FivePRS] New player registered: {playerName} ({license})");
+            }
+
+            data.Name     = playerName;
+            data.IsOnDuty = false;
+            await _db.SavePlayerAsync(data);
+
+            _cache[license] = data;
+            return data;
+        }
+
+        private bool TryGetCached(Player player, out string license, out PlayerData data)
+        {
+            license = GetLicense(player) ?? string.Empty;
+            data    = null!;
+            return license.Length > 0 && _cache.TryGetValue(license, out data!);
+        }
+
+        private void SendPlayerData(Player player, PlayerData data) =>
+            TriggerClientEvent(player, EventNames.ClientReceivePlayerData, JsonConvert.SerializeObject(data));
+
+        private static string? GetLicense(Player player)
+        {
+            var license = player.Identifiers["license"];
+            return string.IsNullOrEmpty(license) ? null : license;
+        }
+
+        private static int ReadMaxXp() =>
+            int.TryParse(API.GetConvar("fiveprs_max_xp", "500"), out var maxXp) && maxXp > 0 ? maxXp : 500;
+
+        private static float ReadXpMultiplier() =>
+            float.TryParse(API.GetConvar("fiveprs_xp_multiplier", "1.0"), NumberStyles.Float,
+                CultureInfo.InvariantCulture, out var multiplier) && multiplier > 0 ? multiplier : 1.0f;
     }
 }

@@ -1,12 +1,9 @@
-﻿using System;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using CitizenFX.Core;
-using CitizenFX.Core.Native;
 using FivePRS.Client;
-using FivePRS.Client.Arrest;
 using FivePRS.Client.Callouts;
-using FivePRS.Client.Tasks;
 using FivePRS.Core.Models;
 
 namespace FivePRS.Police.Callouts
@@ -40,6 +37,7 @@ namespace FivePRS.Police.Callouts
             "a_f_y_scdressy_01",
         };
 
+        private readonly Random  _rng = new();
         private readonly Vector3 _storePosition;
         private readonly string  _suspectModelName;
 
@@ -47,9 +45,8 @@ namespace FivePRS.Police.Callouts
 
         public ShopliftingCallout()
         {
-            var rng           = new Random();
-            _storePosition    = StoreLocations[rng.Next(StoreLocations.Length)];
-            _suspectModelName = SuspectModels[rng.Next(SuspectModels.Length)];
+            _storePosition    = StoreLocations[_rng.Next(StoreLocations.Length)];
+            _suspectModelName = SuspectModels[_rng.Next(SuspectModels.Length)];
 
             Data.Description = "Report of a shoplifter fleeing on foot from a convenience store. Suspect is considered non-violent.";
         }
@@ -79,7 +76,7 @@ namespace FivePRS.Police.Callouts
                 return;
             }
 
-            var offset  = new Vector3(new Random().Next(-5, 5) + 0.5f, new Random().Next(-5, 5) + 0.5f, 0f);
+            var offset  = new Vector3(_rng.Next(-5, 5) + 0.5f, _rng.Next(-5, 5) + 0.5f, 0f);
             _suspect    = TrackEntity(await World.CreatePed(model, _storePosition + offset));
             model.MarkAsNoLongerNeeded();
 
@@ -90,104 +87,9 @@ namespace FivePRS.Police.Callouts
                 return;
             }
 
-            _suspect.IsInvincible = false;
-            _suspect.RelationshipGroup = (uint)Game.GenerateHash("WANTED_PLAYER");
+            ClientBrain.ShowNotification($"~b~{Data.Name}~w~ | Suspect spotted, ~r~pursue on foot~w~.");
 
-            API.SetPedFleeAttributes(_suspect.Handle, 0,   false);
-            API.SetPedCombatAttributes(_suspect.Handle, 17, true);
-            await TaskManager.AssignTaskAsync(_suspect, PedTaskType.FleeFromPlayer);
-
-            ClientBrain.ShowNotification(
-                $"~b~{Data.Name}~w~ | Suspect spotted — ~r~pursue on foot~w~.");
-
-            Debug.WriteLine($"[ShopliftingCallout] Suspect spawned at {_storePosition}.");
-
-            const float ArrestRadiusM    = 3.0f;
-            const float EscapeRadiusM    = 300.0f;
-            const int   LoopIntervalMs   = 500;
-
-            while (!ct.IsCancellationRequested)
-            {
-                await Timing.WaitAsync(LoopIntervalMs, ct);
-
-                if (_suspect is null || !_suspect.Exists() || _suspect.IsDead)
-                {
-                    ClientBrain.ShowNotification("~g~Suspect down~w~ | Callout complete.");
-                    CalloutCompleted();
-                    return;
-                }
-
-                var distToSuspect = Vector3.Distance(Game.PlayerPed.Position, _suspect.Position);
-
-                if (distToSuspect <= ArrestRadiusM)
-                {
-                    await PerformArrestSequenceAsync(ct);
-                    return;
-                }
-
-                if (distToSuspect > EscapeRadiusM)
-                {
-                    ClientBrain.ShowNotification("~r~Suspect escaped~w~ | Callout failed.");
-                    CalloutFailed();
-                    return;
-                }
-            }
-        }
-
-        private async Task PerformArrestSequenceAsync(CancellationToken ct)
-        {
-            if (_suspect is null) return;
-
-            _suspect.Task.StandStill(-1);
-            await TaskManager.AssignTaskAsync(_suspect, PedTaskType.PutHandsUp);
-
-            ArrestManager.RegisterSuspect(_suspect);
-
-            ClientBrain.ShowNotification(
-                "~g~Suspect cornered~w~ | Type ~b~/er_cuff~w~ to handcuff them.");
-
-            const int PollMs = 250;
-            while (!ct.IsCancellationRequested)
-            {
-                API.BeginTextCommandDisplayHelp("STRING");
-                API.AddTextComponentSubstringPlayerName(
-                    "Type ~b~/er_cuff~w~ to arrest the suspect");
-                API.EndTextCommandDisplayHelp(0, false, false, PollMs + 50);
-
-                if (ArrestManager.IsCuffed &&
-                    ArrestManager.CuffedPed?.Handle == _suspect.Handle)
-                {
-                    ClientBrain.ShowNotification(
-                        "~g~Suspect cuffed~w~ | Return to station or press ~b~/er_end_callout~w~.");
-                    CalloutCompleted();
-                    return;
-                }
-
-                if (!_suspect.Exists() || _suspect.IsDead)
-                {
-                    ArrestManager.UnregisterSuspect(_suspect);
-                    ClientBrain.ShowNotification("~g~Suspect down~w~ | Callout complete.");
-                    CalloutCompleted();
-                    return;
-                }
-
-                await Timing.WaitAsync(PollMs, ct);
-            }
-
-            ArrestManager.UnregisterSuspect(_suspect);
-        }
-
-        public override void OnUpdate()
-        {
-            if (_suspect is null || !_suspect.Exists()) return;
-
-            var dist = Vector3.Distance(Game.PlayerPed.Position, _suspect.Position);
-            if (dist is > 5f and < 80f)
-            {
-                API.BeginTextCommandDisplayHelp("STRING");
-                API.AddTextComponentSubstringPlayerName($"~w~Suspect ~r~{dist:F0}m~w~ away");
-                API.EndTextCommandDisplayHelp(0, false, false, 3_000);
-            }
+            await FootPursuitAsync(_suspect, catchDistM: 3.0f, escapeDistM: 300.0f, ct);
         }
 
         public override void OnCalloutDeclined()

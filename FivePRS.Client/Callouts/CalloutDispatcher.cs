@@ -15,10 +15,10 @@ namespace FivePRS.Client.Callouts
         internal static volatile bool EndCalloutPressed;
 
         private static ResourceSettings Settings => ConfigManager.Settings;
+        private static int DispatchIntervalMs => Settings.DispatchIntervalMinutes * 60_000;
 
         private readonly Department _department;
         private readonly CalloutRegistry _registry;
-        private readonly int _dispatchIntervalMs;
         private readonly Action<CalloutBase, CalloutResult> _onEnded;
 
         private CancellationTokenSource? _cts;
@@ -31,12 +31,10 @@ namespace FivePRS.Client.Callouts
         public CalloutDispatcher(
             Department department,
             CalloutRegistry registry,
-            int dispatchIntervalMs,
             Action<CalloutBase, CalloutResult> onEnded)
         {
             _department = department;
             _registry = registry;
-            _dispatchIntervalMs = dispatchIntervalMs;
             _onEnded = onEnded;
         }
 
@@ -131,9 +129,9 @@ namespace FivePRS.Client.Callouts
 
                 var nextDelay = result switch
                 {
-                    CalloutResult.Completed => Settings.PostCompleteCooldownSeconds * 1000 + _dispatchIntervalMs,
+                    CalloutResult.Completed => Settings.PostCompleteCooldownSeconds * 1000 + DispatchIntervalMs,
                     CalloutResult.Declined => Settings.PostDeclineCooldownSeconds * 1000,
-                    _ => Settings.PostFailCooldownSeconds * 1000 + _dispatchIntervalMs
+                    _ => Settings.PostFailCooldownSeconds * 1000 + DispatchIntervalMs
                 };
 
                 if (!await Timing.TryWaitAsync(nextDelay, ct)) return;
@@ -249,10 +247,7 @@ namespace FivePRS.Client.Callouts
                 var remainingMs = end - API.GetGameTimer();
                 if (remainingMs <= 0) return false;
 
-                API.BeginTextCommandDisplayHelp("STRING");
-                API.AddTextComponentSubstringPlayerName(
-                    $"~y~[ DISPATCH ]~w~ ~g~/er_accept~w~  or  ~r~/er_decline~w~ ({remainingMs / 1000 + 1}s)");
-                API.EndTextCommandDisplayHelp(0, false, false, -1);
+                ClientBrain.ShowHelp($"~y~[ DISPATCH ]~w~ ~g~/er_accept~w~  or  ~r~/er_decline~w~ ({remainingMs / 1000 + 1}s)", -1);
 
                 await BaseScript.Delay(0);
             }

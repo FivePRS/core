@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Globalization;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
@@ -16,7 +17,7 @@ namespace FivePRS.Server.Database
             if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
                 Directory.CreateDirectory(dir);
 
-            _connectionString = $"Data Source={Path.GetFullPath(dbPath)};Cache=Shared;";
+            _connectionString = $"Data Source={Path.GetFullPath(dbPath)};";
         }
 
         public async Task InitializeAsync()
@@ -24,7 +25,7 @@ namespace FivePRS.Server.Database
             using var conn = new SqliteConnection(_connectionString);
             await conn.OpenAsync();
 
-            var cmd = conn.CreateCommand();
+            using var cmd = conn.CreateCommand();
             cmd.CommandText = @"
                 PRAGMA journal_mode = WAL;
                 PRAGMA synchronous  = NORMAL;
@@ -37,9 +38,7 @@ namespace FivePRS.Server.Database
                     xp          INTEGER DEFAULT 0,
                     rank_level  INTEGER DEFAULT 1,
                     last_seen   TEXT    DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
-                );
-
-                CREATE INDEX IF NOT EXISTS idx_ers_license ON ers_players(license);";
+                );";
 
             await cmd.ExecuteNonQueryAsync();
         }
@@ -49,8 +48,10 @@ namespace FivePRS.Server.Database
             using var conn = new SqliteConnection(_connectionString);
             await conn.OpenAsync();
 
-            var cmd = conn.CreateCommand();
-            cmd.CommandText = "SELECT * FROM ers_players WHERE license = $license LIMIT 1;";
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"
+                SELECT license, name, department, is_on_duty, xp, rank_level, last_seen
+                FROM ers_players WHERE license = $license LIMIT 1;";
             cmd.Parameters.AddWithValue("$license", license);
 
             using var reader = await cmd.ExecuteReaderAsync();
@@ -64,29 +65,35 @@ namespace FivePRS.Server.Database
                 IsOnDuty   = reader.GetInt32(3) == 1,
                 XP         = reader.GetInt32(4),
                 Rank       = reader.GetInt32(5),
-                LastSeen   = DateTime.TryParse(reader.GetString(6), out var dt) ? dt : DateTime.UtcNow
+                LastSeen   = DateTime.TryParse(reader.GetString(6), CultureInfo.InvariantCulture,
+                    DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out var dt) ? dt : DateTime.UtcNow
             };
         }
 
-        public async Task UpsertPlayerAsync(PlayerData player)
+        public async Task SavePlayerAsync(PlayerData player)
         {
             using var conn = new SqliteConnection(_connectionString);
             await conn.OpenAsync();
 
-            var cmd = conn.CreateCommand();
+            using var cmd = conn.CreateCommand();
             cmd.CommandText = @"
                 INSERT INTO ers_players (license, name, department, is_on_duty, xp, rank_level, last_seen)
-                VALUES ($license, $name, $dept, 0, $xp, $rank, $seen)
+                VALUES ($license, $name, $dept, $onDuty, $xp, $rank, $seen)
                 ON CONFLICT(license) DO UPDATE SET
-                    name      = excluded.name,
-                    last_seen = excluded.last_seen;";
+                    name       = excluded.name,
+                    department = excluded.department,
+                    is_on_duty = excluded.is_on_duty,
+                    xp         = excluded.xp,
+                    rank_level = excluded.rank_level,
+                    last_seen  = excluded.last_seen;";
 
             cmd.Parameters.AddWithValue("$license", player.License);
             cmd.Parameters.AddWithValue("$name",    player.Name);
             cmd.Parameters.AddWithValue("$dept",    (int)player.Department);
+            cmd.Parameters.AddWithValue("$onDuty",  player.IsOnDuty ? 1 : 0);
             cmd.Parameters.AddWithValue("$xp",      player.XP);
             cmd.Parameters.AddWithValue("$rank",    player.Rank);
-            cmd.Parameters.AddWithValue("$seen",    DateTime.UtcNow.ToString("o"));
+            cmd.Parameters.AddWithValue("$seen",    DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture));
 
             await cmd.ExecuteNonQueryAsync();
         }
@@ -96,35 +103,9 @@ namespace FivePRS.Server.Database
             using var conn = new SqliteConnection(_connectionString);
             await conn.OpenAsync();
 
-            var cmd = conn.CreateCommand();
+            using var cmd = conn.CreateCommand();
             cmd.CommandText = "UPDATE ers_players SET is_on_duty = $val WHERE license = $license;";
             cmd.Parameters.AddWithValue("$val",     isOnDuty ? 1 : 0);
-            cmd.Parameters.AddWithValue("$license", license);
-
-            await cmd.ExecuteNonQueryAsync();
-        }
-
-        public async Task AddXPAsync(string license, int xpAmount)
-        {
-            using var conn = new SqliteConnection(_connectionString);
-            await conn.OpenAsync();
-
-            var cmd = conn.CreateCommand();
-            cmd.CommandText = "UPDATE ers_players SET xp = xp + $xp WHERE license = $license;";
-            cmd.Parameters.AddWithValue("$xp",      Math.Max(0, xpAmount));
-            cmd.Parameters.AddWithValue("$license", license);
-
-            await cmd.ExecuteNonQueryAsync();
-        }
-
-        public async Task UpdateDepartmentAsync(string license, Department department)
-        {
-            using var conn = new SqliteConnection(_connectionString);
-            await conn.OpenAsync();
-
-            var cmd = conn.CreateCommand();
-            cmd.CommandText = "UPDATE ers_players SET department = $dept WHERE license = $license;";
-            cmd.Parameters.AddWithValue("$dept",    (int)department);
             cmd.Parameters.AddWithValue("$license", license);
 
             await cmd.ExecuteNonQueryAsync();

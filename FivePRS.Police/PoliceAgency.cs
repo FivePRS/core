@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using CitizenFX.Core;
 using FivePRS.Client.Agency;
@@ -25,12 +25,7 @@ namespace FivePRS.Police
             _registry = new CalloutRegistry();
             _registry.Discover(GetType().Assembly);
 
-            var intervalMs = FivePRS.Core.Config.ConfigManager.Settings.DispatchIntervalMinutes * 60_000;
-            _dispatcher = new CalloutDispatcher(
-                Department.Police,
-                _registry,
-                intervalMs,
-                OnCalloutEnded);
+            _dispatcher = new CalloutDispatcher(Department.Police, _registry, OnCalloutEnded);
         }
 
         public override async Task OnDuty(PlayerData player)

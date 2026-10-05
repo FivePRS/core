@@ -22,7 +22,7 @@ namespace FivePRS.Client.Arrest
 
         private async Task OnTickAsync()
         {
-            if (!ArrestManager.IsCuffed || ArrestManager.CuffedPed is null)
+            if (ArrestManager.CuffedPed is null)
             {
                 await Delay(1_000);
                 return;
