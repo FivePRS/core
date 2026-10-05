@@ -1,4 +1,3 @@
-﻿using System;
 using System.Threading.Tasks;
 using MySqlConnector;
 using FivePRS.Core.Models;
@@ -42,7 +41,9 @@ namespace FivePRS.Server.Database
             await conn.OpenAsync();
 
             using var cmd = conn.CreateCommand();
-            cmd.CommandText = "SELECT * FROM `ers_players` WHERE `license` = @license LIMIT 1;";
+            cmd.CommandText = @"
+                SELECT `license`, `name`, `department`, `is_on_duty`, `xp`, `rank_level`, `last_seen`
+                FROM `ers_players` WHERE `license` = @license LIMIT 1;";
             cmd.Parameters.AddWithValue("@license", license);
 
             using var reader = await cmd.ExecuteReaderAsync();
@@ -60,7 +61,7 @@ namespace FivePRS.Server.Database
             };
         }
 
-        public async Task UpsertPlayerAsync(PlayerData player)
+        public async Task SavePlayerAsync(PlayerData player)
         {
             using var conn = new MySqlConnection(_connectionString);
             await conn.OpenAsync();
@@ -70,14 +71,19 @@ namespace FivePRS.Server.Database
                 INSERT INTO `ers_players`
                     (`license`, `name`, `department`, `is_on_duty`, `xp`, `rank_level`, `last_seen`)
                 VALUES
-                    (@license, @name, @department, 0, @xp, @rank, NOW())
+                    (@license, @name, @department, @onDuty, @xp, @rank, UTC_TIMESTAMP())
                 ON DUPLICATE KEY UPDATE
-                    `name`      = VALUES(`name`),
-                    `last_seen` = VALUES(`last_seen`);";
+                    `name`       = VALUES(`name`),
+                    `department` = VALUES(`department`),
+                    `is_on_duty` = VALUES(`is_on_duty`),
+                    `xp`         = VALUES(`xp`),
+                    `rank_level` = VALUES(`rank_level`),
+                    `last_seen`  = VALUES(`last_seen`);";
 
             cmd.Parameters.AddWithValue("@license",    player.License);
             cmd.Parameters.AddWithValue("@name",       player.Name);
             cmd.Parameters.AddWithValue("@department", (byte)player.Department);
+            cmd.Parameters.AddWithValue("@onDuty",     player.IsOnDuty);
             cmd.Parameters.AddWithValue("@xp",         player.XP);
             cmd.Parameters.AddWithValue("@rank",       player.Rank);
 
@@ -92,38 +98,6 @@ namespace FivePRS.Server.Database
             using var cmd = conn.CreateCommand();
             cmd.CommandText = "UPDATE `ers_players` SET `is_on_duty` = @val WHERE `license` = @license;";
             cmd.Parameters.AddWithValue("@val",     isOnDuty);
-            cmd.Parameters.AddWithValue("@license", license);
-
-            await cmd.ExecuteNonQueryAsync();
-        }
-
-        public async Task AddXPAsync(string license, int xpAmount)
-        {
-            using var conn = new MySqlConnection(_connectionString);
-            await conn.OpenAsync();
-
-            using var cmd = conn.CreateCommand();
-            cmd.CommandText = @"
-                UPDATE `ers_players`
-                SET
-                    `xp`         = `xp` + @xp,
-                    -- Auto rank-up: every 100*rank^2 XP the rank increments once.
-                    `rank_level` = `rank_level` + FLOOR((`xp` + @xp) / (100 * POW(`rank_level`, 2)))
-                WHERE `license` = @license;";
-            cmd.Parameters.AddWithValue("@xp",      Math.Max(0, xpAmount));
-            cmd.Parameters.AddWithValue("@license", license);
-
-            await cmd.ExecuteNonQueryAsync();
-        }
-
-        public async Task UpdateDepartmentAsync(string license, Department department)
-        {
-            using var conn = new MySqlConnection(_connectionString);
-            await conn.OpenAsync();
-
-            using var cmd = conn.CreateCommand();
-            cmd.CommandText = "UPDATE `ers_players` SET `department` = @dept WHERE `license` = @license;";
-            cmd.Parameters.AddWithValue("@dept",    (byte)department);
             cmd.Parameters.AddWithValue("@license", license);
 
             await cmd.ExecuteNonQueryAsync();

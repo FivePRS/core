@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -22,6 +22,8 @@ namespace FivePRS.Client
 
         public ClientBrain()
         {
+            ConfigManager.Log = message => Debug.WriteLine(message);
+
             var res = API.GetCurrentResourceName();
             ConfigManager.LoadSettings(      API.LoadResourceFile(res, "config/settings.json"));
             ConfigManager.LoadPoliceVehicles( API.LoadResourceFile(res, "config/police_vehicles.json"));
@@ -216,8 +218,22 @@ namespace FivePRS.Client
         public static void ShowNotification(string message)
         {
             API.SetNotificationTextEntry("STRING");
-            API.AddTextComponentSubstringPlayerName(message);
+            AddLongText(message);
             API.DrawNotification(false, true);
+        }
+
+        public static void ShowHelp(string message, int durationMs)
+        {
+            API.BeginTextCommandDisplayHelp("STRING");
+            AddLongText(message);
+            API.EndTextCommandDisplayHelp(0, false, false, durationMs);
+        }
+
+        private static void AddLongText(string text)
+        {
+            const int ChunkSize = 64;
+            for (var i = 0; i < text.Length; i += ChunkSize)
+                API.AddTextComponentSubstringPlayerName(text.Substring(i, Math.Min(ChunkSize, text.Length - i)));
         }
     }
 }

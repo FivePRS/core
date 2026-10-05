@@ -1,10 +1,9 @@
-﻿using System;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using CitizenFX.Core;
 using CitizenFX.Core.Native;
 using FivePRS.Client;
-using FivePRS.Client.Arrest;
 using FivePRS.Client.Callouts;
 using FivePRS.Client.Tasks;
 using FivePRS.Core.Models;
@@ -25,6 +24,11 @@ namespace FivePRS.Police.Callouts
         private  const float ApproachDistM         = 5.0f;
         private  const float PursuitEscapeDistM    = 400.0f;
         private  const float ForceStopDistM        = 12.0f;
+        private  const float PullOverDistM         = 30.0f;
+        private  const int   PullOverTimeoutSec    = 120;
+        private  const int   BrakeUntilTimeEnds    = 27;
+        private  const int   NormalDrivingStyle    = 786603;
+        private  const int   RecklessDrivingStyle  = 786468;
 
         private static readonly string[] VehicleModels =
         {
@@ -127,15 +131,7 @@ namespace FivePRS.Police.Callouts
             _driver.BlockPermanentEvents = true;
             _driver.IsInvincible         = false;
 
-            API.TaskVehicleDriveToCoordLongrange(
-                _driver.Handle,
-                _suspectVehicle.Handle,
-                Game.PlayerPed.Position.X,
-                Game.PlayerPed.Position.Y,
-                Game.PlayerPed.Position.Z,
-                20f,
-                262144,
-                5f);
+            API.TaskVehicleDriveWander(_driver.Handle, _suspectVehicle.Handle, 15f, NormalDrivingStyle);
 
             var vehBlip        = TrackBlip(_suspectVehicle.AttachBlip());
             vehBlip.Sprite     = BlipSprite.PersonalVehicleCar;
@@ -144,8 +140,7 @@ namespace FivePRS.Police.Callouts
             vehBlip.ShowRoute  = true;
 
             ClientBrain.ShowNotification(
-                $"~b~Traffic Stop~w~ | Target plate: ~y~{_plate}~w~ | " +
-                $"Activate lights to pull them over.");
+                $"~b~Traffic Stop~w~ | Target plate: ~y~{_plate}~w~");
 
             bool pulledOver = await WaitForPullOverAsync(ct);
             if (!pulledOver) return;
@@ -154,7 +149,6 @@ namespace FivePRS.Police.Callouts
             if (!approached) return;
 
             await RunPlateCheckAsync(ct);
-            if (ct.IsCancellationRequested) return;
 
             if (!_hasWarrant)
             {
@@ -173,12 +167,13 @@ namespace FivePRS.Police.Callouts
         private async Task<bool> WaitForPullOverAsync(CancellationToken ct)
         {
             ClientBrain.ShowNotification(
-                "~b~Traffic Stop~w~ | Get behind the vehicle and activate ~y~lights/sirens~w~.");
+                "~b~Traffic Stop~w~ | Get behind the vehicle and activate your ~y~siren~w~.");
 
             const int PollMs = 500;
-            var timeout = DateTime.UtcNow.AddSeconds(90);
+            var timeout  = DateTime.UtcNow.AddSeconds(PullOverTimeoutSec);
+            var stopping = false;
 
-            while (!ct.IsCancellationRequested)
+            while (true)
             {
                 await Timing.WaitAsync(PollMs, ct);
 
@@ -196,13 +191,16 @@ namespace FivePRS.Police.Callouts
                     return false;
                 }
 
-                var speed   = _suspectVehicle.Speed;
                 var distToPlayer = Vector3.Distance(Game.PlayerPed.Position, _suspectVehicle.Position);
 
-                if (speed < 1.0f && distToPlayer < 40f)
+                if (!stopping && distToPlayer < PullOverDistM && IsPlayerSirenOn())
                 {
-                    _suspectVehicle.Speed = 0f;
-                    API.SetVehicleEngineOn(_suspectVehicle.Handle, true, true, false);
+                    API.TaskVehicleTempAction(_driver.Handle, _suspectVehicle.Handle, BrakeUntilTimeEnds, 30_000);
+                    stopping = true;
+                }
+
+                if (stopping && _suspectVehicle.Speed < 1.0f)
+                {
                     _driver.Task.StandStill(-1);
                     return true;
                 }
@@ -214,8 +212,12 @@ namespace FivePRS.Police.Callouts
                     return false;
                 }
             }
+        }
 
-            return false;
+        private static bool IsPlayerSirenOn()
+        {
+            var vehicle = Game.PlayerPed.CurrentVehicle;
+            return vehicle is not null && vehicle.Exists() && API.IsVehicleSirenOn(vehicle.Handle);
         }
 
         private async Task<bool> WaitForPlayerApproachAsync(CancellationToken ct)
@@ -230,10 +232,7 @@ namespace FivePRS.Police.Callouts
 
             while (!ct.IsCancellationRequested)
             {
-                API.BeginTextCommandDisplayHelp("STRING");
-                API.AddTextComponentSubstringPlayerName(
-                    "Approach the driver window to run plates");
-                API.EndTextCommandDisplayHelp(0, false, false, PollMs + 50);
+                ClientBrain.ShowHelp("Approach the driver window to run plates", PollMs + 50);
 
                 await Timing.WaitAsync(PollMs, ct);
 
@@ -256,7 +255,6 @@ namespace FivePRS.Police.Callouts
         {
             ClientBrain.ShowNotification($"~b~MDT~w~ | Running plate ~y~{_plate}~w~…");
             await Timing.WaitAsync(2_500, ct);
-            if (ct.IsCancellationRequested) return;
 
             if (_hasWarrant)
             {
@@ -273,22 +271,12 @@ namespace FivePRS.Police.Callouts
 
         private async Task CleanDriverOutcomeAsync(CancellationToken ct)
         {
-            if (_driver is null) return;
+            if (_driver is null || _suspectVehicle is null) return;
 
-            _driver.Task.LeaveVehicle();
-            await Timing.WaitAsync(2_000, ct);
-            if (ct.IsCancellationRequested) return;
+            ClientBrain.ShowNotification("~g~Driver cooperating~w~ | Issue a verbal warning.");
+            await Timing.WaitAsync(5_000, ct);
 
-            ClientBrain.ShowNotification(
-                "~g~Driver cooperating~w~ | Issue verbal warning and release.");
-
-            await Timing.WaitAsync(3_000, ct);
-            if (ct.IsCancellationRequested) return;
-
-            API.TaskWarpPedIntoVehicle(_driver.Handle, _suspectVehicle!.Handle, (int)VehicleSeat.Driver);
-            await Timing.WaitAsync(500, ct);
-
-            API.TaskVehicleDriveWander(_driver.Handle, _suspectVehicle.Handle, 15f, 262144);
+            API.TaskVehicleDriveWander(_driver.Handle, _suspectVehicle.Handle, 15f, NormalDrivingStyle);
 
             ClientBrain.ShowNotification("~g~Traffic stop complete~w~ | Driver released with a warning.");
             CalloutCompleted();
@@ -299,28 +287,18 @@ namespace FivePRS.Police.Callouts
             if (_driver is null || _suspectVehicle is null) return;
 
             await Timing.WaitAsync(800, ct);
-            if (ct.IsCancellationRequested) return;
 
-            _driver.BlockPermanentEvents = true;
             API.SetDriverAggressiveness(_driver.Handle, 1.0f);
             API.SetDriverAbility(_driver.Handle, 1.0f);
-            API.TaskVehicleEscort(
-                _driver.Handle,
-                _suspectVehicle.Handle,
-                Game.PlayerPed.CurrentVehicle?.Handle ?? 0,
-                -1,
-                40f,
-                262144,
-                -1, 0, 30f);
+            API.TaskVehicleDriveWander(_driver.Handle, _suspectVehicle.Handle, 35f, RecklessDrivingStyle);
 
-            API.TaskVehicleDriveWander(_driver.Handle, _suspectVehicle.Handle, 35f, 786603);
+            foreach (var b in _suspectVehicle.AttachedBlips)
+            {
+                b.Color = BlipColor.Red;
+                b.Name  = $"PURSUIT · {_plate}";
+            }
 
-            var vehBlips = _suspectVehicle.AttachedBlips;
-            foreach (var b in vehBlips) { b.Color = BlipColor.Red; b.Name = $"PURSUIT · {_plate}"; }
-
-            ClientBrain.ShowNotification(
-                "~r~DRIVER FLEEING~w~ | Vehicle in pursuit! " +
-                $"Uses plate ~y~{_plate}~w~.");
+            ClientBrain.ShowNotification($"~r~DRIVER FLEEING~w~ | Pursue plate ~y~{_plate}~w~!");
 
             await RunPursuitLoopAsync(ct);
         }
@@ -330,49 +308,16 @@ namespace FivePRS.Police.Callouts
             if (_driver is null || _suspectVehicle is null) return;
 
             await Timing.WaitAsync(800, ct);
-            if (ct.IsCancellationRequested) return;
 
             _driver.Task.LeaveVehicle();
             await Timing.WaitAsync(2_000, ct);
-            if (ct.IsCancellationRequested) return;
 
-            _driver.Task.StandStill(-1);
             await TaskManager.AssignTaskAsync(_driver, PedTaskType.PutHandsUp);
 
-            ArrestManager.RegisterSuspect(_driver);
-
             ClientBrain.ShowNotification(
-                "~o~SUSPECT COMPLYING~w~ | Driver has a warrant — type ~b~/er_cuff~w~ to arrest.");
+                "~o~SUSPECT COMPLYING~w~ | Driver has a warrant, type ~b~/er_cuff~w~ to arrest.");
 
-            const int PollMs = 250;
-            while (!ct.IsCancellationRequested)
-            {
-                API.BeginTextCommandDisplayHelp("STRING");
-                API.AddTextComponentSubstringPlayerName("Type ~b~/er_cuff~w~ to arrest the driver");
-                API.EndTextCommandDisplayHelp(0, false, false, PollMs + 50);
-
-                if (ArrestManager.IsCuffed &&
-                    ArrestManager.CuffedPed?.Handle == _driver.Handle)
-                {
-                    ClientBrain.ShowNotification(
-                        "~g~Driver arrested~w~ | Warrant served. " +
-                        "Press ~b~/er_end_callout~w~ when ready.");
-                    CalloutCompleted();
-                    return;
-                }
-
-                if (!_driver.Exists() || _driver.IsDead)
-                {
-                    ArrestManager.UnregisterSuspect(_driver);
-                    ClientBrain.ShowNotification("~g~Driver down~w~ | Callout complete.");
-                    CalloutCompleted();
-                    return;
-                }
-
-                await Timing.WaitAsync(PollMs, ct);
-            }
-
-            ArrestManager.UnregisterSuspect(_driver);
+            await WaitForArrestAsync(_driver, ct, "Type ~b~/er_cuff~w~ to arrest the driver");
         }
 
         private async Task RunPursuitLoopAsync(CancellationToken ct)
@@ -417,11 +362,6 @@ namespace FivePRS.Police.Callouts
                     {
                         _driver.Task.LeaveVehicle();
                         await Timing.WaitAsync(1_500, ct);
-                        if (ct.IsCancellationRequested) return;
-
-                        ClientBrain.ShowNotification(
-                            "~g~Vehicle stopped~w~ | Suspect exiting — " +
-                            "approach and ~b~/er_cuff~w~.");
                         await RunFootPursuitAsync(ct);
                         return;
                     }
@@ -429,97 +369,20 @@ namespace FivePRS.Police.Callouts
 
                 if (distToPlayer < 80f)
                 {
-                    API.BeginTextCommandDisplayHelp("STRING");
-                    API.AddTextComponentSubstringPlayerName(
-                        $"~r~PURSUIT~w~ | Suspect vehicle ~y~{distToPlayer:F0}m");
-                    API.EndTextCommandDisplayHelp(0, false, false, PollMs + 50);
+                    ClientBrain.ShowHelp($"~r~PURSUIT~w~ | Suspect vehicle ~y~{distToPlayer:F0}m", PollMs + 50);
                 }
             }
         }
 
-        private async Task RunFootPursuitAsync(CancellationToken ct)
+        private Task RunFootPursuitAsync(CancellationToken ct)
         {
-            if (_driver is null || !_driver.Exists()) { CalloutCompleted(); return; }
-
-            _driver.BlockPermanentEvents = true;
-            API.SetPedFleeAttributes(_driver.Handle, 0,    false);
-            API.SetPedCombatAttributes(_driver.Handle, 17, true);
-            await TaskManager.AssignTaskAsync(_driver, PedTaskType.FleeFromPlayer);
-
-            ClientBrain.ShowNotification("~r~Suspect fleeing on foot~w~ | Pursue and arrest!");
-
-            const float ArrestDistM   = 3.0f;
-            const float EscapeDistM   = 300.0f;
-            const int   PollMs        = 400;
-
-            while (!ct.IsCancellationRequested)
+            if (_driver is null || !_driver.Exists())
             {
-                await Timing.WaitAsync(PollMs, ct);
-
-                if (!_driver.Exists() || _driver.IsDead)
-                {
-                    ClientBrain.ShowNotification("~g~Suspect down~w~ | Callout complete.");
-                    CalloutCompleted();
-                    return;
-                }
-
-                var dist = Vector3.Distance(Game.PlayerPed.Position, _driver.Position);
-
-                if (dist <= ArrestDistM)
-                {
-                    _driver.Task.StandStill(-1);
-                    await TaskManager.AssignTaskAsync(_driver, PedTaskType.PutHandsUp);
-                    ArrestManager.RegisterSuspect(_driver);
-
-                    ClientBrain.ShowNotification(
-                        "~g~Suspect cornered~w~ | Type ~b~/er_cuff~w~ to arrest.");
-
-                    while (!ct.IsCancellationRequested)
-                    {
-                        API.BeginTextCommandDisplayHelp("STRING");
-                        API.AddTextComponentSubstringPlayerName(
-                            "Type ~b~/er_cuff~w~ to arrest the suspect");
-                        API.EndTextCommandDisplayHelp(0, false, false, PollMs + 50);
-
-                        if (ArrestManager.IsCuffed &&
-                            ArrestManager.CuffedPed?.Handle == _driver.Handle)
-                        {
-                            ClientBrain.ShowNotification(
-                                "~g~Suspect arrested~w~ | Press ~b~/er_end_callout~w~ when ready.");
-                            CalloutCompleted();
-                            return;
-                        }
-
-                        if (!_driver.Exists() || _driver.IsDead)
-                        {
-                            ArrestManager.UnregisterSuspect(_driver);
-                            ClientBrain.ShowNotification("~g~Suspect down~w~ | Callout complete.");
-                            CalloutCompleted();
-                            return;
-                        }
-
-                        await Timing.WaitAsync(PollMs, ct);
-                    }
-
-                    ArrestManager.UnregisterSuspect(_driver);
-                    return;
-                }
-
-                if (dist > EscapeDistM)
-                {
-                    ClientBrain.ShowNotification("~r~Suspect escaped~w~ | Callout failed.");
-                    CalloutFailed();
-                    return;
-                }
-
-                if (dist < 80f)
-                {
-                    API.BeginTextCommandDisplayHelp("STRING");
-                    API.AddTextComponentSubstringPlayerName(
-                        $"~r~Suspect~w~ ~y~{dist:F0}m~w~ away");
-                    API.EndTextCommandDisplayHelp(0, false, false, PollMs + 50);
-                }
+                CalloutCompleted();
+                return Task.FromResult(0);
             }
+
+            return FootPursuitAsync(_driver, catchDistM: 3.0f, escapeDistM: 300.0f, ct);
         }
 
         public override void OnUpdate()
@@ -529,10 +392,7 @@ namespace FivePRS.Police.Callouts
             var dist = Vector3.Distance(Game.PlayerPed.Position, _suspectVehicle.Position);
             if (dist is > 5f and < 80f && _suspectVehicle.Speed > 5f)
             {
-                API.BeginTextCommandDisplayHelp("STRING");
-                API.AddTextComponentSubstringPlayerName(
-                    $"~r~Pursuit~w~ | Suspect ~y~{dist:F0}m");
-                API.EndTextCommandDisplayHelp(0, false, false, 1_500);
+                ClientBrain.ShowHelp($"~r~Pursuit~w~ | Suspect ~y~{dist:F0}m", 1_500);
             }
         }
 

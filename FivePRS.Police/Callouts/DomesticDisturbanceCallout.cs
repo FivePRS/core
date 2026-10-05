@@ -1,12 +1,10 @@
-﻿using System;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using CitizenFX.Core;
 using CitizenFX.Core.Native;
 using FivePRS.Client;
-using FivePRS.Client.Arrest;
 using FivePRS.Client.Callouts;
-using FivePRS.Client.Tasks;
 using FivePRS.Core.Models;
 
 namespace FivePRS.Police.Callouts
@@ -161,10 +159,7 @@ namespace FivePRS.Police.Callouts
                 var dist = Vector3.Distance(Game.PlayerPed.Position, _scenePos);
                 if (dist <= ArrivalDistM) return true;
 
-                API.BeginTextCommandDisplayHelp("STRING");
-                API.AddTextComponentSubstringPlayerName(
-                    $"~b~Scene~w~ ~y~{dist:F0}m~w~ away — respond Code 3");
-                API.EndTextCommandDisplayHelp(0, false, false, PollMs + 50);
+                ClientBrain.ShowHelp($"~b~Scene~w~ ~y~{dist:F0}m~w~ away — respond Code 3", PollMs + 50);
 
                 await Timing.WaitAsync(PollMs, ct);
             }
@@ -177,12 +172,11 @@ namespace FivePRS.Police.Callouts
             _victim!.Task.StandStill(-1);
 
             ClientBrain.ShowNotification(
-                "~g~Both parties cooperating~w~ | Separate and interview. " +
-                "Scene secure — ~b~/er_end_callout~w~ when ready.");
+                "~g~Both parties cooperating~w~ | Separate and interview them.");
 
             await Timing.WaitAsync(10_000, ct);
-            if (!ct.IsCancellationRequested)
-                CalloutCompleted();
+            ClientBrain.ShowNotification("~g~Scene secure~w~ | Callout complete.");
+            CalloutCompleted();
         }
 
         private async Task ResistiveOutcomeAsync(CancellationToken ct)
@@ -209,7 +203,7 @@ namespace FivePRS.Police.Callouts
             ClientBrain.ShowNotification(
                 "~r~Aggressor resisting~w~ | Subdue and ~b~/er_cuff~w~.");
 
-            await WaitForAggressorCuffedOrDown(ct);
+            await WaitForArrestAsync(_aggressor, ct, "Subdue the suspect, then type ~b~/er_cuff~w~ to arrest");
         }
 
         private async Task ArmedOutcomeAsync(CancellationToken ct)
@@ -236,45 +230,7 @@ namespace FivePRS.Police.Callouts
             ClientBrain.ShowNotification(
                 "~r~WEAPON RAISED~w~ | Tase or shoot to disarm — then ~b~/er_cuff~w~.");
 
-            await WaitForAggressorCuffedOrDown(ct);
-        }
-
-        private async Task WaitForAggressorCuffedOrDown(CancellationToken ct)
-        {
-            if (_aggressor is null) return;
-
-            ArrestManager.RegisterSuspect(_aggressor);
-
-            const int PollMs = 300;
-            while (!ct.IsCancellationRequested)
-            {
-                API.BeginTextCommandDisplayHelp("STRING");
-                API.AddTextComponentSubstringPlayerName(
-                    "Subdue suspect then type ~b~/er_cuff~w~ to arrest");
-                API.EndTextCommandDisplayHelp(0, false, false, PollMs + 50);
-
-                if (ArrestManager.IsCuffed &&
-                    ArrestManager.CuffedPed?.Handle == _aggressor.Handle)
-                {
-                    ClientBrain.ShowNotification(
-                        "~g~Aggressor arrested~w~ | Scene secure. " +
-                        "Press ~b~/er_end_callout~w~ when ready.");
-                    CalloutCompleted();
-                    return;
-                }
-
-                if (!_aggressor.Exists() || _aggressor.IsDead)
-                {
-                    ArrestManager.UnregisterSuspect(_aggressor);
-                    ClientBrain.ShowNotification("~g~Aggressor down~w~ | Scene secure.");
-                    CalloutCompleted();
-                    return;
-                }
-
-                await Timing.WaitAsync(PollMs, ct);
-            }
-
-            ArrestManager.UnregisterSuspect(_aggressor);
+            await WaitForArrestAsync(_aggressor, ct, "Subdue the suspect, then type ~b~/er_cuff~w~ to arrest");
         }
 
         public override void OnUpdate()
@@ -283,10 +239,7 @@ namespace FivePRS.Police.Callouts
             var dist = Vector3.Distance(Game.PlayerPed.Position, _aggressor.Position);
             if (dist is > 5f and < 60f)
             {
-                API.BeginTextCommandDisplayHelp("STRING");
-                API.AddTextComponentSubstringPlayerName(
-                    $"~o~Disturbance~w~ ~y~{dist:F0}m~w~ away");
-                API.EndTextCommandDisplayHelp(0, false, false, 1_500);
+                ClientBrain.ShowHelp($"~o~Disturbance~w~ ~y~{dist:F0}m~w~ away", 1_500);
             }
         }
 

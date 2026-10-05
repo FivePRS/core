@@ -1,10 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using CitizenFX.Core;
 using CitizenFX.Core.Native;
 using FivePRS.Client.Arrest;
+using FivePRS.Client.Tasks;
 using FivePRS.Core.Models;
 
 namespace FivePRS.Client.Callouts
@@ -59,6 +60,77 @@ namespace FivePRS.Client.Callouts
             if (State != CalloutState.Active) return;
             State = CalloutState.Failed;
             Ended?.Invoke(this, CalloutResult.Failed);
+        }
+
+        protected async Task WaitForArrestAsync(Ped suspect, CancellationToken ct, string prompt = "Type ~b~/er_cuff~w~ to arrest the suspect")
+        {
+            const int PollMs = 250;
+
+            ArrestManager.RegisterSuspect(suspect);
+
+            while (true)
+            {
+                if (ArrestManager.IsInCustody(suspect))
+                {
+                    ClientBrain.ShowNotification("~g~Suspect in custody~w~ | Callout complete.");
+                    CalloutCompleted();
+                    return;
+                }
+
+                if (!suspect.Exists() || suspect.IsDead)
+                {
+                    ClientBrain.ShowNotification("~g~Suspect down~w~ | Callout complete.");
+                    CalloutCompleted();
+                    return;
+                }
+
+                ClientBrain.ShowHelp(prompt, PollMs + 50);
+                await Timing.WaitAsync(PollMs, ct);
+            }
+        }
+
+        protected async Task FootPursuitAsync(Ped suspect, float catchDistM, float escapeDistM, CancellationToken ct)
+        {
+            const int PollMs = 400;
+
+            suspect.BlockPermanentEvents = true;
+            API.SetPedFleeAttributes(suspect.Handle, 0, false);
+            API.SetPedCombatAttributes(suspect.Handle, 17, true);
+            await TaskManager.AssignTaskAsync(suspect, PedTaskType.FleeFromPlayer);
+
+            ClientBrain.ShowNotification("~r~Suspect fleeing on foot~w~ | Pursue and arrest!");
+
+            while (true)
+            {
+                await Timing.WaitAsync(PollMs, ct);
+
+                if (!suspect.Exists() || suspect.IsDead)
+                {
+                    ClientBrain.ShowNotification("~g~Suspect down~w~ | Callout complete.");
+                    CalloutCompleted();
+                    return;
+                }
+
+                var dist = Vector3.Distance(Game.PlayerPed.Position, suspect.Position);
+
+                if (dist <= catchDistM)
+                {
+                    await TaskManager.AssignTaskAsync(suspect, PedTaskType.PutHandsUp);
+                    ClientBrain.ShowNotification("~g~Suspect cornered~w~ | Type ~b~/er_cuff~w~ to arrest.");
+                    await WaitForArrestAsync(suspect, ct);
+                    return;
+                }
+
+                if (dist > escapeDistM)
+                {
+                    ClientBrain.ShowNotification("~r~Suspect escaped~w~ | Callout failed.");
+                    CalloutFailed();
+                    return;
+                }
+
+                if (dist < 80f)
+                    ClientBrain.ShowHelp($"~r~Suspect on foot~w~ ~y~{dist:F0}m~w~ away", PollMs + 50);
+            }
         }
 
         internal void SetState(CalloutState state) => State = state;

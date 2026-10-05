@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Threading.Tasks;
 using CitizenFX.Core;
@@ -16,9 +16,8 @@ namespace FivePRS.Server.Database
     public sealed class DatabaseManager
     {
         private IDatabaseProvider _provider = null!;
-        private bool _ready = false;
 
-        public bool IsReady => _ready;
+        public bool IsReady { get; private set; }
 
         public async Task InitializeAsync(DatabaseType dbType, string? connectionString)
         {
@@ -35,7 +34,7 @@ namespace FivePRS.Server.Database
             }
 
             await _provider.InitializeAsync();
-            _ready = true;
+            IsReady = true;
 
             Debug.WriteLine($"[FivePRS] Database ({dbType}) ready.");
         }
@@ -43,16 +42,10 @@ namespace FivePRS.Server.Database
         public Task<PlayerData?> GetPlayerAsync(string license)
             => _provider.GetPlayerAsync(license);
 
-        public Task UpsertPlayerAsync(PlayerData player)
-            => _provider.UpsertPlayerAsync(player);
+        public Task SavePlayerAsync(PlayerData player)
+            => _provider.SavePlayerAsync(player);
 
         public Task UpdateDutyStatusAsync(string license, bool isOnDuty)
             => _provider.UpdateDutyStatusAsync(license, isOnDuty);
-
-        public Task AddXPAsync(string license, int xpAmount)
-            => _provider.AddXPAsync(license, xpAmount);
-
-        public Task UpdateDepartmentAsync(string license, Department department)
-            => _provider.UpdateDepartmentAsync(license, department);
     }
 }
