@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using CitizenFX.Core;
 using CitizenFX.Core.Native;
+using FivePRS.Client.Agency;
 using FivePRS.Client.Arrest;
 using FivePRS.Client.Callouts;
 using FivePRS.Core.Config;
@@ -12,11 +14,6 @@ using Newtonsoft.Json;
 
 namespace FivePRS.Client
 {
-    /// <summary>
-    /// Client-side entry point. Owns the local <see cref="PlayerData"/> snapshot,
-    /// handles networking with the server, and bridges state changes to agency modules
-    /// via local events so modules remain decoupled from each other.
-    /// </summary>
     public class ClientBrain : BaseScript
     {
         public static PlayerData LocalPlayerData { get; private set; } = new();
@@ -80,7 +77,7 @@ namespace FivePRS.Client
                 ShowNotification(
                     "~y~FivePRS Commands~w~~n~" +
                     "~b~/duty~w~ — Toggle on/off duty~n~" +
-                    "~b~/setdept [1-3]~w~ — Set department (1=Police 2=EMS 3=Fire)~n~" +
+                    "~b~/setdept [id]~w~ — Set department~n~" +
                     "~b~/er_profile~w~ — View rank and XP~n~" +
                     "~b~/er_accept~w~ — Accept incoming callout~n~" +
                     "~b~/er_decline~w~ — Decline incoming callout~n~" +
@@ -117,9 +114,15 @@ namespace FivePRS.Client
         {
             try
             {
-                LocalPlayerData = JsonConvert.DeserializeObject<PlayerData>(json)!;
+                var data = JsonConvert.DeserializeObject<PlayerData>(json);
+                if (data is null) return;
+
+                LocalPlayerData = data;
                 _profileLoaded  = true;
-                Debug.WriteLine($"[FivePRS] Profile loaded — {LocalPlayerData.Name} | Rank {LocalPlayerData.Rank} | {LocalPlayerData.Department}");
+                Debug.WriteLine($"[FivePRS] Profile loaded: {data.Name} | Rank {data.Rank} | {data.Department}");
+
+                if (data.Department == Department.None)
+                    ShowNotification($"~y~Welcome to FivePRS!~w~ Choose your department with ~b~/setdept~w~.~n~{DepartmentOptions()}");
             }
             catch (Exception ex)
             {
@@ -163,18 +166,51 @@ namespace FivePRS.Client
                 ShowNotification("~r~Your profile hasn't loaded yet. Please wait.");
                 return;
             }
+
+            if (!LocalPlayerData.IsOnDuty)
+            {
+                var dept = LocalPlayerData.Department;
+                if (dept == Department.None)
+                {
+                    ShowNotification($"~r~No department selected.~w~ Use ~b~/setdept~w~ first.~n~{DepartmentOptions()}");
+                    return;
+                }
+                if (!BaseAgency.IsDepartmentLoaded(dept))
+                {
+                    ShowNotification($"~r~The {dept} module is not installed on this server.");
+                    return;
+                }
+            }
+
             TriggerServerEvent(EventNames.ServerToggleDuty);
         }
 
         private void OnSetDeptCommand(int source, List<object> args, string raw)
         {
             if (args.Count < 1 || !int.TryParse(args[0]?.ToString(), out int deptId)
-                || !Enum.IsDefined(typeof(Department), deptId))
+                || !Enum.IsDefined(typeof(Department), deptId) || deptId == (int)Department.None)
             {
-                ShowNotification("~r~Usage: ~w~/setdept [1=Police  2=EMS  3=Fire]");
+                ShowNotification($"~r~Usage: ~w~/setdept [id]~n~{DepartmentOptions()}");
                 return;
             }
+
+            var dept = (Department)deptId;
+            if (!BaseAgency.IsDepartmentLoaded(dept))
+            {
+                ShowNotification($"~r~The {dept} module is not installed on this server.~n~{DepartmentOptions()}");
+                return;
+            }
+
             TriggerServerEvent(EventNames.ServerSetDepartment, deptId);
+        }
+
+        private static string DepartmentOptions()
+        {
+            var options = Enum.GetValues(typeof(Department))
+                .Cast<Department>()
+                .Where(d => d != Department.None && BaseAgency.IsDepartmentLoaded(d))
+                .Select(d => $"~b~{(int)d}~w~={d}");
+            return "Available: " + string.Join("  ", options);
         }
 
         public static void ShowNotification(string message)

@@ -6,10 +6,6 @@ using FivePRS.Core.Models;
 
 namespace FivePRS.Server.Database
 {
-    /// <summary>
-    /// SQLite persistence layer — zero external dependencies, perfect for singleplayer
-    /// or small communities. Drop-in replacement for MySqlProvider via DatabaseManager.
-    /// </summary>
     public sealed class SQLiteProvider : IDatabaseProvider
     {
         private readonly string _connectionString;
@@ -25,7 +21,7 @@ namespace FivePRS.Server.Database
 
         public async Task InitializeAsync()
         {
-            await using var conn = new SqliteConnection(_connectionString);
+            using var conn = new SqliteConnection(_connectionString);
             await conn.OpenAsync();
 
             var cmd = conn.CreateCommand();
@@ -50,14 +46,14 @@ namespace FivePRS.Server.Database
 
         public async Task<PlayerData?> GetPlayerAsync(string license)
         {
-            await using var conn = new SqliteConnection(_connectionString);
+            using var conn = new SqliteConnection(_connectionString);
             await conn.OpenAsync();
 
             var cmd = conn.CreateCommand();
             cmd.CommandText = "SELECT * FROM ers_players WHERE license = $license LIMIT 1;";
             cmd.Parameters.AddWithValue("$license", license);
 
-            await using var reader = await cmd.ExecuteReaderAsync();
+            using var reader = await cmd.ExecuteReaderAsync();
             if (!await reader.ReadAsync()) return null;
 
             return new PlayerData
@@ -74,7 +70,7 @@ namespace FivePRS.Server.Database
 
         public async Task UpsertPlayerAsync(PlayerData player)
         {
-            await using var conn = new SqliteConnection(_connectionString);
+            using var conn = new SqliteConnection(_connectionString);
             await conn.OpenAsync();
 
             var cmd = conn.CreateCommand();
@@ -97,7 +93,7 @@ namespace FivePRS.Server.Database
 
         public async Task UpdateDutyStatusAsync(string license, bool isOnDuty)
         {
-            await using var conn = new SqliteConnection(_connectionString);
+            using var conn = new SqliteConnection(_connectionString);
             await conn.OpenAsync();
 
             var cmd = conn.CreateCommand();
@@ -110,7 +106,7 @@ namespace FivePRS.Server.Database
 
         public async Task AddXPAsync(string license, int xpAmount)
         {
-            await using var conn = new SqliteConnection(_connectionString);
+            using var conn = new SqliteConnection(_connectionString);
             await conn.OpenAsync();
 
             var cmd = conn.CreateCommand();
@@ -123,7 +119,7 @@ namespace FivePRS.Server.Database
 
         public async Task UpdateDepartmentAsync(string license, Department department)
         {
-            await using var conn = new SqliteConnection(_connectionString);
+            using var conn = new SqliteConnection(_connectionString);
             await conn.OpenAsync();
 
             var cmd = conn.CreateCommand();
@@ -138,7 +134,7 @@ namespace FivePRS.Server.Database
         {
             try
             {
-                await using var conn = new SqliteConnection(_connectionString);
+                using var conn = new SqliteConnection(_connectionString);
                 await conn.OpenAsync();
                 return true;
             }

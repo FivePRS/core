@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CitizenFX.Core;
@@ -6,45 +6,52 @@ using CitizenFX.Core.Native;
 
 namespace FivePRS.Client.VehicleSpawner
 {
-    /// <summary>Describes a vehicle model pool + visual configuration for a department.</summary>
     public sealed class PatrolVehicleConfig
     {
-        public IReadOnlyList<string> ModelPool { get; init; } = new[] { "police" };
+        public IReadOnlyList<string> ModelPool { get; set; } = new[] { "police" };
 
-        public int PrimaryColor   { get; init; } = 0;
+        public int PrimaryColor   { get; set; } = 0;
 
-        public int SecondaryColor { get; init; } = 0;
+        public int SecondaryColor { get; set; } = 0;
 
-        public (int R, int G, int B) NeonColor  { get; init; } = (-1, -1, -1);
+        public int[]? NeonColor { get; set; }
 
-        public int DirtLevel  { get; init; } = 0;
+        public int DirtLevel  { get; set; } = 0;
 
-        public int Livery     { get; init; } = -1;
+        public int Livery     { get; set; } = -1;
 
-        public IReadOnlyList<int> ForcedExtras  { get; init; } = Array.Empty<int>();
+        public IReadOnlyList<int> ForcedExtras  { get; set; } = new int[0];
 
-        public IReadOnlyList<int> DisabledExtras { get; init; } = Array.Empty<int>();
+        public IReadOnlyList<int> DisabledExtras { get; set; } = new int[0];
 
-        public string PlateText { get; init; } = string.Empty;
+        public string PlateText { get; set; } = string.Empty;
     }
-    /// Spawns, configures, and tracks a single patrol vehicle for an officer's duty session.
-    /// One instance per agency; call <see cref="SpawnAsync"/> on duty and <see cref="Despawn"/> off duty.
-    ///
-    /// Spawn strategy (in order of preference):
-    ///   1. Nearest police station spawn point within 600 m of the player.
-    ///   2. Nearest road node to the player's current position (fallback).
-    /// </summary>
+
+    public readonly struct SpawnPoint
+    {
+        public Vector3 Position { get; }
+        public float Heading { get; }
+
+        public SpawnPoint(Vector3 position, float heading)
+        {
+            Position = position;
+            Heading = heading;
+        }
+    }
+
     public sealed class PatrolVehicleSpawner
     {
-        private static readonly (Vector3 Pos, float Heading)[] StationSpawns =
+        private static readonly SpawnPoint[] StationSpawns =
         {
-            (new Vector3( 457.1f,  -1016.8f,  28.0f),  90f),
-            (new Vector3( 441.8f,  -986.0f,   30.7f),   0f),
-            (new Vector3(-1108.0f, -845.0f,   19.3f), 120f),
-            (new Vector3( 372.5f, -1608.9f,   29.3f), 260f),
-            (new Vector3(1853.5f,  3686.8f,   34.3f),  30f),
-            (new Vector3(-448.8f,  6012.2f,   31.5f), 240f),
+            new(new Vector3( 457.1f,  -1016.8f,  28.0f),  90f),
+            new(new Vector3( 441.8f,  -986.0f,   30.7f),   0f),
+            new(new Vector3(-1108.0f, -845.0f,   19.3f), 120f),
+            new(new Vector3( 372.5f, -1608.9f,   29.3f), 260f),
+            new(new Vector3(1853.5f,  3686.8f,   34.3f),  30f),
+            new(new Vector3(-448.8f,  6012.2f,   31.5f), 240f),
         };
+
+        private static readonly Random Rng = new();
 
         private const float StationSearchRadius = 600f;
 
@@ -55,7 +62,15 @@ namespace FivePRS.Client.VehicleSpawner
 
         public async Task<CitizenFX.Core.Vehicle?> SpawnAsync(PatrolVehicleConfig config)
         {
-            var modelName = config.ModelPool[new Random().Next(config.ModelPool.Count)];
+            Despawn();
+
+            if (config.ModelPool.Count == 0)
+            {
+                Debug.WriteLine("[PatrolVehicleSpawner] No vehicle models configured.");
+                return null;
+            }
+
+            var modelName = config.ModelPool[Rng.Next(config.ModelPool.Count)];
             var model     = new Model(modelName);
 
             if (!await model.Request(10_000))
@@ -65,9 +80,9 @@ namespace FivePRS.Client.VehicleSpawner
                 return null;
             }
 
-            var (spawnPos, heading) = FindSpawnPoint();
+            var spawn = FindSpawnPoint();
 
-            _vehicle = await CitizenFX.Core.World.CreateVehicle(model, spawnPos, heading);
+            _vehicle = await CitizenFX.Core.World.CreateVehicle(model, spawn.Position, spawn.Heading);
             model.MarkAsNoLongerNeeded();
 
             if (_vehicle is null || !_vehicle.Exists())
@@ -80,7 +95,7 @@ namespace FivePRS.Client.VehicleSpawner
             WarpPlayerIn(_vehicle);
             AddVehicleBlip(_vehicle, modelName);
 
-            Debug.WriteLine($"[PatrolVehicleSpawner] Spawned '{modelName}' at {spawnPos}.");
+            Debug.WriteLine($"[PatrolVehicleSpawner] Spawned '{modelName}' at {spawn.Position}.");
             return _vehicle;
         }
 
@@ -98,30 +113,36 @@ namespace FivePRS.Client.VehicleSpawner
             _vehicle = null;
         }
 
-        private static (Vector3 Pos, float Heading) FindSpawnPoint()
+        private static SpawnPoint FindSpawnPoint()
         {
             var playerPos = Game.PlayerPed.Position;
 
-            var nearestStation = (Pos: Vector3.Zero, Heading: 0f, Dist: float.MaxValue);
+            SpawnPoint? nearest = null;
+            var nearestDist = StationSearchRadius;
 
-            foreach (var (pos, heading) in StationSpawns)
+            foreach (var point in StationSpawns)
             {
-                var dist = Vector3.Distance(playerPos, pos);
-                if (dist < StationSearchRadius && dist < nearestStation.Dist)
-                    nearestStation = (pos, heading, dist);
+                var dist = Vector3.Distance(playerPos, point.Position);
+                if (dist < nearestDist)
+                {
+                    nearest = point;
+                    nearestDist = dist;
+                }
             }
 
-            if (nearestStation.Pos != Vector3.Zero)
-                return (nearestStation.Pos, nearestStation.Heading);
+            if (nearest.HasValue)
+                return nearest.Value;
 
-            var streetPos    = CitizenFX.Core.World.GetNextPositionOnStreet(playerPos);
-            var fallbackHdg  = API.GetEntityHeading(Game.PlayerPed.Handle);
-            return (streetPos, fallbackHdg);
+            var streetPos = CitizenFX.Core.World.GetNextPositionOnStreet(playerPos);
+            return new SpawnPoint(streetPos, API.GetEntityHeading(Game.PlayerPed.Handle));
         }
 
         private static void ConfigureVehicle(CitizenFX.Core.Vehicle vehicle, PatrolVehicleConfig config)
         {
             var h = vehicle.Handle;
+
+            vehicle.Repair();
+            vehicle.FuelLevel = 100f;
 
             API.SetVehicleColours(h, config.PrimaryColor, config.SecondaryColor);
 
@@ -138,17 +159,14 @@ namespace FivePRS.Client.VehicleSpawner
             foreach (var id in config.DisabledExtras)
                 API.SetVehicleExtra(h, id, true);
 
-            if (config.NeonColor.R >= 0)
+            if (config.NeonColor is { Length: 3 })
             {
                 API.SetVehicleNeonLightEnabled(h, 0, true);
                 API.SetVehicleNeonLightEnabled(h, 1, true);
                 API.SetVehicleNeonLightEnabled(h, 2, true);
                 API.SetVehicleNeonLightEnabled(h, 3, true);
-                API.SetVehicleNeonLightsColour(h, config.NeonColor.R, config.NeonColor.G, config.NeonColor.B);
+                API.SetVehicleNeonLightsColour(h, config.NeonColor[0], config.NeonColor[1], config.NeonColor[2]);
             }
-
-            vehicle.Repair();
-            vehicle.FuelLevel = 100f;
         }
 
         private static void WarpPlayerIn(CitizenFX.Core.Vehicle vehicle)

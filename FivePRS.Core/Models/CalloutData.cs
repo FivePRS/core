@@ -10,10 +10,6 @@ namespace FivePRS.Core.Models
         Critical = 4
     }
 
-    /// <summary>
-    /// Describes a dispatched callout. Produced server-side and sent to the relevant
-    /// client(s) as a JSON blob so that the appropriate agency module can react.
-    /// </summary>
     public class CalloutData
     {
         public string Id { get; set; } = string.Empty;

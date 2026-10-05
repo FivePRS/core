@@ -3,18 +3,6 @@ using FivePRS.Core.Models;
 
 namespace FivePRS.Client.Callouts
 {
-    /// <summary>
-    /// Marks a <see cref="CalloutBase"/> subclass as a dispatchable callout.
-    /// The <see cref="CalloutRegistry"/> scans loaded assemblies for this attribute —
-    /// no manual registration in any central list is ever required.
-    ///
-    /// Usage:
-    /// <code>
-    /// [CalloutInfo("Shoplifting", Department.Police, CalloutPriority.Low,
-    ///              weight: 20, cooldownSeconds: 300, xpReward: 75)]
-    /// public class ShopliftingCallout : CalloutBase { ... }
-    /// </code>
-    /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
     public sealed class CalloutInfoAttribute : Attribute
     {

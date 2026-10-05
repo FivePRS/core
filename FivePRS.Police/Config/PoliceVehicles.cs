@@ -3,10 +3,6 @@ using FivePRS.Core.Config;
 
 namespace FivePRS.Police.Config
 {
-    /// <summary>
-    /// Vehicle spawn configurations for the Police department.
-    /// Vehicle pools and colours are loaded from config/police_vehicles.json at runtime.
-    /// </summary>
     public static class PoliceVehicles
     {
         public static PatrolVehicleConfig GetForRank(int rank)

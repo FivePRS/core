@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -7,36 +7,30 @@ using FivePRS.Core.Models;
 
 namespace FivePRS.Client.Callouts
 {
-    /// <summary>
-    /// Maintains a catalog of all registered <see cref="CalloutBase"/> subclasses and
-    /// handles weighted, cooldown-aware random selection for the dispatcher.
-    ///
-    /// Registration is driven entirely by the <see cref="CalloutInfoAttribute"/> — there
-    /// is no central list to maintain. To add a callout, decorate a class and call
-    /// <see cref="Discover(Assembly)"/> with its assembly. That's it.
-    /// </summary>
-    public sealed class CalloutRegistry
+    public sealed class RegisteredCallout
     {
-        private sealed class CalloutEntry
+        public Type Type { get; }
+        public CalloutInfoAttribute Info { get; }
+        internal DateTime LastDispatchedUtc { get; set; } = DateTime.MinValue;
+
+        internal RegisteredCallout(Type type, CalloutInfoAttribute info)
         {
-            public Type                  Type          { get; }
-            public CalloutInfoAttribute  Info          { get; }
-            public long                  LastDispatchedMs { get; set; }
-
-            public CalloutEntry(Type type, CalloutInfoAttribute info)
-            {
-                Type             = type;
-                Info             = info;
-                LastDispatchedMs = 0;
-            }
-
-            public bool IsOnCooldown =>
-                Info.CooldownSeconds > 0 &&
-                (Environment.TickCount64 - LastDispatchedMs) < (Info.CooldownSeconds * 1000L);
+            Type = type;
+            Info = info;
         }
 
-        private readonly List<CalloutEntry> _entries = new();
+        internal bool IsOnCooldown =>
+            Info.CooldownSeconds > 0 &&
+            (DateTime.UtcNow - LastDispatchedUtc).TotalSeconds < Info.CooldownSeconds;
+    }
+
+    public sealed class CalloutRegistry
+    {
+        private readonly List<RegisteredCallout> _entries = new();
         private readonly object _lock = new();
+        private readonly Random _rng = new();
+
+        public int Count { get { lock (_lock) return _entries.Count; } }
 
         public void Discover(Assembly assembly)
         {
@@ -59,9 +53,11 @@ namespace FivePRS.Client.Callouts
             {
                 if (asm.IsDynamic) continue;
                 var name = asm.GetName().Name ?? "";
-                if (name.StartsWith("System.") ||
+                if (name.StartsWith("System") ||
                     name.StartsWith("Microsoft.") ||
                     name.StartsWith("CitizenFX.") ||
+                    name.StartsWith("Mono.") ||
+                    name.StartsWith("Newtonsoft.") ||
                     name == "netstandard" ||
                     name == "mscorlib") continue;
 
@@ -87,91 +83,70 @@ namespace FivePRS.Client.Callouts
             {
                 if (_entries.Any(e => e.Type == type)) return;
 
-                _entries.Add(new CalloutEntry(type, attr));
+                _entries.Add(new RegisteredCallout(type, attr));
                 Debug.WriteLine(
-                    $"[CalloutRegistry] ✓ {attr.Name,-25} dept={attr.Department,-7} " +
+                    $"[CalloutRegistry] {attr.Name,-25} dept={attr.Department,-7} " +
                     $"w={attr.Weight,-4} cd={attr.CooldownSeconds}s");
             }
         }
 
-        public (Type? Type, CalloutInfoAttribute? Info) PickCallout(
-            Department department, int maxAttempts = 5)
+        public RegisteredCallout? PickCallout(Department department)
         {
             lock (_lock)
             {
-                var now = Environment.TickCount64;
-
                 var pool = _entries
                     .Where(e => e.Info.Department == department && !e.IsOnCooldown)
                     .ToList();
 
-                if (pool.Count == 0) return (null, null);
-
-                var rng         = new Random();
-                var usedIndices = new HashSet<int>();
-
-                for (var attempt = 0; attempt < maxAttempts && usedIndices.Count < pool.Count; attempt++)
+                while (pool.Count > 0)
                 {
-                    var winner = WeightedRandom(pool, usedIndices, rng);
-                    if (winner is null) break;
+                    var winner = WeightedRandom(pool);
+                    pool.Remove(winner);
 
-                    CalloutBase? probe = null;
-                    try { probe = (CalloutBase)Activator.CreateInstance(winner.Type)!; }
+                    CalloutBase probe;
+                    try { probe = (CalloutBase)Activator.CreateInstance(winner.Type); }
                     catch (Exception ex)
                     {
                         Debug.WriteLine($"[CalloutRegistry] Probe instantiation failed for {winner.Type.Name}: {ex.Message}");
-                        usedIndices.Add(pool.IndexOf(winner));
                         continue;
                     }
 
-                    if (!probe.CanBeDispatched())
+                    bool dispatchable;
+                    try { dispatchable = probe.CanBeDispatched(); }
+                    catch (Exception ex)
                     {
-                        usedIndices.Add(pool.IndexOf(winner));
+                        Debug.WriteLine($"[CalloutRegistry] CanBeDispatched threw in {winner.Type.Name}: {ex.Message}");
                         continue;
                     }
 
-                    winner.LastDispatchedMs = now;
-                    return (winner.Type, winner.Info);
+                    if (!dispatchable) continue;
+
+                    winner.LastDispatchedUtc = DateTime.UtcNow;
+                    return winner;
                 }
 
-                return (null, null);
+                return null;
             }
         }
 
-        public (Type? Type, CalloutInfoAttribute? Info) FindByName(string name)
+        public RegisteredCallout? FindByName(string name)
         {
             lock (_lock)
             {
-                var entry = _entries.FirstOrDefault(
+                return _entries.FirstOrDefault(
                     e => string.Equals(e.Info.Name, name, StringComparison.OrdinalIgnoreCase));
-
-                return entry is null ? (null, null) : (entry.Type, entry.Info);
             }
         }
 
-        public int Count { get { lock (_lock) return _entries.Count; } }
-
-        private static CalloutEntry? WeightedRandom(
-            List<CalloutEntry> pool, HashSet<int> excludeIndices, Random rng)
+        private RegisteredCallout WeightedRandom(List<RegisteredCallout> pool)
         {
-            var eligible = pool
-                .Select((entry, idx) => (entry, idx))
-                .Where(x => !excludeIndices.Contains(x.idx))
-                .ToList();
-
-            if (eligible.Count == 0) return null;
-
-            var totalWeight = eligible.Sum(x => x.entry.Info.Weight);
-            var roll        = rng.Next(totalWeight);
-            var running     = 0;
-
-            foreach (var (entry, idx) in eligible)
+            var roll = _rng.Next(pool.Sum(e => e.Info.Weight));
+            foreach (var entry in pool)
             {
-                running += entry.Info.Weight;
-                if (roll < running) return entry;
+                roll -= entry.Info.Weight;
+                if (roll < 0) return entry;
             }
-
-            return eligible[^1].entry;
+            return pool[pool.Count - 1];
         }
     }
 }

@@ -2,10 +2,6 @@
 
 namespace FivePRS.Core.Models
 {
-    /// <summary>
-    /// Authoritative player profile — mirrored from the database and cached server-side.
-    /// A serialised copy is sent to the owning client on connect and on state changes.
-    /// </summary>
     public class PlayerData
     {
         public string License     { get; set; } = string.Empty;

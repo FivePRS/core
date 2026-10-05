@@ -11,13 +11,6 @@ using FivePRS.Police.Config;
 
 namespace FivePRS.Police
 {
-    /// <summary>
-    /// Police department implementation.
-    ///
-    /// Adding new callouts requires zero changes here — decorate a CalloutBase subclass
-    /// with [CalloutInfo(Department.Police, ...)] anywhere in this assembly and it is
-    /// auto-discovered by the registry on startup.
-    /// </summary>
     public class PoliceAgency : BaseAgency
     {
         public override Department Department => Department.Police;
@@ -31,8 +24,6 @@ namespace FivePRS.Police
         {
             _registry = new CalloutRegistry();
             _registry.Discover(GetType().Assembly);
-            _registry.DiscoverAll();
-            Debug.WriteLine($"[PoliceAgency] {_registry.Count} callout(s) registered.");
 
             var intervalMs = FivePRS.Core.Config.ConfigManager.Settings.DispatchIntervalMinutes * 60_000;
             _dispatcher = new CalloutDispatcher(
@@ -52,6 +43,8 @@ namespace FivePRS.Police
             var vehicleConfig = PoliceVehicles.GetForRank(player.Rank);
             var vehicle       = await _vehicleSpawner.SpawnAsync(vehicleConfig);
 
+            _registry.DiscoverAll();
+            Debug.WriteLine($"[PoliceAgency] {_registry.Count} callout(s) registered.");
             _dispatcher.Start();
 
             var vehicleMsg = vehicle is not null

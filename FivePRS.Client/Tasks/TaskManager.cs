@@ -4,9 +4,6 @@ using CitizenFX.Core.Native;
 
 namespace FivePRS.Client.Tasks
 {
-    /// <summary>
-    /// High-level task sequences exposed as an enum so callout authors never touch raw natives.
-    /// </summary>
     public enum PedTaskType
     {
         StandStill,
@@ -18,10 +15,6 @@ namespace FivePRS.Client.Tasks
         Surrender
     }
 
-    /// <summary>
-    /// Thin, static wrapper around FiveM ped task natives.
-    /// All methods are null-safe and existence-checked so callout code stays clean.
-    /// </summary>
     public static class TaskManager
     {
         public static async Task AssignTaskAsync(Ped ped, PedTaskType task, Vehicle? vehicle = null)
@@ -40,7 +33,7 @@ namespace FivePRS.Client.Tasks
 
                 case PedTaskType.Kneel:
                     await LoadAnimDictAsync("random@mugging3");
-                    ped.Task.PlayAnimation(
+                    await ped.Task.PlayAnimation(
                         "random@mugging3", "approach_stand_callback_victim_a",
                         blendInSpeed:  8f,
                         blendOutSpeed: -8f,
@@ -64,7 +57,7 @@ namespace FivePRS.Client.Tasks
 
                 case PedTaskType.Surrender:
                     await LoadAnimDictAsync("missminuteman_1ig_2");
-                    ped.Task.PlayAnimation(
+                    await ped.Task.PlayAnimation(
                         "missminuteman_1ig_2", "handsup_base",
                         blendInSpeed:  8f,
                         blendOutSpeed: -8f,

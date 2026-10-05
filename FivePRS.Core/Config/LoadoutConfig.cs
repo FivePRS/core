@@ -1,13 +1,7 @@
-﻿using System;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 
 namespace FivePRS.Core.Config
 {
-    /// <summary>
-    /// One weapon entry inside a config/police_loadouts.json tier.
-    /// Uses the full weapon name (e.g. "WEAPON_PISTOL") so server owners don't need to know Jenkins hashes.
-    /// The client converts the name to a hash at runtime via API.GetHashKey().
-    /// </summary>
     public sealed class WeaponDef
     {
         [JsonProperty("name")]
@@ -20,18 +14,12 @@ namespace FivePRS.Core.Config
         public bool SetCurrent { get; set; } = false;
     }
 
-    /// <summary>Weapon list for one loadout tier (recruit / officer / senior / command).</summary>
     public sealed class WeaponTierDef
     {
         [JsonProperty("weapons")]
-        public WeaponDef[] Weapons { get; set; } = Array.Empty<WeaponDef>();
+        public WeaponDef[] Weapons { get; set; } = new WeaponDef[0];
     }
 
-    /// <summary>
-    /// Loaded from config/police_loadouts.json.
-    /// Defines weapon sets for each Police rank tier. Uniform components are still controlled
-    /// by PoliceLoadouts.cs since they depend on the server's ped models.
-    /// </summary>
     public sealed class PoliceLoadoutsConfig
     {
         [JsonProperty("recruit")]

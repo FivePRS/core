@@ -6,20 +6,6 @@ using System.Linq;
 
 namespace FivePRS.Police.Config
 {
-    /// <summary>
-    /// Rank-based loadout definitions for the Police department.
-    ///
-    /// Component values target the default FiveM freemode ped (mp_m_freemode_01 / mp_f_freemode_01).
-    /// If your server uses custom ped models, update the drawable/texture IDs to match.
-    ///
-    /// Weapon names are loaded from config/police_loadouts.json (e.g. "WEAPON_PISTOL").
-    /// They are resolved to hashes at runtime via API.GetHashKey().
-    ///
-    /// GTA V component slot reference:
-    ///   3=Torso  4=Legs  6=Feet  8=Undershirt  9=BodyArmor  11=Jacket/Torso2
-    /// GTA V prop slot reference:
-    ///   0=Hat  1=Glasses  2=EarPiece
-    /// </summary>
     public static class PoliceLoadouts
     {
         public static LoadoutDefinition GetForRank(int rank)

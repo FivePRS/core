@@ -3,31 +3,14 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using CitizenFX.Core;
+using CitizenFX.Core.Native;
+using FivePRS.Client.Arrest;
 using FivePRS.Core.Models;
 
 namespace FivePRS.Client.Callouts
 {
-    /// <summary>
-    /// Abstract base for every FivePRS callout regardless of department.
-    ///
-    /// Key improvements over FivePD's callout base:
-    /// ─ <see cref="TrackEntity{T}"/> / <see cref="TrackBlip"/> auto-delete all spawned
-    ///   entities and blips on cleanup — callout authors can never leak world objects.
-    /// ─ <see cref="GetDispatchLocation"/> gives the dispatcher a location for the
-    ///   pre-accept preview blip without starting the scenario.
-    /// ─ <see cref="CanBeDispatched"/> lets callouts gate themselves on time, weather,
-    ///   distance from player, or any other runtime condition.
-    /// ─ <see cref="OnUpdate"/> is called every second while Active by the dispatcher —
-    ///   no manual Tick wiring required.
-    /// ─ Formal <see cref="CalloutState"/> makes the lifecycle always queryable.
-    ///
-    /// Callout classes must be decorated with <see cref="CalloutInfoAttribute"/> and
-    /// have a public parameterless constructor so the dispatcher can instantiate them
-    /// via Activator.CreateInstance.
-    /// </summary>
     public abstract class CalloutBase
     {
-
         public CalloutData Data { get; internal set; } = new();
 
         public CalloutState State { get; private set; } = CalloutState.Idle;
@@ -37,7 +20,7 @@ namespace FivePRS.Client.Callouts
         private readonly List<Entity> _trackedEntities = new();
         private readonly List<Blip>   _trackedBlips    = new();
 
-        protected T TrackEntity<T>(T entity) where T : Entity
+        protected T? TrackEntity<T>(T? entity) where T : Entity
         {
             if (entity is not null)
                 _trackedEntities.Add(entity);
@@ -46,8 +29,8 @@ namespace FivePRS.Client.Callouts
 
         protected Blip TrackBlip(Blip blip)
         {
-            if (blip is not null)
-                _trackedBlips.Add(blip);
+            if (blip is null) throw new ArgumentNullException(nameof(blip));
+            _trackedBlips.Add(blip);
             return blip;
         }
 
@@ -82,23 +65,41 @@ namespace FivePRS.Client.Callouts
 
         internal void RaiseEnded(CalloutResult result) => Ended?.Invoke(this, result);
 
-        internal void Cleanup()
+        internal void Cleanup(bool releaseToWorld = false)
         {
             foreach (var entity in _trackedEntities)
             {
                 try
                 {
-                    if (entity?.Exists() == true)
+                    if (!entity.Exists()) continue;
+
+                    if (entity is Ped ped)
+                    {
+                        if (ArrestManager.IsInCustody(ped)) continue;
+                        ArrestManager.UnregisterSuspect(ped);
+                    }
+
+                    if (releaseToWorld)
+                    {
+                        var handle = entity.Handle;
+                        API.SetEntityAsNoLongerNeeded(ref handle);
+                    }
+                    else
+                    {
                         entity.Delete();
+                    }
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[CalloutBase] Entity cleanup failed: {ex.Message}");
+                }
             }
             _trackedEntities.Clear();
 
             foreach (var blip in _trackedBlips)
             {
-                try { blip?.Delete(); }
-                catch { }
+                try { blip.Delete(); }
+                catch (Exception ex) { Debug.WriteLine($"[CalloutBase] Blip cleanup failed: {ex.Message}"); }
             }
             _trackedBlips.Clear();
         }

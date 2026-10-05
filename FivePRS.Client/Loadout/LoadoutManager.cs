@@ -5,12 +5,6 @@ using CitizenFX.Core.Native;
 
 namespace FivePRS.Client.Loadout
 {
-    /// <summary>
-    /// Applies and strips officer loadouts (weapons + uniform + props) on the local player ped.
-    ///
-    /// All operations target <see cref="Game.PlayerPed"/> directly; call only from the game thread
-    /// (Tick or event handlers — the CitizenFX runtime guarantees this for us).
-    /// </summary>
     public static class LoadoutManager
     {
         private static LoadoutDefinition? _current;

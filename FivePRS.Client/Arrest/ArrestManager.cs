@@ -14,21 +14,8 @@ namespace FivePRS.Client.Arrest
         Escorted
     }
 
-    /// <summary>
-    /// Central authority for all cuffing and arrest logic.
-    ///
-    /// Design:
-    /// ─ Callouts register their suspect peds via <see cref="RegisterSuspect"/> so that
-    ///   /er_cuff cannot be used on random civilians — only on scenario peds.
-    /// ─ <see cref="TryCuffNearest"/> finds the closest registered suspect within
-    ///   <see cref="CuffRangeM"/> metres, plays animations, and starts the follow task.
-    /// ─ <see cref="ArrestTick"/> (a separate BaseScript) drives the per-frame follow loop
-    ///   and re-applies the cuffed animation if the engine clears it.
-    /// ─ <see cref="Uncuff"/> and <see cref="EscortToVehicle"/> cover the rest of the lifecycle.
-    /// </summary>
     public static class ArrestManager
     {
-
         public const float CuffRangeM    = 2.5f;
         public const float EscortRangeM  = 5.0f;
 
@@ -44,6 +31,9 @@ namespace FivePRS.Client.Arrest
 
         public static bool IsCuffed  => State == ArrestState.Cuffed;
         public static bool IsEscorted => State == ArrestState.Escorted;
+        public static bool HasCustody => CuffedPed is not null;
+
+        public static bool IsInCustody(Ped ped) => CuffedPed is not null && CuffedPed.Handle == ped.Handle;
 
         public static void RegisterSuspect(Ped ped)
         {
@@ -59,7 +49,7 @@ namespace FivePRS.Client.Arrest
 
         public static async Task<bool> TryCuffNearestAsync()
         {
-            if (IsCuffed)
+            if (HasCustody)
             {
                 ClientBrain.ShowNotification("~r~Already have a suspect in custody.");
                 return false;
@@ -79,7 +69,7 @@ namespace FivePRS.Client.Arrest
 
         public static async Task CuffPedAsync(Ped suspect)
         {
-            if (suspect is null || !suspect.Exists() || IsCuffed) return;
+            if (suspect is null || !suspect.Exists() || HasCustody) return;
             await ExecuteCuffSequenceAsync(suspect);
         }
 
@@ -92,7 +82,7 @@ namespace FivePRS.Client.Arrest
             await BaseScript.Delay(400);
 
             await LoadAnimDictAsync(OfficerAnimDict);
-            player.Task.PlayAnimation(OfficerAnimDict, OfficerAnimClip,
+            await player.Task.PlayAnimation(OfficerAnimDict, OfficerAnimClip,
                 blendInSpeed:  8f, blendOutSpeed: -8f,
                 duration:      1_500,
                 flags:         AnimationFlags.UpperBodyOnly | AnimationFlags.AllowRotation,
@@ -125,17 +115,21 @@ namespace FivePRS.Client.Arrest
 
         public static void Uncuff()
         {
-            if (!IsCuffed || CuffedPed is null) return;
+            if (CuffedPed is null) return;
 
             var suspect = CuffedPed;
+            CuffedPed = null;
+            State     = ArrestState.None;
+            _registeredSuspects.Remove(suspect.Handle);
 
-            suspect.Task.ClearAll();
+            if (!suspect.Exists()) return;
+
+            API.ClearPedTasksImmediately(suspect.Handle);
             suspect.BlockPermanentEvents = false;
             API.SetPedFleeAttributes(suspect.Handle, 512, true);
 
-            _registeredSuspects.Remove(suspect.Handle);
-            CuffedPed = null;
-            State     = ArrestState.None;
+            var handle = suspect.Handle;
+            API.SetEntityAsNoLongerNeeded(ref handle);
 
             ClientBrain.ShowNotification("~o~Suspect released.");
             BaseScript.TriggerEvent(EventNames.LocalSuspectUncuffed, suspect.Handle);
@@ -224,7 +218,7 @@ namespace FivePRS.Client.Arrest
             if (suspect is null || !suspect.Exists()) return;
 
             await LoadAnimDictAsync(CuffAnimDict);
-            suspect.Task.PlayAnimation(
+            await suspect.Task.PlayAnimation(
                 CuffAnimDict, CuffAnimClip,
                 blendInSpeed:  8f,
                 blendOutSpeed: -8f,

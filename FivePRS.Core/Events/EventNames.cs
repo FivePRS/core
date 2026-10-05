@@ -1,9 +1,5 @@
 ﻿namespace FivePRS.Core.Events
 {
-    /// <summary>
-    /// Single source of truth for all network event names.
-    /// Both client and server reference this class to avoid typos.
-    /// </summary>
     public static class EventNames
     {
         public const string ClientReceivePlayerData = "FivePRS:Client:ReceivePlayerData";

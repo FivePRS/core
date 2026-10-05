@@ -1,6 +1,8 @@
 ﻿using System;
+using System.IO;
 using System.Threading.Tasks;
 using CitizenFX.Core;
+using CitizenFX.Core.Native;
 using FivePRS.Core.Models;
 
 namespace FivePRS.Server.Database
@@ -11,11 +13,6 @@ namespace FivePRS.Server.Database
         MySQL
     }
 
-    /// <summary>
-    /// Singleton-style façade that owns the active <see cref="IDatabaseProvider"/>.
-    /// All server-side code goes through this class; swapping the engine only requires
-    /// changing the fiveprs_db_type convar.
-    /// </summary>
     public sealed class DatabaseManager
     {
         private IDatabaseProvider _provider = null!;
@@ -25,14 +22,17 @@ namespace FivePRS.Server.Database
 
         public async Task InitializeAsync(DatabaseType dbType, string? connectionString)
         {
-            _provider = dbType switch
+            if (dbType == DatabaseType.MySQL)
             {
-                DatabaseType.MySQL => string.IsNullOrWhiteSpace(connectionString)
-                    ? throw new ArgumentException("[FivePRS] MySQL selected but fiveprs_db_connection is empty.")
-                    : new MySqlProvider(connectionString),
-
-                _ => new SQLiteProvider(connectionString ?? "FivePRS/fiveprs.db")
-            };
+                if (connectionString is null || string.IsNullOrWhiteSpace(connectionString))
+                    throw new ArgumentException("[FivePRS] MySQL selected but fiveprs_db_connection is empty.");
+                _provider = new MySqlProvider(connectionString);
+            }
+            else
+            {
+                var resourcePath = API.GetResourcePath(API.GetCurrentResourceName());
+                _provider = new SQLiteProvider(connectionString ?? Path.Combine(resourcePath, "data", "fiveprs.db"));
+            }
 
             if (!await _provider.TestConnectionAsync())
                 throw new Exception($"[FivePRS] {dbType} connection test failed. Check convars.");

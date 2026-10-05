@@ -4,14 +4,6 @@ using CitizenFX.Core.Native;
 
 namespace FivePRS.Client.Arrest
 {
-    /// <summary>
-    /// Drives the per-frame logic for a cuffed suspect:
-    /// ─ Keeps the suspect walking behind the officer.
-    /// ─ Re-applies the cuffed idle animation every ~1 s if the engine clears it
-    ///   (task changes such as entering a doorway will break the animation).
-    ///
-    /// Registered as a CitizenFX Tick handler; self-suspends when nobody is cuffed.
-    /// </summary>
     public class ArrestTick : BaseScript
     {
         private const int AnimCheckIntervalMs = 1_000;

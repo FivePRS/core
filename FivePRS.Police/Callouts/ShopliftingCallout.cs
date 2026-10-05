@@ -20,7 +20,6 @@ namespace FivePRS.Police.Callouts
         xpReward:        75)]
     public sealed class ShopliftingCallout : CalloutBase
     {
-
         private static readonly Vector3[] StoreLocations =
         {
             new( 25.7f,  -1344.4f, 29.5f),
@@ -109,7 +108,7 @@ namespace FivePRS.Police.Callouts
 
             while (!ct.IsCancellationRequested)
             {
-                await Task.Delay(LoopIntervalMs, ct).ConfigureAwait(false);
+                await Timing.WaitAsync(LoopIntervalMs, ct);
 
                 if (_suspect is null || !_suspect.Exists() || _suspect.IsDead)
                 {
@@ -172,7 +171,7 @@ namespace FivePRS.Police.Callouts
                     return;
                 }
 
-                await Task.Delay(PollMs, ct).ConfigureAwait(false);
+                await Timing.WaitAsync(PollMs, ct);
             }
 
             ArrestManager.UnregisterSuspect(_suspect);

@@ -1,23 +1,21 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net452</TargetFramework>
     <LangVersion>10</LangVersion>
     <Nullable>enable</Nullable>
     <OutputType>Library</OutputType>
     <RootNamespace>FivePRS.Client</RootNamespace>
-    <AssemblyName>FivePRS.Client</AssemblyName>
+    <AssemblyName>FivePRS.Client.net</AssemblyName>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <OutputPath>$(SolutionDir)bin\client\</OutputPath>
+    <OutputPath>$(MSBuildThisFileDirectory)..\bin\client\</OutputPath>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CitizenFX.Core.Client" Version="1.0.*">
-      <ExcludeAssets>runtime</ExcludeAssets>
-    </PackageReference>
-
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.*" />
+    <PackageReference Include="CitizenFX.Core.Client" Version="1.0.26803" ExcludeAssets="runtime" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>

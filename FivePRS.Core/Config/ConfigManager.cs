@@ -4,13 +4,6 @@ using Newtonsoft.Json;
 
 namespace FivePRS.Core.Config
 {
-    /// <summary>
-    /// Static configuration store. Populated once at resource startup by ClientBrain
-    /// (and ServerBrain for server-side convars) before any agency code runs.
-    ///
-    /// All properties return safe defaults if the corresponding config file is missing
-    /// or contains invalid JSON — the resource always starts successfully.
-    /// </summary>
     public static class ConfigManager
     {
         public static ResourceSettings    Settings      { get; private set; } = new();

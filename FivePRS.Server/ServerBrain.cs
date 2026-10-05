@@ -10,11 +10,6 @@ using Newtonsoft.Json;
 
 namespace FivePRS.Server
 {
-    /// <summary>
-    /// Central server-side controller. Manages the database lifecycle, player session
-    /// cache, duty toggling, department selection, and XP rewards. All heavy I/O is
-    /// async so the main thread is never blocked.
-    /// </summary>
     public class ServerBrain : BaseScript
     {
         private readonly ConcurrentDictionary<string, PlayerData> _cache = new();
@@ -122,6 +117,7 @@ namespace FivePRS.Server
         {
             var license = player.Identifiers["license"];
             if (string.IsNullOrEmpty(license) || !_cache.TryGetValue(license, out var data)) return;
+            if (!data.IsOnDuty && data.Department == Department.None) return;
 
             data.IsOnDuty = !data.IsOnDuty;
 
@@ -142,15 +138,21 @@ namespace FivePRS.Server
 
         private async void OnSetDepartment([FromSource] Player player, int departmentId)
         {
-            if (!Enum.IsDefined(typeof(Department), departmentId)) return;
+            if (!Enum.IsDefined(typeof(Department), departmentId) || departmentId == (int)Department.None) return;
 
             var license = player.Identifiers["license"];
             if (string.IsNullOrEmpty(license) || !_cache.TryGetValue(license, out var data)) return;
 
-            data.Department = (Department)departmentId;
-
             try
             {
+                if (data.IsOnDuty)
+                {
+                    data.IsOnDuty = false;
+                    await _db.UpdateDutyStatusAsync(license, false);
+                    TriggerClientEvent(player, EventNames.ClientDutyStatusChanged, false, (int)data.Department);
+                }
+
+                data.Department = (Department)departmentId;
                 await _db.UpdateDepartmentAsync(license, data.Department);
                 TriggerClientEvent(player, EventNames.ClientReceivePlayerData, JsonConvert.SerializeObject(data));
             }
@@ -169,7 +171,7 @@ namespace FivePRS.Server
             if (maxXp <= 0) maxXp = 500;
             float.TryParse(API.GetConvar("fiveprs_xp_multiplier", "1.0"), out var xpMultiplier);
             if (xpMultiplier <= 0) xpMultiplier = 1.0f;
-            var awardedXP = (int)Math.Clamp(xpClaim * xpMultiplier, 0, maxXp);
+            var awardedXP = (int)Math.Min(Math.Max(xpClaim * xpMultiplier, 0), maxXp);
 
             try
             {

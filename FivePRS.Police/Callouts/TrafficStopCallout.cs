@@ -20,7 +20,6 @@ namespace FivePRS.Police.Callouts
         xpReward:        60)]
     public sealed class TrafficStopCallout : CalloutBase
     {
-
         private  const int   WarrantChancePct      = 35;
         private  const int   FleeChancePct         = 45;
         private  const float ApproachDistM         = 5.0f;
@@ -181,7 +180,7 @@ namespace FivePRS.Police.Callouts
 
             while (!ct.IsCancellationRequested)
             {
-                await Task.Delay(PollMs, ct).ConfigureAwait(false);
+                await Timing.WaitAsync(PollMs, ct);
 
                 if (_suspectVehicle is null || !_suspectVehicle.Exists())
                 {
@@ -236,7 +235,7 @@ namespace FivePRS.Police.Callouts
                     "Approach the driver window to run plates");
                 API.EndTextCommandDisplayHelp(0, false, false, PollMs + 50);
 
-                await Task.Delay(PollMs, ct).ConfigureAwait(false);
+                await Timing.WaitAsync(PollMs, ct);
 
                 if (_driver is null || !_driver.Exists() || _driver.IsDead)
                 {
@@ -256,7 +255,7 @@ namespace FivePRS.Police.Callouts
         private async Task RunPlateCheckAsync(CancellationToken ct)
         {
             ClientBrain.ShowNotification($"~b~MDT~w~ | Running plate ~y~{_plate}~w~…");
-            await Task.Delay(2_500, ct).ConfigureAwait(false);
+            await Timing.WaitAsync(2_500, ct);
             if (ct.IsCancellationRequested) return;
 
             if (_hasWarrant)
@@ -277,17 +276,17 @@ namespace FivePRS.Police.Callouts
             if (_driver is null) return;
 
             _driver.Task.LeaveVehicle();
-            await Task.Delay(2_000, ct).ConfigureAwait(false);
+            await Timing.WaitAsync(2_000, ct);
             if (ct.IsCancellationRequested) return;
 
             ClientBrain.ShowNotification(
                 "~g~Driver cooperating~w~ | Issue verbal warning and release.");
 
-            await Task.Delay(3_000, ct).ConfigureAwait(false);
+            await Timing.WaitAsync(3_000, ct);
             if (ct.IsCancellationRequested) return;
 
             API.TaskWarpPedIntoVehicle(_driver.Handle, _suspectVehicle!.Handle, (int)VehicleSeat.Driver);
-            await Task.Delay(500, ct).ConfigureAwait(false);
+            await Timing.WaitAsync(500, ct);
 
             API.TaskVehicleDriveWander(_driver.Handle, _suspectVehicle.Handle, 15f, 262144);
 
@@ -299,7 +298,7 @@ namespace FivePRS.Police.Callouts
         {
             if (_driver is null || _suspectVehicle is null) return;
 
-            await Task.Delay(800, ct).ConfigureAwait(false);
+            await Timing.WaitAsync(800, ct);
             if (ct.IsCancellationRequested) return;
 
             _driver.BlockPermanentEvents = true;
@@ -330,11 +329,11 @@ namespace FivePRS.Police.Callouts
         {
             if (_driver is null || _suspectVehicle is null) return;
 
-            await Task.Delay(800, ct).ConfigureAwait(false);
+            await Timing.WaitAsync(800, ct);
             if (ct.IsCancellationRequested) return;
 
             _driver.Task.LeaveVehicle();
-            await Task.Delay(2_000, ct).ConfigureAwait(false);
+            await Timing.WaitAsync(2_000, ct);
             if (ct.IsCancellationRequested) return;
 
             _driver.Task.StandStill(-1);
@@ -370,7 +369,7 @@ namespace FivePRS.Police.Callouts
                     return;
                 }
 
-                await Task.Delay(PollMs, ct).ConfigureAwait(false);
+                await Timing.WaitAsync(PollMs, ct);
             }
 
             ArrestManager.UnregisterSuspect(_driver);
@@ -382,7 +381,7 @@ namespace FivePRS.Police.Callouts
 
             while (!ct.IsCancellationRequested)
             {
-                await Task.Delay(PollMs, ct).ConfigureAwait(false);
+                await Timing.WaitAsync(PollMs, ct);
 
                 if (_driver is null || !_driver.Exists() || _driver.IsDead)
                 {
@@ -417,7 +416,7 @@ namespace FivePRS.Police.Callouts
                     if (driverIn)
                     {
                         _driver.Task.LeaveVehicle();
-                        await Task.Delay(1_500, ct).ConfigureAwait(false);
+                        await Timing.WaitAsync(1_500, ct);
                         if (ct.IsCancellationRequested) return;
 
                         ClientBrain.ShowNotification(
@@ -455,7 +454,7 @@ namespace FivePRS.Police.Callouts
 
             while (!ct.IsCancellationRequested)
             {
-                await Task.Delay(PollMs, ct).ConfigureAwait(false);
+                await Timing.WaitAsync(PollMs, ct);
 
                 if (!_driver.Exists() || _driver.IsDead)
                 {
@@ -499,7 +498,7 @@ namespace FivePRS.Police.Callouts
                             return;
                         }
 
-                        await Task.Delay(PollMs, ct).ConfigureAwait(false);
+                        await Timing.WaitAsync(PollMs, ct);
                     }
 
                     ArrestManager.UnregisterSuspect(_driver);

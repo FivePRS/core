@@ -3,10 +3,6 @@ using FivePRS.Core.Models;
 
 namespace FivePRS.Server.Database
 {
-    /// <summary>
-    /// Abstraction over the underlying SQL engine.
-    /// Swap between MySQL and SQLite by changing a single convar — no code changes needed.
-    /// </summary>
     public interface IDatabaseProvider
     {
         Task InitializeAsync();

@@ -5,10 +5,6 @@ using FivePRS.Core.Models;
 
 namespace FivePRS.Server.Database
 {
-    /// <summary>
-    /// MySQL / MariaDB persistence layer using MySqlConnector (async-first, MIT-licensed).
-    /// Connection string is read from the fiveprs_db_connection convar.
-    /// </summary>
     public sealed class MySqlProvider : IDatabaseProvider
     {
         private readonly string _connectionString;
@@ -20,10 +16,10 @@ namespace FivePRS.Server.Database
 
         public async Task InitializeAsync()
         {
-            await using var conn = new MySqlConnection(_connectionString);
+            using var conn = new MySqlConnection(_connectionString);
             await conn.OpenAsync();
 
-            await using var cmd = conn.CreateCommand();
+            using var cmd = conn.CreateCommand();
             cmd.CommandText = @"
                 CREATE TABLE IF NOT EXISTS `ers_players` (
                     `license`     VARCHAR(60)  NOT NULL,
@@ -42,14 +38,14 @@ namespace FivePRS.Server.Database
 
         public async Task<PlayerData?> GetPlayerAsync(string license)
         {
-            await using var conn = new MySqlConnection(_connectionString);
+            using var conn = new MySqlConnection(_connectionString);
             await conn.OpenAsync();
 
-            await using var cmd = conn.CreateCommand();
+            using var cmd = conn.CreateCommand();
             cmd.CommandText = "SELECT * FROM `ers_players` WHERE `license` = @license LIMIT 1;";
             cmd.Parameters.AddWithValue("@license", license);
 
-            await using var reader = await cmd.ExecuteReaderAsync();
+            using var reader = await cmd.ExecuteReaderAsync();
             if (!await reader.ReadAsync()) return null;
 
             return new PlayerData
@@ -66,10 +62,10 @@ namespace FivePRS.Server.Database
 
         public async Task UpsertPlayerAsync(PlayerData player)
         {
-            await using var conn = new MySqlConnection(_connectionString);
+            using var conn = new MySqlConnection(_connectionString);
             await conn.OpenAsync();
 
-            await using var cmd = conn.CreateCommand();
+            using var cmd = conn.CreateCommand();
             cmd.CommandText = @"
                 INSERT INTO `ers_players`
                     (`license`, `name`, `department`, `is_on_duty`, `xp`, `rank_level`, `last_seen`)
@@ -90,10 +86,10 @@ namespace FivePRS.Server.Database
 
         public async Task UpdateDutyStatusAsync(string license, bool isOnDuty)
         {
-            await using var conn = new MySqlConnection(_connectionString);
+            using var conn = new MySqlConnection(_connectionString);
             await conn.OpenAsync();
 
-            await using var cmd = conn.CreateCommand();
+            using var cmd = conn.CreateCommand();
             cmd.CommandText = "UPDATE `ers_players` SET `is_on_duty` = @val WHERE `license` = @license;";
             cmd.Parameters.AddWithValue("@val",     isOnDuty);
             cmd.Parameters.AddWithValue("@license", license);
@@ -103,10 +99,10 @@ namespace FivePRS.Server.Database
 
         public async Task AddXPAsync(string license, int xpAmount)
         {
-            await using var conn = new MySqlConnection(_connectionString);
+            using var conn = new MySqlConnection(_connectionString);
             await conn.OpenAsync();
 
-            await using var cmd = conn.CreateCommand();
+            using var cmd = conn.CreateCommand();
             cmd.CommandText = @"
                 UPDATE `ers_players`
                 SET
@@ -122,10 +118,10 @@ namespace FivePRS.Server.Database
 
         public async Task UpdateDepartmentAsync(string license, Department department)
         {
-            await using var conn = new MySqlConnection(_connectionString);
+            using var conn = new MySqlConnection(_connectionString);
             await conn.OpenAsync();
 
-            await using var cmd = conn.CreateCommand();
+            using var cmd = conn.CreateCommand();
             cmd.CommandText = "UPDATE `ers_players` SET `department` = @dept WHERE `license` = @license;";
             cmd.Parameters.AddWithValue("@dept",    (byte)department);
             cmd.Parameters.AddWithValue("@license", license);
@@ -137,7 +133,7 @@ namespace FivePRS.Server.Database
         {
             try
             {
-                await using var conn = new MySqlConnection(_connectionString);
+                using var conn = new MySqlConnection(_connectionString);
                 await conn.OpenAsync();
                 return true;
             }

@@ -2,10 +2,6 @@
 
 namespace FivePRS.Core.Config
 {
-    /// <summary>
-    /// Loaded from config/settings.json. Controls dispatch timing and XP on the client side.
-    /// All values have safe defaults so the resource works even if the file is missing or malformed.
-    /// </summary>
     public sealed class ResourceSettings
     {
         [JsonProperty("dispatchIntervalMinutes")]

@@ -1,11 +1,7 @@
-﻿using System;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 
 namespace FivePRS.Core.Config
 {
-    /// <summary>
-    /// Describes one vehicle tier (patrol / senior / command) loaded from config/police_vehicles.json.
-    /// </summary>
     public sealed class VehicleTierDef
     {
         [JsonProperty("models")]
@@ -27,16 +23,12 @@ namespace FivePRS.Core.Config
         public string PlateText { get; set; } = "";
 
         [JsonProperty("forcedExtras")]
-        public int[] ForcedExtras { get; set; } = Array.Empty<int>();
+        public int[] ForcedExtras { get; set; } = new int[0];
 
         [JsonProperty("disabledExtras")]
-        public int[] DisabledExtras { get; set; } = Array.Empty<int>();
+        public int[] DisabledExtras { get; set; } = new int[0];
     }
 
-    /// <summary>
-    /// Loaded from config/police_vehicles.json.
-    /// Defines the three vehicle tiers for the Police department.
-    /// </summary>
     public sealed class PoliceVehiclesConfig
     {
         [JsonProperty("patrol")]

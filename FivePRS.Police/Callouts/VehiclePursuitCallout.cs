@@ -155,7 +155,7 @@ namespace FivePRS.Police.Callouts
 
             while (!ct.IsCancellationRequested)
             {
-                await Task.Delay(PollMs, ct).ConfigureAwait(false);
+                await Timing.WaitAsync(PollMs, ct);
 
                 if (_driver is null || !_driver.Exists() || _driver.IsDead)
                 {
@@ -203,7 +203,7 @@ namespace FivePRS.Police.Callouts
                         else
                         {
                             _driver.Task.LeaveVehicle();
-                            await Task.Delay(1_200, ct).ConfigureAwait(false);
+                            await Timing.WaitAsync(1_200, ct);
                             ClientBrain.ShowNotification(
                                 "~o~Suspect bailing~w~ | On foot — pursue and arrest!");
                             await RunFootPursuitAsync(ct);
@@ -228,7 +228,7 @@ namespace FivePRS.Police.Callouts
             if (_driver is null || _car is null) return;
 
             _driver.Task.LeaveVehicle();
-            await Task.Delay(1_500, ct).ConfigureAwait(false);
+            await Timing.WaitAsync(1_500, ct);
             if (ct.IsCancellationRequested) return;
 
             _driver.Task.StandStill(-1);
@@ -262,7 +262,7 @@ namespace FivePRS.Police.Callouts
                     return;
                 }
 
-                await Task.Delay(PollMs, ct).ConfigureAwait(false);
+                await Timing.WaitAsync(PollMs, ct);
             }
 
             ArrestManager.UnregisterSuspect(_driver);
@@ -283,7 +283,7 @@ namespace FivePRS.Police.Callouts
 
             while (!ct.IsCancellationRequested)
             {
-                await Task.Delay(PollMs, ct).ConfigureAwait(false);
+                await Timing.WaitAsync(PollMs, ct);
 
                 if (!_driver.Exists() || _driver.IsDead)
                 {
@@ -327,7 +327,7 @@ namespace FivePRS.Police.Callouts
                             return;
                         }
 
-                        await Task.Delay(PollMs, ct).ConfigureAwait(false);
+                        await Timing.WaitAsync(PollMs, ct);
                     }
 
                     ArrestManager.UnregisterSuspect(_driver);

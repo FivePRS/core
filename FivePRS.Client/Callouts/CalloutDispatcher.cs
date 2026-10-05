@@ -1,54 +1,31 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using CitizenFX.Core;
 using CitizenFX.Core.Native;
-using FivePRS.Core.Events;
+using FivePRS.Core.Config;
 using FivePRS.Core.Models;
 
 namespace FivePRS.Client.Callouts
 {
-    /// <summary>
-    /// Orchestrates the full callout lifecycle for a single department:
-    ///
-    ///   Idle → (dispatch interval) → Dispatching → Accept/Decline → Active
-    ///       → Completed / Failed / Declined → (cooldown) → back to Idle
-    ///
-    /// One instance per agency. Owned and started/stopped by the agency's OnDuty/OffDuty.
-    ///
-    /// Design notes:
-    /// ─ Entirely task-based; never holds a game-thread Tick.
-    /// ─ Accept/decline is driven by /er_accept and /er_decline commands (registered once
-    ///   in ClientBrain) via two static volatile flags read in the accept window loop.
-    /// ─ Server-dispatched callouts bypass the dispatch interval and jump straight to
-    ///   the accept window via HandleServerCalloutAsync.
-    /// ─ OnUpdate() is called once per second while Active; scenario logic runs concurrently
-    ///   as a separate detached Task.
-    /// </summary>
     public sealed class CalloutDispatcher
     {
-        internal static volatile bool AcceptPressed     = false;
-        internal static volatile bool DeclinePressed    = false;
-        internal static volatile bool EndCalloutPressed = false;
+        internal static volatile bool AcceptPressed;
+        internal static volatile bool DeclinePressed;
+        internal static volatile bool EndCalloutPressed;
 
-        private static int AcceptWindowSeconds    => FivePRS.Core.Config.ConfigManager.Settings.AcceptWindowSeconds;
-        private static int PostCompleteCooldownMs => FivePRS.Core.Config.ConfigManager.Settings.PostCompleteCooldownSeconds * 1000;
-        private static int PostDeclineCooldownMs  => FivePRS.Core.Config.ConfigManager.Settings.PostDeclineCooldownSeconds * 1000;
-        private static int PostFailCooldownMs     => FivePRS.Core.Config.ConfigManager.Settings.PostFailCooldownSeconds * 1000;
-        private static int NoCalloutRetryMs       => FivePRS.Core.Config.ConfigManager.Settings.NoCalloutRetrySeconds * 1000;
-        private static int InitialDelayMs         => FivePRS.Core.Config.ConfigManager.Settings.InitialGraceSeconds * 1000;
+        private static ResourceSettings Settings => ConfigManager.Settings;
 
-        private readonly Department                      _department;
-        private readonly CalloutRegistry                 _registry;
-        private readonly int                             _dispatchIntervalMs;
+        private readonly Department _department;
+        private readonly CalloutRegistry _registry;
+        private readonly int _dispatchIntervalMs;
         private readonly Action<CalloutBase, CalloutResult> _onEnded;
 
         private CancellationTokenSource? _cts;
-        private CancellationTokenSource? _calloutCts;
-        private CalloutBase?             _activeCallout;
-        private bool                     _running;
+        private CalloutBase? _activeCallout;
+        private bool _busy;
 
+        public bool IsRunning => _cts is not null;
         public bool HasActiveCallout => _activeCallout is not null;
 
         public CalloutDispatcher(
@@ -57,206 +34,227 @@ namespace FivePRS.Client.Callouts
             int dispatchIntervalMs,
             Action<CalloutBase, CalloutResult> onEnded)
         {
-            _department          = department;
-            _registry            = registry;
-            _dispatchIntervalMs  = dispatchIntervalMs;
-            _onEnded             = onEnded;
+            _department = department;
+            _registry = registry;
+            _dispatchIntervalMs = dispatchIntervalMs;
+            _onEnded = onEnded;
         }
 
         public void EndActiveCallout()
         {
-            if (_activeCallout is null) return;
-            EndCalloutPressed = true;
+            if (_activeCallout is not null)
+                EndCalloutPressed = true;
         }
 
         public void Start()
         {
-            if (_running) return;
-            _running = true;
-            _cts     = new CancellationTokenSource();
+            if (_cts is not null) return;
+            _cts = new CancellationTokenSource();
             _ = DispatchLoopAsync(_cts.Token);
         }
 
         public void Stop()
         {
-            _running = false;
-            _cts?.Cancel();
-            _cts?.Dispose();
+            if (_cts is null) return;
+            _cts.Cancel();
+            _cts.Dispose();
             _cts = null;
 
-            if (_activeCallout is not null)
-            {
-                try { _activeCallout.OnCalloutFailed(); } catch { }
-                _activeCallout.Cleanup();
-                _activeCallout.SetState(CalloutState.Failed);
-                _activeCallout = null;
-            }
+            var callout = _activeCallout;
+            _activeCallout = null;
+            if (callout is null) return;
+
+            try { callout.OnCalloutFailed(); }
+            catch (Exception ex) { Debug.WriteLine($"[CalloutDispatcher] OnCalloutFailed threw: {ex.Message}"); }
+            callout.SetState(CalloutState.Failed);
+            callout.Cleanup();
         }
 
         public async Task HandleServerCalloutAsync(CalloutData data)
         {
-            if (_activeCallout is not null)
+            if (_cts is null || _busy)
             {
-                Debug.WriteLine($"[CalloutDispatcher] Server callout '{data.Name}' dropped — already active.");
+                Debug.WriteLine($"[CalloutDispatcher] Server callout '{data.Name}' dropped: dispatcher busy or stopped.");
                 return;
             }
 
-            var (type, info) = _registry.FindByName(data.Name);
-            if (type is null)
+            var entry = _registry.FindByName(data.Name);
+            if (entry is null)
             {
                 Debug.WriteLine($"[CalloutDispatcher] No handler registered for server callout '{data.Name}'.");
                 return;
             }
 
-            CalloutBase callout;
-            try { callout = (CalloutBase)Activator.CreateInstance(type)!; }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[CalloutDispatcher] Could not create {type.Name}: {ex.Message}");
-                return;
-            }
+            var callout = CreateCallout(entry);
+            if (callout is null) return;
 
             callout.Data = data;
-            var ct = _cts?.Token ?? CancellationToken.None;
-            await RunCalloutAsync(callout, ct);
+            await RunCalloutAsync(callout, _cts.Token);
         }
 
         private async Task DispatchLoopAsync(CancellationToken ct)
         {
-            await SafeDelay(InitialDelayMs, ct);
+            if (!await Timing.TryWaitAsync(Settings.InitialGraceSeconds * 1000, ct)) return;
 
             while (!ct.IsCancellationRequested)
             {
-                var (type, info) = _registry.PickCallout(_department);
-
-                if (type is null)
+                if (_busy)
                 {
-                    Debug.WriteLine("[CalloutDispatcher] No callouts available; retrying in 30s.");
-                    await SafeDelay(NoCalloutRetryMs, ct);
+                    if (!await Timing.TryWaitAsync(1000, ct)) return;
                     continue;
                 }
 
-                CalloutBase callout;
-                try { callout = (CalloutBase)Activator.CreateInstance(type)!; }
-                catch (Exception ex)
+                var entry = _registry.PickCallout(_department);
+                var callout = entry is null ? null : CreateCallout(entry);
+
+                if (entry is null || callout is null)
                 {
-                    Debug.WriteLine($"[CalloutDispatcher] Failed to create {type.Name}: {ex.Message}");
-                    await SafeDelay(NoCalloutRetryMs, ct);
+                    if (!await Timing.TryWaitAsync(Settings.NoCalloutRetrySeconds * 1000, ct)) return;
                     continue;
                 }
 
                 callout.Data = new CalloutData
                 {
-                    Id                 = Guid.NewGuid().ToString(),
-                    Name               = info.Name,
-                    Description        = callout.Data.Description,
-                    Priority           = info.Priority,
+                    Id = Guid.NewGuid().ToString(),
+                    Name = entry.Info.Name,
+                    Description = callout.Data.Description,
+                    Priority = entry.Info.Priority,
                     RequiredDepartment = _department,
-                    XPReward           = info.XPReward
+                    XPReward = entry.Info.XPReward,
+                    LocationX = callout.Data.LocationX,
+                    LocationY = callout.Data.LocationY,
+                    LocationZ = callout.Data.LocationZ,
+                    Metadata = callout.Data.Metadata
                 };
 
-                var cooldown = await RunCalloutAsync(callout, ct);
+                var result = await RunCalloutAsync(callout, ct);
 
-                if (ct.IsCancellationRequested) break;
-
-                var nextDelay = cooldown switch
+                var nextDelay = result switch
                 {
-                    CalloutResult.Completed => PostCompleteCooldownMs + _dispatchIntervalMs,
-                    CalloutResult.Declined  => PostDeclineCooldownMs,
-                    CalloutResult.Failed    => PostFailCooldownMs + _dispatchIntervalMs,
-                    _                       => _dispatchIntervalMs
+                    CalloutResult.Completed => Settings.PostCompleteCooldownSeconds * 1000 + _dispatchIntervalMs,
+                    CalloutResult.Declined => Settings.PostDeclineCooldownSeconds * 1000,
+                    _ => Settings.PostFailCooldownSeconds * 1000 + _dispatchIntervalMs
                 };
 
-                await SafeDelay(nextDelay, ct);
+                if (!await Timing.TryWaitAsync(nextDelay, ct)) return;
+            }
+        }
+
+        private static CalloutBase? CreateCallout(RegisteredCallout entry)
+        {
+            try
+            {
+                return (CalloutBase)Activator.CreateInstance(entry.Type);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[CalloutDispatcher] Could not create {entry.Type.Name}: {ex.Message}");
+                return null;
             }
         }
 
         private async Task<CalloutResult> RunCalloutAsync(CalloutBase callout, CancellationToken ct)
         {
+            _busy = true;
+            try
+            {
+                return await RunCalloutCoreAsync(callout, ct);
+            }
+            finally
+            {
+                _busy = false;
+            }
+        }
+
+        private async Task<CalloutResult> RunCalloutCoreAsync(CalloutBase callout, CancellationToken ct)
+        {
             callout.SetState(CalloutState.Dispatching);
 
-            ShowDispatchNotification(callout);
+            var dispatchLoc = callout.GetDispatchLocation();
+            ShowDispatchNotification(callout, dispatchLoc);
+            var previewBlip = CreatePreviewBlip(dispatchLoc, callout.Data);
 
-            var dispatchLoc  = callout.GetDispatchLocation();
-            var previewBlip  = CreatePreviewBlip(dispatchLoc, callout.Data);
-
-            AcceptPressed  = false;
+            AcceptPressed = false;
             DeclinePressed = false;
 
-            var accepted = await RunAcceptWindowAsync(callout.Data, ct);
+            var accepted = await RunAcceptWindowAsync(ct);
 
             previewBlip?.Delete();
 
-            if (!accepted || ct.IsCancellationRequested)
+            if (!accepted)
             {
-                try { callout.OnCalloutDeclined(); } catch { }
+                try { callout.OnCalloutDeclined(); }
+                catch (Exception ex) { Debug.WriteLine($"[CalloutDispatcher] OnCalloutDeclined threw: {ex.Message}"); }
                 callout.Cleanup();
                 callout.SetState(CalloutState.Declined);
 
-                ClientBrain.ShowNotification("~r~[ DISPATCH ]~w~ Callout declined.");
-                Debug.WriteLine($"[CalloutDispatcher] '{callout.Data.Name}' declined.");
+                if (!ct.IsCancellationRequested)
+                    ClientBrain.ShowNotification("~r~[ DISPATCH ]~w~ Callout declined.");
                 return CalloutResult.Declined;
             }
 
+            EndCalloutPressed = false;
             callout.SetState(CalloutState.Active);
             _activeCallout = callout;
 
-            ClientBrain.ShowNotification(
-                $"~g~[ DISPATCH ]~w~ Callout accepted — ~b~{callout.Data.Name}");
+            ClientBrain.ShowNotification($"~g~[ DISPATCH ]~w~ Callout accepted: ~b~{callout.Data.Name}");
 
-            _calloutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            using var calloutCts = _calloutCts;
+            var finalResult = CalloutResult.Failed;
+            using var calloutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
 
-            CalloutResult finalResult = CalloutResult.Failed;
-
-            callout.Ended += (c, result) =>
+            void OnEnded(CalloutBase c, CalloutResult result)
             {
                 finalResult = result;
-                calloutCts.Cancel();
-                _onEnded(c, result);
-                _activeCallout = null;
-            };
+                if (!calloutCts.IsCancellationRequested) calloutCts.Cancel();
+            }
 
-            var scenarioTask = SafeRunScenario(callout, calloutCts.Token);
+            callout.Ended += OnEnded;
+
+            var scenarioTask = RunScenarioAsync(callout, calloutCts.Token);
             await RunUpdateLoopAsync(callout, calloutCts.Token);
+            await scenarioTask;
 
-            try { await scenarioTask; }
-            catch (OperationCanceledException) { }
-            catch (Exception ex) { Debug.WriteLine($"[CalloutDispatcher] Scenario error: {ex.Message}"); }
+            callout.Ended -= OnEnded;
 
             if (callout.State == CalloutState.Active)
             {
-                finalResult = CalloutResult.Failed;
-                try { callout.OnCalloutFailed(); } catch { }
+                try { callout.OnCalloutFailed(); }
+                catch (Exception ex) { Debug.WriteLine($"[CalloutDispatcher] OnCalloutFailed threw: {ex.Message}"); }
                 callout.SetState(CalloutState.Failed);
-                _activeCallout = null;
+                finalResult = CalloutResult.Failed;
             }
 
-            callout.Cleanup();
+            callout.Cleanup(finalResult == CalloutResult.Completed);
 
-            Debug.WriteLine($"[CalloutDispatcher] '{callout.Data.Name}' ended → {finalResult}");
+            if (ReferenceEquals(_activeCallout, callout))
+            {
+                _activeCallout = null;
+                if (!ct.IsCancellationRequested)
+                    _onEnded(callout, finalResult);
+            }
+
+            Debug.WriteLine($"[CalloutDispatcher] '{callout.Data.Name}' ended: {finalResult}");
             return finalResult;
         }
 
-        private async Task<bool> RunAcceptWindowAsync(CalloutData data, CancellationToken ct)
+        private static async Task<bool> RunAcceptWindowAsync(CancellationToken ct)
         {
-            const int PollMs     = 500;
-            var totalPolls       = (AcceptWindowSeconds * 1000) / PollMs;
+            var end = API.GetGameTimer() + Settings.AcceptWindowSeconds * 1000;
 
-            for (var i = 0; i < totalPolls; i++)
+            while (!ct.IsCancellationRequested)
             {
-                if (ct.IsCancellationRequested) return false;
-                if (AcceptPressed)  return true;
+                if (AcceptPressed) return true;
                 if (DeclinePressed) return false;
 
-                var secondsLeft = AcceptWindowSeconds - (i * PollMs / 1000);
+                var remainingMs = end - API.GetGameTimer();
+                if (remainingMs <= 0) return false;
+
                 API.BeginTextCommandDisplayHelp("STRING");
                 API.AddTextComponentSubstringPlayerName(
-                    $"~y~[ DISPATCH ]~w~ ~g~/er_accept~w~  or  ~r~/er_decline~w~ " +
-                    $"(~w~{secondsLeft}s~w~)");
-                API.EndTextCommandDisplayHelp(0, false, true, -1);
+                    $"~y~[ DISPATCH ]~w~ ~g~/er_accept~w~  or  ~r~/er_decline~w~ ({remainingMs / 1000 + 1}s)");
+                API.EndTextCommandDisplayHelp(0, false, false, -1);
 
-                await Task.Delay(PollMs);
+                await BaseScript.Delay(0);
             }
 
             return false;
@@ -270,26 +268,22 @@ namespace FivePRS.Client.Callouts
                 {
                     EndCalloutPressed = false;
                     ClientBrain.ShowNotification("~o~[ DISPATCH ]~w~ Callout ended by officer.");
-                    if (callout.State == CalloutState.Active)
-                    {
-                        callout.SetState(CalloutState.Failed);
-                        callout.RaiseEnded(CalloutResult.Failed);
-                    }
-                    break;
+                    callout.SetState(CalloutState.Failed);
+                    callout.RaiseEnded(CalloutResult.Failed);
+                    return;
                 }
 
                 try { callout.OnUpdate(); }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine(
-                        $"[CalloutDispatcher] OnUpdate exception in {callout.GetType().Name}: {ex.Message}");
+                    Debug.WriteLine($"[CalloutDispatcher] OnUpdate exception in {callout.GetType().Name}: {ex.Message}");
                 }
-                try { await Task.Delay(1_000, ct); }
-                catch (OperationCanceledException) { break; }
+
+                if (!await Timing.TryWaitAsync(1000, ct)) return;
             }
         }
 
-        private static async Task SafeRunScenario(CalloutBase callout, CancellationToken ct)
+        private static async Task RunScenarioAsync(CalloutBase callout, CancellationToken ct)
         {
             try
             {
@@ -300,51 +294,40 @@ namespace FivePRS.Client.Callouts
             }
             catch (Exception ex)
             {
-                Debug.WriteLine(
-                    $"[CalloutDispatcher] Unhandled exception in {callout.GetType().Name}." +
-                    $"OnCalloutAccepted: {ex}");
+                Debug.WriteLine($"[CalloutDispatcher] Unhandled exception in {callout.GetType().Name}.OnCalloutAccepted: {ex}");
                 if (callout.State == CalloutState.Active)
+                {
                     callout.SetState(CalloutState.Failed);
+                    callout.RaiseEnded(CalloutResult.Failed);
+                }
             }
         }
 
-        private static void ShowDispatchNotification(CalloutBase callout)
+        private static void ShowDispatchNotification(CalloutBase callout, Vector3 dispatchLoc)
         {
-            var data       = callout.Data;
-            var priority   = data.Priority;
-            var codeColor  = priority >= CalloutPriority.High ? "~r~" : "~o~";
-            var codeLabel  = $"{codeColor}Code {(int)priority}~w~";
-            var dispatchLoc = callout.GetDispatchLocation();
-            var hasLocation = dispatchLoc != Vector3.Zero;
+            var data = callout.Data;
+            var codeColor = data.Priority >= CalloutPriority.High ? "~r~" : "~o~";
+            var distance = dispatchLoc != Vector3.Zero
+                ? $"~s~Distance: ~w~{Vector3.Distance(Game.PlayerPed.Position, dispatchLoc):F0}m~n~"
+                : "";
 
-            API.SetNotificationTextEntry("STRING");
-            API.AddTextComponentSubstringPlayerName(
-                $"~y~[ DISPATCH ]~w~  {codeLabel}  ~b~{data.Name}~n~" +
-                $"{data.Description}~n~" +
-                (hasLocation ? $"~s~Distance: ~w~{Vector3.Distance(Game.PlayerPed.Position, dispatchLoc):F0}m~n~" : "") +
-                $"  ~g~/er_accept~w~   ~r~/er_decline");
-
-            API.DrawNotification(false, true);
+            ClientBrain.ShowNotification(
+                $"~y~[ DISPATCH ]~w~  {codeColor}Code {(int)data.Priority}~w~  ~b~{data.Name}~n~" +
+                $"{data.Description}~n~{distance}~g~/er_accept~w~   ~r~/er_decline");
         }
 
         private static Blip? CreatePreviewBlip(Vector3 location, CalloutData data)
         {
             if (location == Vector3.Zero) return null;
 
-            var blip           = World.CreateBlip(location);
-            blip.Sprite        = BlipSprite.PoliceStation;
-            blip.Color         = BlipColor.Yellow;
-            blip.Alpha         = 180;
-            blip.Name          = $"[DISPATCH] {data.Name}";
-            blip.IsShortRange  = false;
-            blip.ShowRoute     = true;
+            var blip = World.CreateBlip(location);
+            blip.Sprite = BlipSprite.PoliceStation;
+            blip.Color = BlipColor.Yellow;
+            blip.Alpha = 180;
+            blip.Name = $"[DISPATCH] {data.Name}";
+            blip.IsShortRange = false;
+            blip.ShowRoute = true;
             return blip;
-        }
-
-        private static async Task SafeDelay(int ms, CancellationToken ct)
-        {
-            try { await Task.Delay(ms, ct); }
-            catch (OperationCanceledException) { }
         }
     }
 }

@@ -20,7 +20,6 @@ namespace FivePRS.Police.Callouts
         xpReward:        90)]
     public sealed class DomesticDisturbanceCallout : CalloutBase
     {
-
         private enum AggressorProfile { Peaceful, Resistive, Armed }
 
         private const int ResistiveChancePct = 40;
@@ -97,7 +96,6 @@ namespace FivePRS.Police.Callouts
 
         public override async Task OnCalloutAccepted(CancellationToken ct)
         {
-
             var aggModel = new Model(_aggressorModel);
             if (!await aggModel.Request(7_000)) { CalloutFailed(); return; }
 
@@ -168,7 +166,7 @@ namespace FivePRS.Police.Callouts
                     $"~b~Scene~w~ ~y~{dist:F0}m~w~ away — respond Code 3");
                 API.EndTextCommandDisplayHelp(0, false, false, PollMs + 50);
 
-                await Task.Delay(PollMs, ct).ConfigureAwait(false);
+                await Timing.WaitAsync(PollMs, ct);
             }
             return false;
         }
@@ -182,7 +180,7 @@ namespace FivePRS.Police.Callouts
                 "~g~Both parties cooperating~w~ | Separate and interview. " +
                 "Scene secure — ~b~/er_end_callout~w~ when ready.");
 
-            await Task.Delay(10_000, ct).ConfigureAwait(false);
+            await Timing.WaitAsync(10_000, ct);
             if (!ct.IsCancellationRequested)
                 CalloutCompleted();
         }
@@ -200,7 +198,7 @@ namespace FivePRS.Police.Callouts
             {
                 var dist = Vector3.Distance(Game.PlayerPed.Position, _aggressor.Position);
                 if (dist <= DetainDistM) break;
-                await Task.Delay(300, ct).ConfigureAwait(false);
+                await Timing.WaitAsync(300, ct);
             }
             if (ct.IsCancellationRequested) return;
 
@@ -227,7 +225,7 @@ namespace FivePRS.Police.Callouts
             {
                 var dist = Vector3.Distance(Game.PlayerPed.Position, _aggressor.Position);
                 if (dist <= ThreatDistM) break;
-                await Task.Delay(300, ct).ConfigureAwait(false);
+                await Timing.WaitAsync(300, ct);
             }
             if (ct.IsCancellationRequested) return;
 
@@ -273,7 +271,7 @@ namespace FivePRS.Police.Callouts
                     return;
                 }
 
-                await Task.Delay(PollMs, ct).ConfigureAwait(false);
+                await Timing.WaitAsync(PollMs, ct);
             }
 
             ArrestManager.UnregisterSuspect(_aggressor);

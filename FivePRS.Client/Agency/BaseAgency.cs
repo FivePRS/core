@@ -1,74 +1,93 @@
-﻿using System.Threading.Tasks;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using CitizenFX.Core;
+using CitizenFX.Core.Native;
 using FivePRS.Core.Events;
 using FivePRS.Core.Interfaces;
 using FivePRS.Core.Models;
+using Newtonsoft.Json;
 
 namespace FivePRS.Client.Agency
 {
-    /// <summary>
-    /// Abstract base for all FivePRS department modules.
-    ///
-    /// Inheriting from <see cref="BaseScript"/> lets the FiveM runtime auto-instantiate
-    /// each concrete subclass when their dll is loaded, giving them access to Tick,
-    /// Delay(), TriggerEvent(), and EventHandlers without any manual wiring.
-    ///
-    /// Subclasses must override <see cref="Department"/>, <see cref="AgencyName"/>,
-    /// and <see cref="OnCalloutReceived"/>. The duty lifecycle methods have virtual
-    /// defaults so agencies only override what they customise.
-    /// </summary>
     public abstract class BaseAgency : BaseScript, IAgency
     {
+        private static readonly HashSet<Department> LoadedDepartments = new();
 
         public abstract Department Department { get; }
         public abstract string AgencyName { get; }
 
+        public bool IsActive { get; private set; }
+
         protected static PlayerData CurrentPlayer => ClientBrain.LocalPlayerData;
+
+        public static bool IsDepartmentLoaded(Department department) => LoadedDepartments.Contains(department);
 
         protected BaseAgency()
         {
-            EventHandlers[EventNames.LocalDutyChanged]     += new System.Action<bool, int>(OnLocalDutyChanged);
-            EventHandlers[EventNames.LocalCalloutReceived] += new System.Action<string>(OnLocalCalloutReceived);
+            LoadedDepartments.Add(Department);
+
+            EventHandlers[EventNames.LocalDutyChanged] += new Action<bool, int>(OnLocalDutyChanged);
+            EventHandlers[EventNames.LocalCalloutReceived] += new Action<string>(OnLocalCalloutReceived);
+            EventHandlers["onClientResourceStop"] += new Action<string>(OnResourceStop);
         }
 
-        public virtual async Task OnDuty(PlayerData player)
+        public virtual Task OnDuty(PlayerData player)
         {
             Debug.WriteLine($"[{AgencyName}] {player.Name} is ON DUTY.");
-            await Task.CompletedTask;
+            return Task.FromResult(0);
         }
 
-        public virtual async Task OffDuty(PlayerData player)
+        public virtual Task OffDuty(PlayerData player)
         {
             Debug.WriteLine($"[{AgencyName}] {player.Name} is OFF DUTY.");
-            await Task.CompletedTask;
+            return Task.FromResult(0);
         }
 
         public abstract Task OnCalloutReceived(CalloutData callout);
 
         private async void OnLocalDutyChanged(bool isOnDuty, int departmentId)
         {
-            if ((Department)departmentId != Department) return;
+            var shouldBeActive = isOnDuty && (Department)departmentId == Department;
+            if (shouldBeActive == IsActive) return;
 
-            if (isOnDuty)
-                await OnDuty(CurrentPlayer);
-            else
-                await OffDuty(CurrentPlayer);
+            IsActive = shouldBeActive;
+            try
+            {
+                if (shouldBeActive)
+                    await OnDuty(CurrentPlayer);
+                else
+                    await OffDuty(CurrentPlayer);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[{AgencyName}] Duty transition failed: {ex}");
+            }
         }
 
         private async void OnLocalCalloutReceived(string calloutJson)
         {
-            CalloutData callout;
+            if (!IsActive) return;
+
             try
             {
-                callout = Newtonsoft.Json.JsonConvert.DeserializeObject<CalloutData>(calloutJson)!;
+                var callout = JsonConvert.DeserializeObject<CalloutData>(calloutJson);
+                if (callout is null || callout.RequiredDepartment != Department) return;
+                await OnCalloutReceived(callout);
             }
-            catch
+            catch (Exception ex)
             {
-                return;
+                Debug.WriteLine($"[{AgencyName}] Callout handling failed: {ex}");
             }
+        }
 
-            if (callout.RequiredDepartment != Department) return;
-            await OnCalloutReceived(callout);
+        private void OnResourceStop(string resourceName)
+        {
+            if (resourceName != API.GetCurrentResourceName() || !IsActive) return;
+
+            IsActive = false;
+            try { _ = OffDuty(CurrentPlayer); }
+            catch (Exception ex) { Debug.WriteLine($"[{AgencyName}] Cleanup on stop failed: {ex.Message}"); }
         }
 
         protected static void Notify(string message) => ClientBrain.ShowNotification(message);
