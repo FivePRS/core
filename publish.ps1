@@ -2,8 +2,10 @@
 
 $ErrorActionPreference = "Stop"
 $Root    = $PSScriptRoot
-$DistDir = Join-Path $Root "dist\FivePRS"
-$ZipOut  = Join-Path $Root "dist\FivePRS.zip"
+$DistDir       = Join-Path $Root "dist\FivePRS"
+$ZipOut        = Join-Path $Root "dist\FivePRS.zip"
+$LoadscreenDir = Join-Path $Root "dist\fiveprs_loadscreen"
+$LoadscreenZip = Join-Path $Root "dist\fiveprs_loadscreen.zip"
 
 function Info($msg) { Write-Host "[FivePRS] $msg" -ForegroundColor Cyan }
 function Ok($msg)   { Write-Host "[FivePRS] $msg" -ForegroundColor Green }
@@ -108,14 +110,18 @@ if ($missing.Count -gt 0) {
     Ok "All manifest references satisfied."
 }
 
-# 8. Zip the dist folder
-Info "Creating zip archive..."
-if (Test-Path $ZipOut) { Remove-Item $ZipOut -Force }
+# 8. Copy the optional loading screen resource
+Info "Copying loading screen resource..."
+Copy-Item -Recurse "$Root\loadscreen" $LoadscreenDir
+
+# 9. Zip both resources
+Info "Creating zip archives..."
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 [System.IO.Compression.ZipFile]::CreateFromDirectory($DistDir, $ZipOut)
-Ok "Zip created -> $ZipOut"
+[System.IO.Compression.ZipFile]::CreateFromDirectory($LoadscreenDir, $LoadscreenZip)
+Ok "Zips created -> $ZipOut, $LoadscreenZip"
 
-# 9. Summary
+# 10. Summary
 $fileCount = (Get-ChildItem -Recurse -File $DistDir).Count
 $bytes = (Get-ChildItem -Recurse -File $DistDir | Measure-Object -Property Length -Sum).Sum
 $distMB = [math]::Round($bytes / 1MB, 2)
@@ -126,12 +132,13 @@ Ok "Published -> $DistDir ($fileCount files, ~${distMB} MB)"
 Ok "Zipped   -> $ZipOut (~${zipMB} MB)"
 Write-Host ""
 Write-Host "Next steps:" -ForegroundColor Yellow
-Write-Host "  1. Extract FivePRS.zip into your server resources\ directory." -ForegroundColor Yellow
+Write-Host "  1. Extract FivePRS.zip (and optionally fiveprs_loadscreen.zip) into your server resources\ directory." -ForegroundColor Yellow
 Write-Host "  2. Add to server.cfg:" -ForegroundColor Yellow
 Write-Host '       set fiveprs_db_type      "sqlite"   # or "mysql"' -ForegroundColor Gray
 Write-Host '       set fiveprs_db_connection ""         # MySQL only' -ForegroundColor Gray
 Write-Host '       set fiveprs_restrict_departments "false" # "true" to require ACE per department' -ForegroundColor Gray
 Write-Host "       ensure FivePRS" -ForegroundColor Gray
+Write-Host "       ensure fiveprs_loadscreen          # optional branded loading screen" -ForegroundColor Gray
 Write-Host ""
 Write-Host "  plugins\   <- drop functionality extensions here" -ForegroundColor Yellow
 Write-Host "  callouts\  <- drop scenario packs here" -ForegroundColor Yellow

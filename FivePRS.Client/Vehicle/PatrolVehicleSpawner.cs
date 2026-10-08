@@ -27,7 +27,7 @@ namespace FivePRS.Client.VehicleSpawner
         public string PlateText { get; set; } = string.Empty;
     }
 
-    public readonly struct SpawnPoint
+    public sealed class SpawnPoint
     {
         public Vector3 Position { get; }
         public float Heading { get; }
@@ -130,8 +130,8 @@ namespace FivePRS.Client.VehicleSpawner
                 }
             }
 
-            if (nearest.HasValue)
-                return nearest.Value;
+            if (nearest is not null)
+                return nearest;
 
             var streetPos = CitizenFX.Core.World.GetNextPositionOnStreet(playerPos);
             return new SpawnPoint(streetPos, API.GetEntityHeading(Game.PlayerPed.Handle));

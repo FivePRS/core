@@ -26,7 +26,7 @@ namespace FivePRS.Client.Mdt
             API.RegisterCommand("mdt", new Action<int, List<object>, string>((_, __, ___) => Toggle()), false);
             API.RegisterKeyMapping("mdt", "FivePRS: Open MDT", "keyboard", "F7");
 
-            RegisterCallback("close",     _    => Close());
+            RegisterCallback("mdtClose",  _    => Close());
             RegisterCallback("setStatus", data => SetStatus(data));
             RegisterCallback("attach",    data => Attach(data));
             RegisterCallback("waypoint",  data => Waypoint(data));
@@ -159,7 +159,7 @@ namespace FivePRS.Client.Mdt
         }
 
         private static void Send(string type, object? payload) =>
-            API.SendNuiMessage(JsonConvert.SerializeObject(new { type, payload }, JsonSettings));
+            API.SendNuiMessage(JsonConvert.SerializeObject(new { screen = "mdt", type, payload }, JsonSettings));
 
         private void RegisterCallback(string name, Action<IDictionary<string, object>> handler)
         {

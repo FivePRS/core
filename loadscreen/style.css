@@ -1,0 +1,193 @@
+@font-face {
+  font-family: "Magz";
+  src: url("Magz.otf") format("opentype");
+}
+
+:root {
+  --bg: #07090f;
+  --text: #eef2fb;
+  --muted: rgba(238, 242, 251, 0.62);
+  --subtle: rgba(238, 242, 251, 0.42);
+  --line: rgba(255, 255, 255, 0.1);
+  --red: #ef4444;
+  --blue: #3b82f6;
+  --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  user-select: none;
+}
+
+.backdrop,
+.topo,
+.siren {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.topo {
+  background: url("topo.svg") center / cover no-repeat;
+  mask-image: radial-gradient(ellipse 70% 65% at 50% 45%, black 30%, transparent 85%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 65% at 50% 45%, black 30%, transparent 85%);
+}
+
+.siren {
+  opacity: 0.3;
+  animation: siren 3.2s ease-in-out infinite;
+}
+
+.siren-red {
+  background: radial-gradient(ellipse 35% 55% at 36% 20%, rgba(239, 68, 68, 0.2), transparent 70%);
+}
+
+.siren-blue {
+  background: radial-gradient(ellipse 35% 55% at 64% 20%, rgba(59, 130, 246, 0.22), transparent 70%);
+  animation-delay: -1.6s;
+}
+
+@keyframes siren {
+  0%, 100% { opacity: 0.3; }
+  10% { opacity: 1; }
+  20% { opacity: 0.4; }
+  30% { opacity: 0.9; }
+  50% { opacity: 0.3; }
+}
+
+.lightbar {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--red) 0 50%, var(--blue) 50% 100%);
+}
+
+.content {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 12vh;
+  text-align: center;
+}
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--blue);
+}
+
+.wordmark {
+  margin-top: 18px;
+  font-family: "Magz", system-ui, sans-serif;
+  font-weight: 400;
+  font-size: clamp(72px, 12vw, 180px);
+  line-height: 0.9;
+}
+
+.wordmark .red { color: var(--red); }
+.wordmark .blue { color: var(--blue); }
+
+.tagline {
+  margin-top: 20px;
+  font-family: var(--mono);
+  font-size: 15px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.welcome {
+  margin-top: 44px;
+  padding: 16px 26px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(12, 16, 25, 0.75);
+}
+
+.welcome-title {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.welcome-detail {
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.footer {
+  position: fixed;
+  left: 50%;
+  bottom: 7vh;
+  width: min(720px, 80vw);
+  transform: translateX(-50%);
+}
+
+.tip {
+  min-height: 1.5em;
+  margin-bottom: 18px;
+  text-align: center;
+  font-size: 15px;
+  color: var(--muted);
+  transition: opacity 0.4s ease;
+}
+
+.tip.fading {
+  opacity: 0;
+}
+
+.progress {
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.progress-bar {
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--red), var(--blue));
+  transition: width 0.4s ease;
+}
+
+.status {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 10px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--subtle);
+}
+
+#status-text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .siren { animation: none; }
+  .tip, .progress-bar { transition: none; }
+}

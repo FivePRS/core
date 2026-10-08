@@ -9,11 +9,14 @@ namespace FivePRS.Core.Events
         public const string ClientRankedUp          = "FivePRS:Client:RankedUp";
         public const string ClientNotify            = "FivePRS:Client:Notify";
         public const string ClientEndCallout        = "FivePRS:Client:EndCallout";
+        public const string ClientEntryOptions      = "FivePRS:Client:EntryOptions";
+        public const string ClientEntryRejected     = "FivePRS:Client:EntryRejected";
 
         public const string ServerPlayerConnected   = "FivePRS:Server:PlayerConnected";
         public const string ServerToggleDuty        = "FivePRS:Server:ToggleDuty";
         public const string ServerSetDepartment     = "FivePRS:Server:SetDepartment";
         public const string ServerSetAgency         = "FivePRS:Server:SetAgency";
+        public const string ServerEnterService      = "FivePRS:Server:EnterService";
         public const string ServerRegisterCallouts  = "FivePRS:Server:RegisterCallouts";
         public const string ServerCalloutResponse   = "FivePRS:Server:CalloutResponse";
         public const string ServerCalloutEnded      = "FivePRS:Server:CalloutEnded";

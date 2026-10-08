@@ -49,6 +49,7 @@ namespace FivePRS.Server
             EventHandlers[EventNames.ServerToggleDuty]       += new Action<Player>(OnToggleDuty);
             EventHandlers[EventNames.ServerSetDepartment]    += new Action<Player, int>(OnSetDepartment);
             EventHandlers[EventNames.ServerSetAgency]        += new Action<Player, string>(OnSetAgency);
+            EventHandlers[EventNames.ServerEnterService]     += new Action<Player, int, string>(OnEnterService);
             EventHandlers[EventNames.ServerRegisterCallouts] += new Action<Player, string>(OnRegisterCallouts);
             EventHandlers[EventNames.ServerCalloutResponse]  += new Action<Player, string, int, float, float, float>(OnCalloutResponse);
             EventHandlers[EventNames.ServerCalloutEnded]     += new Action<Player, string, int>(OnCalloutEnded);
@@ -105,7 +106,8 @@ namespace FivePRS.Server
 
             try
             {
-                await LoadProfileAsync(license, playerName);
+                var data = await LoadProfileAsync(license, playerName);
+                HandOverProfile(deferrals, data);
                 deferrals.done();
             }
             catch (Exception ex)
@@ -140,10 +142,89 @@ namespace FivePRS.Server
                 }
 
                 SendPlayerData(player, data);
+                SendEntryOptions(player);
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"[FivePRS] Error sending profile to {player.Name}: {ex.Message}");
+            }
+        }
+
+        private async void OnEnterService([FromSource] Player player, int departmentId, string agencyId)
+        {
+            if (!TryGetCached(player, out var license, out var data) || data.IsOnDuty) return;
+            if (!Enum.IsDefined(typeof(Department), departmentId) || departmentId == (int)Department.None) return;
+
+            var department = (Department)departmentId;
+            if (!_permissions.CanJoinDepartment(player.Handle, department))
+            {
+                TriggerClientEvent(player, EventNames.ClientEntryRejected, $"You are not authorised to join {department}.");
+                Audit(AuditActions.PermissionDenied, player, license, $"department {department}");
+                return;
+            }
+
+            try
+            {
+                var agency = ConfigManager.Territories.ResolveAgency(department, agencyId)?.Id ?? string.Empty;
+
+                if (data.Department != department)
+                {
+                    data.Department = department;
+                    Audit(AuditActions.DepartmentSet, player, license, department.ToString());
+                }
+
+                if (data.Agency != agency)
+                {
+                    data.Agency = agency;
+                    Audit(AuditActions.AgencySet, player, license, agency);
+                }
+
+                await _db.SavePlayerAsync(data);
+                SendPlayerData(player, data);
+
+                await SetDutyAsync(player, data, true);
+                Audit(AuditActions.DutyOn, player, license, department.ToString());
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[FivePRS] Error entering service for {player.Name}: {ex.Message}");
+                TriggerClientEvent(player, EventNames.ClientEntryRejected, "Something went wrong. Please try again.");
+            }
+        }
+
+        private void SendEntryOptions(Player player)
+        {
+            var allowed = new List<int>();
+            foreach (Department department in Enum.GetValues(typeof(Department)))
+            {
+                if (_permissions.CanJoinDepartment(player.Handle, department))
+                    allowed.Add((int)department);
+            }
+
+            TriggerClientEvent(player, EventNames.ClientEntryOptions, JsonConvert.SerializeObject(allowed));
+        }
+
+        private static void HandOverProfile(dynamic deferrals, PlayerData data)
+        {
+            try
+            {
+                var agency = data.Department == Department.None
+                    ? string.Empty
+                    : ConfigManager.Territories.FindAgency(data.Agency)?.Name ?? data.Department.ToString();
+
+                deferrals.handover(new Dictionary<string, object>
+                {
+                    ["fiveprs"] = new Dictionary<string, object>
+                    {
+                        ["name"]   = data.Name,
+                        ["rank"]   = data.Rank,
+                        ["agency"] = agency,
+                    },
+                });
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[FivePRS] Loading screen handover failed: {ex.Message}");
             }
         }
 

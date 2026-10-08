@@ -24,7 +24,9 @@ client_scripts {
 files {
     'nui/index.html',
     'nui/style.css',
-    'nui/app.js',
+    'nui/common.js',
+    'nui/mdt.js',
+    'nui/entry.js',
     'client/FivePRS.Core.dll',
     'client/Newtonsoft.Json.dll',
     'plugins/*.dll',

@@ -28,17 +28,14 @@ namespace FivePRS.Client
             ConfigManager.LoadSettings(      API.LoadResourceFile(res, "config/settings.json"));
             ConfigManager.LoadPoliceVehicles( API.LoadResourceFile(res, "config/police_vehicles.json"));
             ConfigManager.LoadPoliceLoadouts( API.LoadResourceFile(res, "config/police_loadouts.json"));
-            ConfigManager.LoadJurisdictions(  API.LoadResourceFile(res, "config/jurisdictions.json"));
 
             EventHandlers[EventNames.ClientReceivePlayerData] += new Action<string>(OnReceivePlayerData);
             EventHandlers[EventNames.ClientDutyStatusChanged] += new Action<bool, int>(OnDutyStatusChanged);
-            EventHandlers[EventNames.ClientCalloutOffered]    += new Action<string>(OnCalloutOffered);
+            EventHandlers[EventNames.ClientCalloutStarted]    += new Action<string>(OnCalloutStarted);
             EventHandlers[EventNames.ClientRankedUp]          += new Action<int>(OnRankedUp);
-            EventHandlers[EventNames.ClientEndCallout]        += new Action(() => CalloutDispatcher.EndCalloutPressed = true);
 
             API.RegisterCommand("duty",      new Action<int, List<object>, string>(OnDutyCommand),    false);
             API.RegisterCommand("setdept",   new Action<int, List<object>, string>(OnSetDeptCommand), false);
-            API.RegisterCommand("setagency", new Action<int, List<object>, string>(OnSetAgencyCommand), false);
 
             API.RegisterCommand("er_accept",  new Action<int, List<object>, string>((_, __, ___) =>
             {
@@ -74,9 +71,8 @@ namespace FivePRS.Client
             API.RegisterCommand("er_profile", new Action<int, List<object>, string>((_, __, ___) =>
             {
                 var d = LocalPlayerData;
-                var agency = ConfigManager.Territories.FindAgency(d.Agency)?.Name ?? d.Department.ToString();
                 ShowNotification(
-                    $"~b~{d.Name}~w~ | {agency} | Rank {d.Rank}~n~~g~XP: {d.XP} / {d.XPToNextRank}");
+                    $"~b~{d.Name}~w~ | {d.Department} | Rank {d.Rank}~n~~g~XP: {d.XP}");
             }), false);
             API.RegisterCommand("er_help", new Action<int, List<object>, string>((_, __, ___) =>
             {
@@ -84,14 +80,10 @@ namespace FivePRS.Client
                     "~y~FivePRS Commands~w~~n~" +
                     "~b~/duty~w~ — Toggle on/off duty~n~" +
                     "~b~/setdept [id]~w~ — Set department~n~" +
-                    "~b~/setagency [id]~w~ — Set agency~n~" +
                     "~b~/er_profile~w~ — View rank and XP~n~" +
                     "~b~/er_accept~w~ — Accept incoming callout~n~" +
                     "~b~/er_decline~w~ — Decline incoming callout~n~" +
                     "~b~/er_end_callout~w~ — End active callout~n~" +
-                    "~b~/er_calls~w~ — List active calls~n~" +
-                    "~b~/er_attach [id]~w~ — Respond as backup~n~" +
-                    "~b~/er_status [available|busy]~w~ — Set unit status~n~" +
                     "~b~/er_cuff~w~ — Cuff nearest suspect~n~" +
                     "~b~/er_uncuff~w~ — Release cuffed suspect~n~" +
                     "~b~/er_escort~w~ — Place suspect in your vehicle");
@@ -154,7 +146,7 @@ namespace FivePRS.Client
             ShowNotification($"~g~RANK UP!~w~ You are now Rank {newRank}. Keep it up!");
         }
 
-        private void OnCalloutOffered(string calloutJson)
+        private void OnCalloutStarted(string calloutJson)
         {
             try
             {
@@ -212,32 +204,6 @@ namespace FivePRS.Client
             }
 
             TriggerServerEvent(EventNames.ServerSetDepartment, deptId);
-        }
-
-        private void OnSetAgencyCommand(int source, List<object> args, string raw)
-        {
-            if (!_profileLoaded)
-            {
-                ShowNotification("~r~Your profile hasn't loaded yet. Please wait.");
-                return;
-            }
-
-            var agencies = ConfigManager.Territories.AgenciesFor(LocalPlayerData.Department).ToList();
-            if (agencies.Count == 0)
-            {
-                ShowNotification($"~r~{LocalPlayerData.Department} has no agencies configured.");
-                return;
-            }
-
-            var agencyId = args.Count > 0 ? args[0]?.ToString() : null;
-            if (string.IsNullOrEmpty(agencyId))
-            {
-                var options = agencies.Select(a => $"~b~{a.Id}~w~ {a.Name}");
-                ShowNotification("~r~Usage: ~w~/setagency [id]~n~" + string.Join("~n~", options));
-                return;
-            }
-
-            TriggerServerEvent(EventNames.ServerSetAgency, agencyId);
         }
 
         private static string DepartmentOptions()

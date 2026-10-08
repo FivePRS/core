@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 
 namespace FivePRS.Core.Config
 {
@@ -24,5 +24,8 @@ namespace FivePRS.Core.Config
 
         [JsonProperty("noCalloutRetrySeconds")]
         public int NoCalloutRetrySeconds { get; set; } = 30;
+
+        [JsonProperty("showEntryScreen")]
+        public bool ShowEntryScreen { get; set; } = true;
     }
 }

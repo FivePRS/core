@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>FivePRS</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true">
+    <div class="topo"></div>
+    <div class="siren siren-red"></div>
+    <div class="siren siren-blue"></div>
+  </div>
+
+  <div class="lightbar" aria-hidden="true"></div>
+
+  <main class="content">
+    <p id="server-name" class="eyebrow"></p>
+    <h1 class="wordmark">five<span class="red">p</span><span class="blue">rs</span></h1>
+    <p class="tagline">FiveM Public Response System</p>
+
+    <section id="welcome" class="welcome" hidden>
+      <p class="welcome-title">Welcome back, <span id="welcome-name"></span></p>
+      <p id="welcome-detail" class="welcome-detail"></p>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p id="tip" class="tip"></p>
+    <div class="progress" aria-hidden="true"><div id="progress-bar" class="progress-bar"></div></div>
+    <div class="status">
+      <span id="status-text">Connecting</span>
+      <span id="status-percent">0%</span>
+    </div>
+  </footer>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

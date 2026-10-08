@@ -6,6 +6,43 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <div id="entry" class="entry" hidden>
+    <div class="entry-card" role="dialog" aria-labelledby="entry-title">
+      <div class="lightbar" aria-hidden="true"></div>
+
+      <p class="panel-title">FivePRS</p>
+      <h1 id="entry-title" class="entry-title"></h1>
+
+      <div class="entry-profile">
+        <div>
+          <p class="entry-label">Rank</p>
+          <p id="entry-rank" class="entry-rank"></p>
+        </div>
+        <div class="entry-xp">
+          <div class="entry-xp-head">
+            <p class="entry-label">Experience</p>
+            <p id="entry-xp" class="entry-label"></p>
+          </div>
+          <div class="xp-track" aria-hidden="true"><div id="entry-xp-bar" class="xp-bar"></div></div>
+        </div>
+      </div>
+
+      <p class="panel-title entry-section">Department</p>
+      <div id="entry-departments" class="option-row"></div>
+
+      <p id="entry-agency-title" class="panel-title entry-section">Agency</p>
+      <div id="entry-agencies" class="option-grid"></div>
+
+      <p id="entry-empty" class="entry-message" hidden>No departments are available to you on this server.</p>
+      <p id="entry-error" class="entry-message entry-error" hidden></p>
+
+      <div class="entry-actions">
+        <button id="entry-civilian" type="button" class="button">Continue as civilian</button>
+        <button id="entry-enter" type="button" class="button primary">Go on duty</button>
+      </div>
+    </div>
+  </div>
+
   <div id="mdt" class="mdt" hidden>
     <header class="mdt-header">
       <div class="lightbar" aria-hidden="true"></div>
@@ -73,6 +110,8 @@
     </main>
   </div>
 
-  <script src="app.js"></script>
+  <script src="common.js"></script>
+  <script src="mdt.js"></script>
+  <script src="entry.js"></script>
 </body>
 </html>
