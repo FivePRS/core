@@ -9,6 +9,7 @@ license 'AGPL-3.0-or-later'
 version '1.0.0'
 
 loadscreen 'index.html'
+loadscreen_cursor 'yes'
 
 files {
     'index.html',
@@ -17,4 +18,6 @@ files {
     'app.js',
     'topo.svg',
     'Magz.otf',
+    'music/*.mp3',
+    'music/*.ogg',
 }

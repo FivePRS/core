@@ -202,9 +202,9 @@ namespace FivePRS.Police.Callouts
             API.TaskCombatPed(_aggressor.Handle, Game.PlayerPed.Handle, 0, 16);
 
             ClientBrain.ShowNotification(
-                "~r~Aggressor resisting~w~ | Subdue and ~b~/er_cuff~w~.");
+                $"~r~Aggressor resisting~w~ | Subdue and press {Binds.Cuff}.");
 
-            await WaitForArrestAsync(_aggressor, ct, "Subdue the suspect, then type ~b~/er_cuff~w~ to arrest");
+            await WaitForArrestAsync(_aggressor, ct, $"Subdue the suspect, then press {Binds.Cuff} to arrest");
         }
 
         private async Task ArmedOutcomeAsync(CancellationToken ct)
@@ -229,9 +229,9 @@ namespace FivePRS.Police.Callouts
             API.TaskCombatPed(_aggressor.Handle, Game.PlayerPed.Handle, 0, 16);
 
             ClientBrain.ShowNotification(
-                "~r~WEAPON RAISED~w~ | Tase or shoot to disarm — then ~b~/er_cuff~w~.");
+                $"~r~WEAPON RAISED~w~ | Tase or shoot to disarm, then press {Binds.Cuff}.");
 
-            await WaitForArrestAsync(_aggressor, ct, "Subdue the suspect, then type ~b~/er_cuff~w~ to arrest");
+            await WaitForArrestAsync(_aggressor, ct, $"Subdue the suspect, then press {Binds.Cuff} to arrest");
         }
 
         public override void OnUpdate()

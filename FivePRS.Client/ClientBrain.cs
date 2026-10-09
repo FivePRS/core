@@ -10,6 +10,7 @@ using FivePRS.Client.Callouts;
 using FivePRS.Core.Config;
 using FivePRS.Core.Events;
 using FivePRS.Core.Models;
+using FivePRS.Core.Text;
 using Newtonsoft.Json;
 
 namespace FivePRS.Client
@@ -17,8 +18,6 @@ namespace FivePRS.Client
     public class ClientBrain : BaseScript
     {
         public static PlayerData LocalPlayerData { get; private set; } = new();
-
-        private bool _profileLoaded = false;
 
         public ClientBrain()
         {
@@ -35,10 +34,6 @@ namespace FivePRS.Client
             EventHandlers[EventNames.ClientCalloutOffered]    += new Action<string>(OnCalloutOffered);
             EventHandlers[EventNames.ClientRankedUp]          += new Action<int>(OnRankedUp);
             EventHandlers[EventNames.ClientEndCallout]        += new Action(() => CalloutDispatcher.EndCalloutPressed = true);
-
-            API.RegisterCommand("duty",      new Action<int, List<object>, string>(OnDutyCommand),    false);
-            API.RegisterCommand("setdept",   new Action<int, List<object>, string>(OnSetDeptCommand), false);
-            API.RegisterCommand("setagency", new Action<int, List<object>, string>(OnSetAgencyCommand), false);
 
             API.RegisterCommand("er_accept",  new Action<int, List<object>, string>((_, __, ___) =>
             {
@@ -82,9 +77,7 @@ namespace FivePRS.Client
             {
                 ShowNotification(
                     "~y~FivePRS Commands~w~~n~" +
-                    "~b~/duty~w~ — Toggle on/off duty~n~" +
-                    "~b~/setdept [id]~w~ — Set department~n~" +
-                    "~b~/setagency [id]~w~ — Set agency~n~" +
+                    "~b~/duty~w~ — Choose department, agency and callsign, or go off duty~n~" +
                     "~b~/er_profile~w~ — View rank and XP~n~" +
                     "~b~/er_accept~w~ — Accept incoming callout~n~" +
                     "~b~/er_decline~w~ — Decline incoming callout~n~" +
@@ -97,7 +90,6 @@ namespace FivePRS.Client
                     "~b~/er_escort~w~ — Place suspect in your vehicle");
             }), false);
 
-            API.RegisterKeyMapping("duty",          "FivePRS: Toggle on/off duty",          "keyboard", "F5");
             API.RegisterKeyMapping("er_accept",      "FivePRS: Accept callout",              "keyboard", "Y");
             API.RegisterKeyMapping("er_decline",     "FivePRS: Decline callout",             "keyboard", "N");
             API.RegisterKeyMapping("er_end_callout", "FivePRS: End active callout",          "keyboard", "END");
@@ -108,6 +100,7 @@ namespace FivePRS.Client
             API.RegisterKeyMapping("er_help",        "FivePRS: Show command list",           "keyboard", "");
 
             Tick += WaitForSpawnTick;
+            Tick += DrawHelpTick;
         }
 
         private async Task WaitForSpawnTick()
@@ -115,7 +108,7 @@ namespace FivePRS.Client
             if (Game.PlayerPed.Exists() && Game.PlayerPed.Handle != 0)
             {
                 Tick -= WaitForSpawnTick;
-                TriggerServerEvent(EventNames.ServerPlayerConnected);
+                ClientEvents.TriggerServer(EventNames.ServerPlayerConnected);
             }
             await Delay(500);
         }
@@ -128,11 +121,10 @@ namespace FivePRS.Client
                 if (data is null) return;
 
                 LocalPlayerData = data;
-                _profileLoaded  = true;
                 Debug.WriteLine($"[FivePRS] Profile loaded: {data.Name} | Rank {data.Rank} | {data.Department}");
 
-                if (data.Department == Department.None)
-                    ShowNotification($"~y~Welcome to FivePRS!~w~ Choose your department with ~b~/setdept~w~.~n~{DepartmentOptions()}");
+                if (!data.IsOnDuty)
+                    ShowNotification($"~y~Welcome to FivePRS!~w~ Press {Binds.Duty} to go on duty.");
             }
             catch (Exception ex)
             {
@@ -145,7 +137,7 @@ namespace FivePRS.Client
             LocalPlayerData.IsOnDuty   = isOnDuty;
             LocalPlayerData.Department = (Department)departmentId;
 
-            TriggerEvent(EventNames.LocalDutyChanged, isOnDuty, departmentId);
+            ClientEvents.TriggerLocal(EventNames.LocalDutyChanged, isOnDuty, departmentId);
         }
 
         private void OnRankedUp(int newRank)
@@ -161,7 +153,7 @@ namespace FivePRS.Client
                 _ = JsonConvert.DeserializeObject<CalloutData>(calloutJson)
                     ?? throw new InvalidOperationException("Callout JSON was null after deserialisation.");
 
-                TriggerEvent(EventNames.LocalCalloutReceived, calloutJson);
+                ClientEvents.TriggerLocal(EventNames.LocalCalloutReceived, calloutJson);
             }
             catch (Exception ex)
             {
@@ -169,105 +161,45 @@ namespace FivePRS.Client
             }
         }
 
-        private void OnDutyCommand(int source, List<object> args, string raw)
-        {
-            if (!_profileLoaded)
-            {
-                ShowNotification("~r~Your profile hasn't loaded yet. Please wait.");
-                return;
-            }
-
-            if (!LocalPlayerData.IsOnDuty)
-            {
-                var dept = LocalPlayerData.Department;
-                if (dept == Department.None)
-                {
-                    ShowNotification($"~r~No department selected.~w~ Use ~b~/setdept~w~ first.~n~{DepartmentOptions()}");
-                    return;
-                }
-                if (!BaseAgency.IsDepartmentLoaded(dept))
-                {
-                    ShowNotification($"~r~The {dept} module is not installed on this server.");
-                    return;
-                }
-            }
-
-            TriggerServerEvent(EventNames.ServerToggleDuty);
-        }
-
-        private void OnSetDeptCommand(int source, List<object> args, string raw)
-        {
-            if (args.Count < 1 || !int.TryParse(args[0]?.ToString(), out int deptId)
-                || !Enum.IsDefined(typeof(Department), deptId) || deptId == (int)Department.None)
-            {
-                ShowNotification($"~r~Usage: ~w~/setdept [id]~n~{DepartmentOptions()}");
-                return;
-            }
-
-            var dept = (Department)deptId;
-            if (!BaseAgency.IsDepartmentLoaded(dept))
-            {
-                ShowNotification($"~r~The {dept} module is not installed on this server.~n~{DepartmentOptions()}");
-                return;
-            }
-
-            TriggerServerEvent(EventNames.ServerSetDepartment, deptId);
-        }
-
-        private void OnSetAgencyCommand(int source, List<object> args, string raw)
-        {
-            if (!_profileLoaded)
-            {
-                ShowNotification("~r~Your profile hasn't loaded yet. Please wait.");
-                return;
-            }
-
-            var agencies = ConfigManager.Territories.AgenciesFor(LocalPlayerData.Department).ToList();
-            if (agencies.Count == 0)
-            {
-                ShowNotification($"~r~{LocalPlayerData.Department} has no agencies configured.");
-                return;
-            }
-
-            var agencyId = args.Count > 0 ? args[0]?.ToString() : null;
-            if (string.IsNullOrEmpty(agencyId))
-            {
-                var options = agencies.Select(a => $"~b~{a.Id}~w~ {a.Name}");
-                ShowNotification("~r~Usage: ~w~/setagency [id]~n~" + string.Join("~n~", options));
-                return;
-            }
-
-            TriggerServerEvent(EventNames.ServerSetAgency, agencyId);
-        }
-
-        private static string DepartmentOptions()
-        {
-            var options = Enum.GetValues(typeof(Department))
-                .Cast<Department>()
-                .Where(d => d != Department.None && BaseAgency.IsDepartmentLoaded(d))
-                .Select(d => $"~b~{(int)d}~w~={d}");
-            return "Available: " + string.Join("  ", options);
-        }
-
         public static void ShowNotification(string message)
         {
-            API.SetNotificationTextEntry("STRING");
+            API.SetNotificationTextEntry(LongTextEntry);
             AddLongText(message);
             API.DrawNotification(false, true);
         }
 
         public static void ShowHelp(string message, int durationMs)
         {
-            API.BeginTextCommandDisplayHelp("STRING");
-            AddLongText(message);
-            API.EndTextCommandDisplayHelp(0, false, false, durationMs);
+            _helpText  = message;
+            _helpUntil = API.GetGameTimer() + Math.Max(durationMs, MinHelpDurationMs);
         }
+
+        private Task DrawHelpTick()
+        {
+            if (_helpText is null) return Delay(50);
+
+            if (API.GetGameTimer() > _helpUntil)
+            {
+                _helpText = null;
+                return Delay(50);
+            }
+
+            API.BeginTextCommandDisplayHelp(LongTextEntry);
+            AddLongText(_helpText);
+            API.EndTextCommandDisplayHelp(0, false, false, -1);
+            return Task.FromResult(0);
+        }
+
+        private const string LongTextEntry = "CELL_EMAIL_BCON";
+        private const int MinHelpDurationMs = 100;
+
+        private static string? _helpText;
+        private static int _helpUntil;
 
         private static void AddLongText(string text)
         {
-            const int ChunkSize = 64;
-            for (var i = 0; i < text.Length; i += ChunkSize)
-                API.AddTextComponentSubstringPlayerName(text.Substring(i, Math.Min(ChunkSize, text.Length - i)));
+            foreach (var part in GameText.SplitComponents(text))
+                API.AddTextComponentSubstringPlayerName(part);
         }
     }
 }

@@ -47,9 +47,7 @@ namespace FivePRS.Server
 
             EventHandlers[EventNames.ServerPlayerConnected]  += new Action<Player>(OnPlayerReady);
             EventHandlers[EventNames.ServerToggleDuty]       += new Action<Player>(OnToggleDuty);
-            EventHandlers[EventNames.ServerSetDepartment]    += new Action<Player, int>(OnSetDepartment);
-            EventHandlers[EventNames.ServerSetAgency]        += new Action<Player, string>(OnSetAgency);
-            EventHandlers[EventNames.ServerEnterService]     += new Action<Player, int, string>(OnEnterService);
+            EventHandlers[EventNames.ServerEnterService]     += new Action<Player, int, string, string>(OnEnterService);
             EventHandlers[EventNames.ServerRegisterCallouts] += new Action<Player, string>(OnRegisterCallouts);
             EventHandlers[EventNames.ServerCalloutResponse]  += new Action<Player, string, int, float, float, float>(OnCalloutResponse);
             EventHandlers[EventNames.ServerCalloutEnded]     += new Action<Player, string, int>(OnCalloutEnded);
@@ -150,7 +148,7 @@ namespace FivePRS.Server
             }
         }
 
-        private async void OnEnterService([FromSource] Player player, int departmentId, string agencyId)
+        private async void OnEnterService([FromSource] Player player, int departmentId, string agencyId, string callsign)
         {
             if (!TryGetCached(player, out var license, out var data) || data.IsOnDuty) return;
             if (!Enum.IsDefined(typeof(Department), departmentId) || departmentId == (int)Department.None) return;
@@ -163,9 +161,23 @@ namespace FivePRS.Server
                 return;
             }
 
+            if (!Callsign.TryNormalize(callsign, out var normalizedCallsign))
+            {
+                TriggerClientEvent(player, EventNames.ClientEntryRejected,
+                    $"Callsigns can be up to {Callsign.MaxLength} letters, numbers or hyphens.");
+                return;
+            }
+
+            if (normalizedCallsign.Length > 0 && _dispatch.IsCallsignTaken(normalizedCallsign, ServerId(player)))
+            {
+                TriggerClientEvent(player, EventNames.ClientEntryRejected, $"Callsign {normalizedCallsign} is already in use.");
+                return;
+            }
+
             try
             {
                 var agency = ConfigManager.Territories.ResolveAgency(department, agencyId)?.Id ?? string.Empty;
+                data.Callsign = normalizedCallsign;
 
                 if (data.Department != department)
                 {
@@ -249,59 +261,6 @@ namespace FivePRS.Server
             catch (Exception ex)
             {
                 Debug.WriteLine($"[FivePRS] Error toggling duty for {player.Name}: {ex.Message}");
-            }
-        }
-
-        private async void OnSetDepartment([FromSource] Player player, int departmentId)
-        {
-            if (!Enum.IsDefined(typeof(Department), departmentId) || departmentId == (int)Department.None) return;
-            if (!TryGetCached(player, out var license, out var data)) return;
-
-            var department = (Department)departmentId;
-            if (!_permissions.CanJoinDepartment(player.Handle, department))
-            {
-                Notify(player, $"~r~You are not authorised to join {department}.");
-                Audit(AuditActions.PermissionDenied, player, license, $"department {department}");
-                return;
-            }
-
-            try
-            {
-                await ChangeDepartmentAsync(player, data, department);
-                Audit(AuditActions.DepartmentSet, player, license, department.ToString());
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[FivePRS] Error setting department for {player.Name}: {ex.Message}");
-            }
-        }
-
-        private async void OnSetAgency([FromSource] Player player, string agencyId)
-        {
-            if (!TryGetCached(player, out var license, out var data)) return;
-
-            var agency = ConfigManager.Territories.FindAgency(agencyId);
-            if (agency is null || agency.Department != data.Department)
-            {
-                Notify(player, $"~r~Unknown agency '{agencyId}' for {data.Department}.");
-                return;
-            }
-
-            try
-            {
-                if (data.IsOnDuty)
-                    await SetDutyAsync(player, data, false);
-
-                data.Agency = agency.Id;
-                await _db.SavePlayerAsync(data);
-                SendPlayerData(player, data);
-
-                Notify(player, $"~g~You are now with the {agency.Name}.");
-                Audit(AuditActions.AgencySet, player, license, agency.Id);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[FivePRS] Error setting agency for {player.Name}: {ex.Message}");
             }
         }
 
@@ -401,7 +360,7 @@ namespace FivePRS.Server
             data.IsOnDuty = onDuty;
 
             if (onDuty)
-                _dispatch.SetOnDuty(ServerId(player), data.Name, data.Department, data.Rank, data.Agency);
+                _dispatch.SetOnDuty(ServerId(player), data.Name, data.Department, data.Rank, data.Agency, data.Callsign);
             else
                 _dispatch.SetOffDuty(ServerId(player));
 

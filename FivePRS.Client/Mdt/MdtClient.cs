@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CitizenFX.Core;
 using CitizenFX.Core.Native;
+using FivePRS.Client.Callouts;
 using FivePRS.Client.Dispatch;
 using FivePRS.Core.Config;
 using FivePRS.Core.Events;
@@ -30,8 +31,12 @@ namespace FivePRS.Client.Mdt
             RegisterCallback("setStatus", data => SetStatus(data));
             RegisterCallback("attach",    data => Attach(data));
             RegisterCallback("waypoint",  data => Waypoint(data));
+            RegisterCallback("offerAccept",  _ => CalloutDispatcher.AcceptOffer());
+            RegisterCallback("offerDecline", _ => CalloutDispatcher.DeclineOffer());
+            RegisterCallback("endCall",      _ => CalloutDispatcher.EndActiveCall());
 
             DispatchClient.SnapshotUpdated += OnSnapshotUpdated;
+            CalloutDispatcher.StateChanged += OnCalloutStateChanged;
             EventHandlers["onClientResourceStop"] += new Action<string>(OnResourceStop);
         }
 
@@ -50,7 +55,7 @@ namespace FivePRS.Client.Mdt
             }
 
             _open = true;
-            API.SetNuiFocus(true, true);
+            NuiFocus.Take();
             Send("open", BuildView());
         }
 
@@ -59,7 +64,7 @@ namespace FivePRS.Client.Mdt
             if (!_open) return;
 
             _open = false;
-            API.SetNuiFocus(false, false);
+            NuiFocus.Release();
             Send("close", null);
         }
 
@@ -76,6 +81,12 @@ namespace FivePRS.Client.Mdt
             Send("update", BuildView());
         }
 
+        private void OnCalloutStateChanged()
+        {
+            if (_open && DispatchClient.LocalUnit is not null)
+                Send("update", BuildView());
+        }
+
         private static void SetStatus(IDictionary<string, object> data)
         {
             if (!TryGetString(data, "status", out var value) ||
@@ -85,13 +96,13 @@ namespace FivePRS.Client.Mdt
                 return;
             }
 
-            TriggerServerEvent(EventNames.ServerSetUnitStatus, (int)status);
+            ClientEvents.TriggerServer(EventNames.ServerSetUnitStatus, (int)status);
         }
 
         private static void Attach(IDictionary<string, object> data)
         {
             if (TryGetString(data, "callId", out var callId))
-                TriggerServerEvent(EventNames.ServerAttachToCall, callId);
+                ClientEvents.TriggerServer(EventNames.ServerAttachToCall, callId);
         }
 
         private static void Waypoint(IDictionary<string, object> data)
@@ -108,7 +119,7 @@ namespace FivePRS.Client.Mdt
         private void OnResourceStop(string resourceName)
         {
             if (resourceName == API.GetCurrentResourceName() && _open)
-                API.SetNuiFocus(false, false);
+                NuiFocus.Release();
         }
 
         private static object BuildView()
@@ -116,9 +127,25 @@ namespace FivePRS.Client.Mdt
             var snapshot  = DispatchClient.Snapshot;
             var self      = DispatchClient.LocalUnit;
             var map       = ConfigManager.Territories;
+            var offer     = CalloutDispatcher.PendingOffer;
+            var active    = CalloutDispatcher.ActiveCall;
 
             return new
             {
+                offer = offer is null ? null : new
+                {
+                    offer.Id,
+                    offer.Name,
+                    Code        = (int)offer.Priority,
+                    offer.Description,
+                    ExpiresInMs = Math.Max(0, CalloutDispatcher.PendingOfferExpiresAt - API.GetGameTimer()),
+                    WindowMs    = ConfigManager.Settings.AcceptWindowSeconds * 1000,
+                },
+                activeCall = active is null ? null : new
+                {
+                    active.Id,
+                    active.Name,
+                },
                 self = self is null ? null : new
                 {
                     self.ServerId,

@@ -14,8 +14,6 @@ namespace FivePRS.Core.Events
 
         public const string ServerPlayerConnected   = "FivePRS:Server:PlayerConnected";
         public const string ServerToggleDuty        = "FivePRS:Server:ToggleDuty";
-        public const string ServerSetDepartment     = "FivePRS:Server:SetDepartment";
-        public const string ServerSetAgency         = "FivePRS:Server:SetAgency";
         public const string ServerEnterService      = "FivePRS:Server:EnterService";
         public const string ServerRegisterCallouts  = "FivePRS:Server:RegisterCallouts";
         public const string ServerCalloutResponse   = "FivePRS:Server:CalloutResponse";

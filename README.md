@@ -58,17 +58,19 @@ Admin commands work from the server console or in game with `fiveprs.admin`:
 | `fprs_offduty <id>` | Force a player off duty |
 | `fprs_endcall <call id>` | Close an active call |
 
-## Joining & Entry Screen
-When a player spawns, an entry screen shows their rank and XP and lets them pick a department and agency, then go on duty or continue as a civilian. Only departments the player is permitted to join are offered. Reopen it with `/fiveprs` while off duty, or turn it off with `"showEntryScreen": false` in `config/settings.json`.
+## Going On Duty
+Press `F5` or use `/duty` to open the duty menu. It shows the player's rank and XP and lets them pick a department, agency and callsign before going on duty. Only departments the player is permitted to join are offered. Callsigns are up to 12 letters, numbers or hyphens, are saved to the player's profile, and must be unique among units on duty; leaving it blank uses the agency's default (for example `LSPD-12`). While on duty, `F5` / `/duty` takes the player off duty.
 
 ## Loading Screen
 `fiveprs_loadscreen` is an optional addon in `fiveprs_addons` with a FivePRS-branded loading screen: load progress, rotating tips and a welcome back card with the player's agency and rank. Add `ensure fiveprs_loadscreen` to `server.cfg` to use it, and set your server name and tips in its `config.js`. Leave it out if your server already has a loading screen.
+
+For background music, put `.mp3` or `.ogg` files in the addon's `music/` folder and list them under `music.tracks` in `config.js`, along with `volume` and `shuffle`. Direct links to audio files also work. No music ships with FivePRS, so only use tracks you have the rights to. Players can mute it from the button in the top-right corner, and the choice is remembered.
 
 ## Mobile Data Terminal
 On-duty units open the MDT with `F7` or `/mdt`. It shows your unit and status, every active call with its territory and assigned units, and all units on duty. From the MDT you can set your status, attach to a call as backup and set a waypoint to a call. The interface lives in `nui/` as plain HTML, CSS and JavaScript, so it can be restyled without rebuilding the resource.
 
 ## Jurisdictions
-`config/jurisdictions.json` defines territories as map polygons and the agencies that patrol them. Players choose an agency within their department with `/setagency`, and dispatch only offers calls to units inside their agency's territory. An agency with no territories is unrestricted. The bundled split (Los Santos for LSPD, Blaine County for BCSO) is a coarse default; adjust the polygons to suit your server.
+`config/jurisdictions.json` defines territories as map polygons and the agencies that patrol them. Players choose an agency within their department from the duty menu, and dispatch only offers calls to units inside their agency's territory. An agency with no territories is unrestricted. The bundled split (Los Santos for LSPD, Blaine County for BCSO) is a coarse default; adjust the polygons to suit your server.
 
 ## Agency Loadouts & Vehicles
 `config/police_loadouts.json` and `config/police_vehicles.json` define the default weapons, uniforms and patrol vehicles per rank tier. Any agency can override individual tiers under `agencies`; anything not overridden falls back to the defaults. BCSO ships with the `sheriff` and `sheriff2` vehicles.
@@ -86,3 +88,8 @@ Uniforms use freemode clothing slots by default, which keeps the player's charac
 The original model and clothing are restored when going off duty, but freemode facial customisation is not, so ped models suit servers that do not use freemode characters.
 
 Duty changes, department changes, XP awards, rank-ups, admin actions and denied permission checks are recorded in the `fiveprs_audit` table.
+
+## Troubleshooting
+**`Could not load assembly Windows` / `Microsoft.Windows.SDK.NET` stack traces on start.** These appear once each time the resource starts with SQLite and are harmless. `Microsoft.Data.Sqlite` checks whether it is running as a Windows Store app by looking for those assemblies; FiveM logs each failed lookup with a full stack trace, then SQLite carries on normally. Startup succeeded if `[FivePRS] Database (SQLite) ready.` follows them. MySQL does not produce these messages.
+
+**`Could not load native SQLite` or `DllNotFoundException: e_sqlite3`.** The resource's `server/` folder must contain `e_sqlite3.dll` (Windows) or `libe_sqlite3.so` (Linux). Re-extract `fiveprs.zip` rather than copying individual DLLs.

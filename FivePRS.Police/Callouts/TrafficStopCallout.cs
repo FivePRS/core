@@ -315,9 +315,9 @@ namespace FivePRS.Police.Callouts
             await TaskManager.AssignTaskAsync(_driver, PedTaskType.PutHandsUp);
 
             ClientBrain.ShowNotification(
-                "~o~SUSPECT COMPLYING~w~ | Driver has a warrant, type ~b~/er_cuff~w~ to arrest.");
+                $"~o~SUSPECT COMPLYING~w~ | Driver has a warrant, press {Binds.Cuff} to arrest.");
 
-            await WaitForArrestAsync(_driver, ct, "Type ~b~/er_cuff~w~ to arrest the driver");
+            await WaitForArrestAsync(_driver, ct, $"Press {Binds.Cuff} to arrest the driver");
         }
 
         private async Task RunPursuitLoopAsync(CancellationToken ct)

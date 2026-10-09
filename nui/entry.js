@@ -1,5 +1,6 @@
 const entry = document.getElementById("entry");
 const enterButton = document.getElementById("entry-enter");
+const callsignInput = document.getElementById("entry-callsign");
 let entryView = null;
 let selectedDepartment = null;
 let selectedAgency = null;
@@ -47,6 +48,8 @@ function renderEntry() {
   );
 
   const agencies = departmentById(selectedDepartment)?.agencies ?? [];
+  const agency = agencies.find((item) => item.id === selectedAgency);
+  callsignInput.placeholder = `${agency?.callsignPrefix || "UNIT"}-ID`;
   document.getElementById("entry-agency-title").hidden = agencies.length === 0;
   document.getElementById("entry-agencies").replaceChildren(
     ...agencies.map((agency) =>
@@ -71,6 +74,8 @@ screens.entry = {
     entering = false;
     selectedAgency = payload.agencyId || null;
     selectDepartment(departmentById(payload.departmentId) ? payload.departmentId : payload.departments[0]?.id);
+    callsignInput.value = payload.callsign ?? "";
+    callsignInput.maxLength = payload.callsignMaxLength ?? 12;
     showError(null);
     entry.hidden = false;
     renderEntry();
@@ -96,14 +101,28 @@ entry.addEventListener("click", (event) => {
   } else if (target.dataset.agency) {
     selectedAgency = target.dataset.agency;
     renderEntry();
-  } else if (target.id === "entry-civilian") {
+  } else if (target.id === "entry-cancel") {
     post("entryClose");
   } else if (target.id === "entry-enter") {
     entering = true;
     showError(null);
     renderEntry();
-    post("entryEnter", { departmentId: selectedDepartment, agencyId: selectedAgency ?? "" });
+    post("entryEnter", {
+      departmentId: selectedDepartment,
+      agencyId: selectedAgency ?? "",
+      callsign: callsignInput.value.trim(),
+    });
   }
+});
+
+callsignInput.addEventListener("input", () => {
+  const cleaned = callsignInput.value.toUpperCase().replace(/[^A-Z0-9-]/g, "");
+  if (cleaned !== callsignInput.value) callsignInput.value = cleaned;
+  showError(null);
+});
+
+callsignInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && !enterButton.disabled) enterButton.click();
 });
 
 document.addEventListener("keydown", (event) => {

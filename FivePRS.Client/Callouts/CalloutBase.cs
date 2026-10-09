@@ -96,9 +96,10 @@ namespace FivePRS.Client.Callouts
             return pool[rng.Next(pool.Count)];
         }
 
-        protected async Task WaitForArrestAsync(Ped suspect, CancellationToken ct, string prompt = "Type ~b~/er_cuff~w~ to arrest the suspect")
+        protected async Task WaitForArrestAsync(Ped suspect, CancellationToken ct, string? prompt = null)
         {
             const int PollMs = 250;
+            var help = prompt ?? $"Press {Binds.Cuff} to arrest the suspect";
 
             ArrestManager.RegisterSuspect(suspect);
 
@@ -118,7 +119,7 @@ namespace FivePRS.Client.Callouts
                     return;
                 }
 
-                ClientBrain.ShowHelp(prompt, PollMs + 50);
+                ClientBrain.ShowHelp(help, PollMs + 50);
                 await Timing.WaitAsync(PollMs, ct);
             }
         }
@@ -150,7 +151,7 @@ namespace FivePRS.Client.Callouts
                 if (dist <= catchDistM)
                 {
                     await TaskManager.AssignTaskAsync(suspect, PedTaskType.PutHandsUp);
-                    ClientBrain.ShowNotification("~g~Suspect cornered~w~ | Type ~b~/er_cuff~w~ to arrest.");
+                    ClientBrain.ShowNotification($"~g~Suspect cornered~w~ | Press {Binds.Cuff} to arrest.");
                     await WaitForArrestAsync(suspect, ct);
                     return;
                 }

@@ -38,6 +38,7 @@ namespace FivePRS.Server.Database
                     xp          INTEGER DEFAULT 0,
                     rank_level  INTEGER DEFAULT 1,
                     agency      TEXT    NOT NULL DEFAULT '',
+                    callsign    TEXT    NOT NULL DEFAULT '',
                     last_seen   TEXT    DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
                 );
 
@@ -56,6 +57,7 @@ namespace FivePRS.Server.Database
             await cmd.ExecuteNonQueryAsync();
 
             await EnsureColumnAsync(conn, "ers_players", "agency", "TEXT NOT NULL DEFAULT ''");
+            await EnsureColumnAsync(conn, "ers_players", "callsign", "TEXT NOT NULL DEFAULT ''");
         }
 
         public async Task<PlayerData?> GetPlayerAsync(string license)
@@ -65,7 +67,7 @@ namespace FivePRS.Server.Database
 
             using var cmd = conn.CreateCommand();
             cmd.CommandText = @"
-                SELECT license, name, department, is_on_duty, xp, rank_level, last_seen, agency
+                SELECT license, name, department, is_on_duty, xp, rank_level, last_seen, agency, callsign
                 FROM ers_players WHERE license = $license LIMIT 1;";
             cmd.Parameters.AddWithValue("$license", license);
 
@@ -83,6 +85,7 @@ namespace FivePRS.Server.Database
                 LastSeen   = DateTime.TryParse(reader.GetString(6), CultureInfo.InvariantCulture,
                     DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out var dt) ? dt : DateTime.UtcNow,
                 Agency     = reader.GetString(7),
+                Callsign   = reader.GetString(8),
             };
         }
 
@@ -93,12 +96,13 @@ namespace FivePRS.Server.Database
 
             using var cmd = conn.CreateCommand();
             cmd.CommandText = @"
-                INSERT INTO ers_players (license, name, department, agency, is_on_duty, xp, rank_level, last_seen)
-                VALUES ($license, $name, $dept, $agency, $onDuty, $xp, $rank, $seen)
+                INSERT INTO ers_players (license, name, department, agency, callsign, is_on_duty, xp, rank_level, last_seen)
+                VALUES ($license, $name, $dept, $agency, $callsign, $onDuty, $xp, $rank, $seen)
                 ON CONFLICT(license) DO UPDATE SET
                     name       = excluded.name,
                     department = excluded.department,
                     agency     = excluded.agency,
+                    callsign   = excluded.callsign,
                     is_on_duty = excluded.is_on_duty,
                     xp         = excluded.xp,
                     rank_level = excluded.rank_level,
@@ -108,6 +112,7 @@ namespace FivePRS.Server.Database
             cmd.Parameters.AddWithValue("$name",    player.Name);
             cmd.Parameters.AddWithValue("$dept",    (int)player.Department);
             cmd.Parameters.AddWithValue("$agency",  player.Agency);
+            cmd.Parameters.AddWithValue("$callsign", player.Callsign);
             cmd.Parameters.AddWithValue("$onDuty",  player.IsOnDuty ? 1 : 0);
             cmd.Parameters.AddWithValue("$xp",      player.XP);
             cmd.Parameters.AddWithValue("$rank",    player.Rank);

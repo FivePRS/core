@@ -19,6 +19,7 @@
     <PackageReference Include="Microsoft.Data.Sqlite" Version="6.0.36" />
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" ExcludeAssets="runtime" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.13" />
+    <PackageReference Include="SQLitePCLRaw.provider.dynamic_cdecl" Version="2.1.13" />
     <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="2.1.13" GeneratePathProperty="true" />
   </ItemGroup>
 

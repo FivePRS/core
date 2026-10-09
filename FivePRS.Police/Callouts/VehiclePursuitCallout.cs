@@ -222,7 +222,7 @@ namespace FivePRS.Police.Callouts
             await Timing.WaitAsync(1_500, ct);
 
             await TaskManager.AssignTaskAsync(driver, PedTaskType.PutHandsUp);
-            ClientBrain.ShowNotification("~g~Suspect surrendering~w~ | Approach and ~b~/er_cuff~w~ to arrest.");
+            ClientBrain.ShowNotification($"~g~Suspect surrendering~w~ | Approach and press {Binds.Cuff} to arrest.");
 
             await WaitForArrestAsync(driver, ct);
         }

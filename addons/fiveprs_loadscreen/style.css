@@ -187,6 +187,47 @@ body {
   text-overflow: ellipsis;
 }
 
+.music-toggle {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(12, 16, 25, 0.75);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.music-toggle:hover,
+.music-toggle:focus-visible {
+  color: var(--text);
+  border-color: rgba(255, 255, 255, 0.25);
+  outline: none;
+}
+
+.music-toggle svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.music-toggle .waves,
+.music-toggle .muted-x {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .siren { animation: none; }
   .tip, .progress-bar { transition: none; }

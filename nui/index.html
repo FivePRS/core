@@ -33,11 +33,15 @@
       <p id="entry-agency-title" class="panel-title entry-section">Agency</p>
       <div id="entry-agencies" class="option-grid"></div>
 
+      <label for="entry-callsign" class="panel-title entry-section entry-field-label">Callsign</label>
+      <input id="entry-callsign" class="entry-input" type="text" autocomplete="off" spellcheck="false">
+      <p class="entry-label entry-hint">Letters, numbers and hyphens. Leave blank to use your agency's default.</p>
+
       <p id="entry-empty" class="entry-message" hidden>No departments are available to you on this server.</p>
       <p id="entry-error" class="entry-message entry-error" hidden></p>
 
       <div class="entry-actions">
-        <button id="entry-civilian" type="button" class="button">Continue as civilian</button>
+        <button id="entry-cancel" type="button" class="button">Cancel</button>
         <button id="entry-enter" type="button" class="button primary">Go on duty</button>
       </div>
     </div>
@@ -68,6 +72,25 @@
           <div><dt>Area</dt><dd id="self-territory"></dd></div>
           <div><dt>Assigned call</dt><dd id="self-call"></dd></div>
         </dl>
+
+        <div id="offer" class="call-card offer" hidden>
+          <p class="panel-title">Incoming call</p>
+          <p id="offer-title" class="call-card-title"></p>
+          <p id="offer-description" class="muted call-card-detail"></p>
+          <div class="offer-track" aria-hidden="true"><div id="offer-bar" class="offer-bar"></div></div>
+          <div class="call-card-actions">
+            <button id="offer-accept" type="button" class="button primary" data-action="offer-accept">Accept</button>
+            <button type="button" class="button" data-action="offer-decline">Decline</button>
+          </div>
+        </div>
+
+        <div id="active-call" class="call-card" hidden>
+          <p class="panel-title">Active call</p>
+          <p id="active-title" class="call-card-title"></p>
+          <div class="call-card-actions">
+            <button type="button" class="button danger" data-action="end-call">End call</button>
+          </div>
+        </div>
 
         <p class="panel-title">Set status</p>
         <div class="status-buttons">

@@ -29,6 +29,7 @@ namespace FivePRS.Server.Database
                     `xp`          INT UNSIGNED  DEFAULT 0,
                     `rank_level`  TINYINT UNSIGNED DEFAULT 1,
                     `agency`      VARCHAR(40)  NOT NULL DEFAULT '',
+                    `callsign`    VARCHAR(16)  NOT NULL DEFAULT '',
                     `last_seen`   DATETIME     DEFAULT CURRENT_TIMESTAMP
                                                ON UPDATE CURRENT_TIMESTAMP,
                     PRIMARY KEY (`license`)
@@ -49,6 +50,7 @@ namespace FivePRS.Server.Database
             await cmd.ExecuteNonQueryAsync();
 
             await EnsureColumnAsync(conn, "ers_players", "agency", "VARCHAR(40) NOT NULL DEFAULT ''");
+            await EnsureColumnAsync(conn, "ers_players", "callsign", "VARCHAR(16) NOT NULL DEFAULT ''");
         }
 
         public async Task<PlayerData?> GetPlayerAsync(string license)
@@ -58,7 +60,7 @@ namespace FivePRS.Server.Database
 
             using var cmd = conn.CreateCommand();
             cmd.CommandText = @"
-                SELECT `license`, `name`, `department`, `is_on_duty`, `xp`, `rank_level`, `last_seen`, `agency`
+                SELECT `license`, `name`, `department`, `is_on_duty`, `xp`, `rank_level`, `last_seen`, `agency`, `callsign`
                 FROM `ers_players` WHERE `license` = @license LIMIT 1;";
             cmd.Parameters.AddWithValue("@license", license);
 
@@ -75,6 +77,7 @@ namespace FivePRS.Server.Database
                 Rank       = reader.GetByte("rank_level"),
                 LastSeen   = reader.GetDateTime("last_seen"),
                 Agency     = reader.GetString("agency"),
+                Callsign   = reader.GetString("callsign"),
             };
         }
 
@@ -86,13 +89,14 @@ namespace FivePRS.Server.Database
             using var cmd = conn.CreateCommand();
             cmd.CommandText = @"
                 INSERT INTO `ers_players`
-                    (`license`, `name`, `department`, `agency`, `is_on_duty`, `xp`, `rank_level`, `last_seen`)
+                    (`license`, `name`, `department`, `agency`, `callsign`, `is_on_duty`, `xp`, `rank_level`, `last_seen`)
                 VALUES
-                    (@license, @name, @department, @agency, @onDuty, @xp, @rank, UTC_TIMESTAMP())
+                    (@license, @name, @department, @agency, @callsign, @onDuty, @xp, @rank, UTC_TIMESTAMP())
                 ON DUPLICATE KEY UPDATE
                     `name`       = VALUES(`name`),
                     `department` = VALUES(`department`),
                     `agency`     = VALUES(`agency`),
+                    `callsign`   = VALUES(`callsign`),
                     `is_on_duty` = VALUES(`is_on_duty`),
                     `xp`         = VALUES(`xp`),
                     `rank_level` = VALUES(`rank_level`),
@@ -102,6 +106,7 @@ namespace FivePRS.Server.Database
             cmd.Parameters.AddWithValue("@name",       player.Name);
             cmd.Parameters.AddWithValue("@department", (byte)player.Department);
             cmd.Parameters.AddWithValue("@agency",     player.Agency);
+            cmd.Parameters.AddWithValue("@callsign",   player.Callsign);
             cmd.Parameters.AddWithValue("@onDuty",     player.IsOnDuty);
             cmd.Parameters.AddWithValue("@xp",         player.XP);
             cmd.Parameters.AddWithValue("@rank",       player.Rank);

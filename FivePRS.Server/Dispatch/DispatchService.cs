@@ -90,7 +90,7 @@ namespace FivePRS.Server.Dispatch
 
         public bool IsOnDuty(int unitId) => _units.ContainsKey(unitId);
 
-        public void SetOnDuty(int unitId, string name, Department department, int rank, string? agencyId = null)
+        public void SetOnDuty(int unitId, string name, Department department, int rank, string? agencyId = null, string? callsign = null)
         {
             SetOffDuty(unitId);
 
@@ -107,12 +107,16 @@ namespace FivePRS.Server.Dispatch
             unit.Info.Department = department;
             unit.Info.Agency     = agency?.Id ?? string.Empty;
             unit.Info.Rank       = rank;
-            unit.Info.Callsign   = $"{prefix}-{unitId}";
+            unit.Info.Callsign   = callsign is null || callsign.Length == 0 ? $"{prefix}-{unitId}" : callsign;
             unit.Info.Status     = UnitStatus.Available;
 
             _units[unitId] = unit;
             IsDirty = true;
         }
+
+        public bool IsCallsignTaken(string callsign, int exceptUnitId) =>
+            _units.Values.Any(u => u.Info.ServerId != exceptUnitId &&
+                                   string.Equals(u.Info.Callsign, callsign, StringComparison.OrdinalIgnoreCase));
 
         public void SetOffDuty(int unitId)
         {

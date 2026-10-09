@@ -24,8 +24,5 @@ namespace FivePRS.Core.Config
 
         [JsonProperty("noCalloutRetrySeconds")]
         public int NoCalloutRetrySeconds { get; set; } = 30;
-
-        [JsonProperty("showEntryScreen")]
-        public bool ShowEntryScreen { get; set; } = true;
     }
 }

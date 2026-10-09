@@ -5,6 +5,5 @@
     "postCompleteCooldownSeconds": 60,
     "postDeclineCooldownSeconds": 45,
     "postFailCooldownSeconds": 30,
-    "noCalloutRetrySeconds": 30,
-    "showEntryScreen": true
+    "noCalloutRetrySeconds": 30
 }

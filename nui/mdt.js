@@ -7,6 +7,9 @@ const statusLabels = {
 
 const root = document.getElementById("mdt");
 let view = null;
+let offerDeadline = 0;
+let offerTotalMs = 0;
+let offerTimer = null;
 
 function statusPill(status) {
   return el("span", { className: `status status-${status.toLowerCase()}`, text: statusLabels[status] ?? status });
@@ -88,8 +91,45 @@ function renderUnits(units, self) {
   setText("unit-count", `${units.length} on duty`);
 }
 
+function tickOffer() {
+  const remaining = Math.max(0, offerDeadline - Date.now());
+  const fraction = offerTotalMs > 0 ? remaining / offerTotalMs : 0;
+  document.getElementById("offer-bar").style.width = `${(fraction * 100).toFixed(1)}%`;
+  document.getElementById("offer-accept").textContent = `Accept (${Math.ceil(remaining / 1000)}s)`;
+  if (remaining <= 0) stopOfferTimer();
+}
+
+function stopOfferTimer() {
+  if (offerTimer !== null) clearInterval(offerTimer);
+  offerTimer = null;
+}
+
+function renderCallCards(offer, activeCall) {
+  const offerCard = document.getElementById("offer");
+  offerCard.hidden = !offer;
+  stopOfferTimer();
+
+  if (offer) {
+    setText("offer-title", `#${offer.id} ${offer.name} · Code ${offer.code}`);
+    setText("offer-description", offer.description || "");
+    offerTotalMs = offer.windowMs || offer.expiresInMs;
+    offerDeadline = Date.now() + offer.expiresInMs;
+    for (const button of offerCard.querySelectorAll("button")) button.disabled = false;
+    tickOffer();
+    offerTimer = setInterval(tickOffer, 250);
+  }
+
+  const activeCard = document.getElementById("active-call");
+  activeCard.hidden = !activeCall;
+  if (activeCall) {
+    setText("active-title", `#${activeCall.id} ${activeCall.name}`);
+    activeCard.querySelector("button").disabled = false;
+  }
+}
+
 function render() {
   if (!view || !view.self) return;
+  renderCallCards(view.offer, view.activeCall);
   renderSelf(view.self);
   renderCalls(view.calls ?? [], view.self);
   renderUnits(view.units ?? [], view.self);
@@ -113,6 +153,7 @@ screens.mdt = {
   },
   close() {
     root.hidden = true;
+    stopOfferTimer();
   },
 };
 
@@ -124,6 +165,13 @@ root.addEventListener("click", (event) => {
   else if (target.dataset.status) post("setStatus", { status: target.dataset.status });
   else if (target.dataset.action === "attach") post("attach", { callId: target.dataset.call });
   else if (target.dataset.action === "waypoint") post("waypoint", { callId: target.dataset.call });
+  else if (target.dataset.action === "offer-accept" || target.dataset.action === "offer-decline") {
+    for (const button of document.querySelectorAll("#offer button")) button.disabled = true;
+    post(target.dataset.action === "offer-accept" ? "offerAccept" : "offerDecline");
+  } else if (target.dataset.action === "end-call") {
+    target.disabled = true;
+    post("endCall");
+  }
 });
 
 document.addEventListener("keydown", (event) => {

@@ -272,6 +272,24 @@ namespace FivePRS.Tests
         }
 
         [Fact]
+        public void SetOnDuty_WithCallsign_UsesIt()
+        {
+            _dispatch.SetOnDuty(Officer, "Officer", Department.Police, 1, "lspd", "1-ADAM-12");
+
+            Assert.Equal("1-ADAM-12", _dispatch.GetUnit(Officer)!.Callsign);
+        }
+
+        [Fact]
+        public void IsCallsignTaken_OtherUnitHasIt_ReturnsTrue()
+        {
+            _dispatch.SetOnDuty(Officer, "Officer", Department.Police, 1, "lspd", "1-ADAM-12");
+
+            Assert.True(_dispatch.IsCallsignTaken("1-adam-12", Backup));
+            Assert.False(_dispatch.IsCallsignTaken("1-ADAM-12", Officer));
+            Assert.False(_dispatch.IsCallsignTaken("2-ADAM-12", Backup));
+        }
+
+        [Fact]
         public void SetOnDuty_AgencyFromOtherDepartment_FallsBackToDefault()
         {
             _dispatch.SetOnDuty(Officer, "Officer", Department.Police, 1, "unknown");

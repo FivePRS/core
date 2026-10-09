@@ -8,6 +8,8 @@ repository 'https://github.com/FivePRS/core'
 license 'AGPL-3.0-or-later'
 version '1.0.0'
 
+lua54 'yes'
+
 server_scripts {
     'server/FivePRS.Server.net.dll',
 }
@@ -15,6 +17,7 @@ server_scripts {
 ui_page 'nui/index.html'
 
 client_scripts {
+    'scripts/relay.lua',
     'client/FivePRS.Client.net.dll',
     'client/FivePRS.Police.net.dll',
     'plugins/*.net.dll',

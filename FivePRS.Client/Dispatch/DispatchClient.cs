@@ -25,6 +25,7 @@ namespace FivePRS.Client.Dispatch
         {
             EventHandlers[EventNames.ClientDispatchSnapshot] += new Action<string>(OnSnapshot);
             EventHandlers[EventNames.ClientNotify]           += new Action<string>(ClientBrain.ShowNotification);
+            EventHandlers[EventNames.LocalDutyChanged]       += new Action<bool, int>(OnDutyChanged);
 
             API.RegisterCommand("er_calls",  new Action<int, List<object>, string>(OnCallsCommand),  false);
             API.RegisterCommand("er_attach", new Action<int, List<object>, string>(OnAttachCommand), false);
@@ -52,6 +53,15 @@ namespace FivePRS.Client.Dispatch
             }
             _lastCallId = callId;
 
+            SnapshotUpdated?.Invoke();
+        }
+
+        private void OnDutyChanged(bool isOnDuty, int departmentId)
+        {
+            if (isOnDuty) return;
+
+            Snapshot    = new DispatchSnapshot();
+            _lastCallId = null;
             SnapshotUpdated?.Invoke();
         }
 
@@ -85,13 +95,13 @@ namespace FivePRS.Client.Dispatch
         private static void OnAttachCommand(int source, List<object> args, string raw)
         {
             var callId = args.Count > 0 ? args[0]?.ToString()?.TrimStart('#') : null;
-            if (string.IsNullOrEmpty(callId))
+            if (callId is null || callId.Length == 0)
             {
                 ClientBrain.ShowNotification("~r~Usage: ~w~/er_attach [call id]");
                 return;
             }
 
-            TriggerServerEvent(EventNames.ServerAttachToCall, callId);
+            ClientEvents.TriggerServer(EventNames.ServerAttachToCall, callId);
         }
 
         private static void OnStatusCommand(int source, List<object> args, string raw)
@@ -104,7 +114,7 @@ namespace FivePRS.Client.Dispatch
                 return;
             }
 
-            TriggerServerEvent(EventNames.ServerSetUnitStatus, (int)status);
+            ClientEvents.TriggerServer(EventNames.ServerSetUnitStatus, (int)status);
         }
     }
 }

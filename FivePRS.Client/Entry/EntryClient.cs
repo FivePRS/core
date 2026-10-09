@@ -22,7 +22,6 @@ namespace FivePRS.Client.Entry
 
         private PlayerData? _profile;
         private List<Department>? _allowed;
-        private bool _shownOnJoin;
         private bool _open;
 
         public EntryClient()
@@ -33,7 +32,8 @@ namespace FivePRS.Client.Entry
             EventHandlers[EventNames.LocalDutyChanged]        += new Action<bool, int>(OnDutyChanged);
             EventHandlers["onClientResourceStop"]             += new Action<string>(OnResourceStop);
 
-            API.RegisterCommand("fiveprs", new Action<int, List<object>, string>((_, __, ___) => OpenFromCommand()), false);
+            API.RegisterCommand("duty", new Action<int, List<object>, string>((_, __, ___) => OnDutyCommand()), false);
+            API.RegisterKeyMapping("duty", "FivePRS: Duty menu", "keyboard", "F5");
 
             RegisterCallback("entryClose", _    => Close());
             RegisterCallback("entryEnter", data => Enter(data));
@@ -53,8 +53,6 @@ namespace FivePRS.Client.Entry
 
             if (_open && _profile is not null && !_profile.IsOnDuty)
                 Send("open", BuildView());
-
-            _ = ShowOnJoinAsync();
         }
 
         private void OnEntryOptions(string json)
@@ -72,26 +70,18 @@ namespace FivePRS.Client.Entry
                 return;
             }
 
-            _ = ShowOnJoinAsync();
+            if (_open)
+                Send("open", BuildView());
         }
 
-        private async Task ShowOnJoinAsync()
+        private void OnDutyCommand()
         {
-            if (_shownOnJoin || _profile is null || _allowed is null) return;
-            _shownOnJoin = true;
+            if (_open)
+            {
+                Close();
+                return;
+            }
 
-            if (!ConfigManager.Settings.ShowEntryScreen || _profile.IsOnDuty) return;
-
-            while (API.GetIsLoadingScreenActive() || API.IsScreenFadedOut() || !Game.PlayerPed.Exists())
-                await Delay(250);
-
-            await Delay(1000);
-            if (_profile is not null && !_profile.IsOnDuty)
-                Open();
-        }
-
-        private void OpenFromCommand()
-        {
             if (_profile is null || _allowed is null)
             {
                 ClientBrain.ShowNotification("~r~Your profile hasn't loaded yet. Please wait.");
@@ -100,7 +90,7 @@ namespace FivePRS.Client.Entry
 
             if (_profile.IsOnDuty)
             {
-                ClientBrain.ShowNotification("~r~Go off duty before changing your department or agency.");
+                ClientEvents.TriggerServer(EventNames.ServerToggleDuty);
                 return;
             }
 
@@ -109,8 +99,11 @@ namespace FivePRS.Client.Entry
 
         private void Open()
         {
+            if (!_open)
+                Tick += HoldFocusAsync;
+
             _open = true;
-            API.SetNuiFocus(true, true);
+            NuiFocus.Take();
             Send("open", BuildView());
         }
 
@@ -119,11 +112,20 @@ namespace FivePRS.Client.Entry
             if (!_open) return;
 
             _open = false;
-            API.SetNuiFocus(false, false);
+            Tick -= HoldFocusAsync;
+            NuiFocus.Release();
             Send("close", null);
         }
 
-        private static void Enter(IDictionary<string, object> data)
+        private async Task HoldFocusAsync()
+        {
+            if (_open)
+                NuiFocus.EnsureTaken();
+
+            await Delay(250);
+        }
+
+        private void Enter(IDictionary<string, object> data)
         {
             if (!data.TryGetValue("departmentId", out var rawDepartment) ||
                 !int.TryParse(rawDepartment?.ToString(), out var departmentId))
@@ -131,8 +133,16 @@ namespace FivePRS.Client.Entry
                 return;
             }
 
-            var agencyId = data.TryGetValue("agencyId", out var rawAgency) ? rawAgency?.ToString() ?? string.Empty : string.Empty;
-            TriggerServerEvent(EventNames.ServerEnterService, departmentId, agencyId);
+            var agencyId    = data.TryGetValue("agencyId", out var rawAgency) ? rawAgency?.ToString() ?? string.Empty : string.Empty;
+            var rawCallsign = data.TryGetValue("callsign", out var callsignValue) ? callsignValue?.ToString() : null;
+
+            if (!Callsign.TryNormalize(rawCallsign, out var callsign))
+            {
+                Send("rejected", $"Callsigns can be up to {Callsign.MaxLength} letters, numbers or hyphens.");
+                return;
+            }
+
+            ClientEvents.TriggerServer(EventNames.ServerEnterService, departmentId, agencyId, callsign);
         }
 
         private void OnRejected(string message)
@@ -155,7 +165,7 @@ namespace FivePRS.Client.Entry
         private void OnResourceStop(string resourceName)
         {
             if (resourceName == API.GetCurrentResourceName() && _open)
-                API.SetNuiFocus(false, false);
+                NuiFocus.Release();
         }
 
         private object BuildView()
@@ -178,10 +188,12 @@ namespace FivePRS.Client.Entry
                 profile.Name,
                 profile.Rank,
                 profile.XP,
-                XpToNext     = profile.XPToNextRank,
-                DepartmentId = (int)profile.Department,
-                AgencyId     = profile.Agency,
-                Departments  = departments,
+                XpToNext          = profile.XPToNextRank,
+                DepartmentId      = (int)profile.Department,
+                AgencyId          = profile.Agency,
+                profile.Callsign,
+                CallsignMaxLength = Callsign.MaxLength,
+                Departments       = departments,
             };
         }
 

@@ -21,13 +21,19 @@ namespace FivePRS.Tests
             "IsExternalInit",
         };
 
-        public static IEnumerable<object[]> ClientAssemblies()
+        public static IEnumerable<object[]> ClientAssemblies() => ClientFiles("FivePRS.*.dll");
+
+        public static IEnumerable<object[]> AllShippedClientAssemblies() => ClientFiles("*.dll");
+
+        private static IEnumerable<object[]> ClientFiles(string pattern)
         {
             var dir = Path.Combine(RepoRoot(), "bin", "client");
             if (!Directory.Exists(dir))
                 throw new InvalidOperationException($"{dir} not found; build FivePRS.sln before running tests.");
 
-            return Directory.GetFiles(dir, "FivePRS.*.dll").Select(path => new object[] { Path.GetFileName(path) });
+            return Directory.GetFiles(dir, pattern)
+                .Where(path => !Path.GetFileName(path).StartsWith("CitizenFX.", StringComparison.Ordinal))
+                .Select(path => new object[] { Path.GetFileName(path) });
         }
 
         [Theory]
@@ -49,7 +55,7 @@ namespace FivePRS.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ClientAssemblies))]
+        [MemberData(nameof(AllShippedClientAssemblies))]
         public void ClientAssembly_HasNoAttributesOnGenericParameters(string fileName)
         {
             using var stream = File.OpenRead(Path.Combine(RepoRoot(), "bin", "client", fileName));

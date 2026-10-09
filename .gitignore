@@ -32,3 +32,5 @@ packages/
 
 *.log
 *.tmp
+
+TESTING.md

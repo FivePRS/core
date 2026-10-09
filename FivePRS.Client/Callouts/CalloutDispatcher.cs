@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CitizenFX.Core;
@@ -12,9 +13,34 @@ namespace FivePRS.Client.Callouts
 {
     public sealed class CalloutDispatcher
     {
+        private const int RegistrationBatchSize = 5;
+
         internal static volatile bool AcceptPressed;
         internal static volatile bool DeclinePressed;
         internal static volatile bool EndCalloutPressed;
+
+        public static CalloutData? PendingOffer { get; private set; }
+        public static int PendingOfferExpiresAt { get; private set; }
+        public static CalloutData? ActiveCall { get; private set; }
+
+        public static event Action? StateChanged;
+
+        public static void AcceptOffer() => AcceptPressed = true;
+        public static void DeclineOffer() => DeclinePressed = true;
+        public static void EndActiveCall() => EndCalloutPressed = true;
+
+        private static void SetOffer(CalloutData? offer, int expiresAt)
+        {
+            PendingOffer = offer;
+            PendingOfferExpiresAt = expiresAt;
+            StateChanged?.Invoke();
+        }
+
+        private static void SetActive(CalloutData? call)
+        {
+            ActiveCall = call;
+            StateChanged?.Invoke();
+        }
 
         private readonly Department _department;
         private readonly CalloutRegistry _registry;
@@ -43,7 +69,11 @@ namespace FivePRS.Client.Callouts
             _cts = new CancellationTokenSource();
 
             var definitions = _registry.GetDefinitions(_department);
-            BaseScript.TriggerServerEvent(EventNames.ServerRegisterCallouts, JsonConvert.SerializeObject(definitions));
+            for (var i = 0; i < definitions.Count; i += RegistrationBatchSize)
+            {
+                var batch = definitions.Skip(i).Take(RegistrationBatchSize).ToList();
+                ClientEvents.TriggerServer(EventNames.ServerRegisterCallouts, JsonConvert.SerializeObject(batch));
+            }
             Debug.WriteLine($"[CalloutDispatcher] Registered {definitions.Count} {_department} callout(s) with dispatch.");
         }
 
@@ -56,6 +86,8 @@ namespace FivePRS.Client.Callouts
 
             var callout = _activeCallout;
             _activeCallout = null;
+            SetOffer(null, 0);
+            SetActive(null);
             if (callout is null) return;
 
             try { callout.OnCalloutFailed(); }
@@ -127,7 +159,9 @@ namespace FivePRS.Client.Callouts
             AcceptPressed = false;
             DeclinePressed = false;
 
+            SetOffer(callout.Data, API.GetGameTimer() + ConfigManager.Settings.AcceptWindowSeconds * 1000);
             var accepted = await RunAcceptWindowAsync(ct);
+            SetOffer(null, 0);
 
             previewBlip?.Delete();
 
@@ -150,6 +184,7 @@ namespace FivePRS.Client.Callouts
             EndCalloutPressed = false;
             callout.SetState(CalloutState.Active);
             _activeCallout = callout;
+            SetActive(callout.Data);
 
             ClientBrain.ShowNotification($"~g~[ DISPATCH ]~w~ Call ~y~#{callout.Data.Id}~w~ accepted: ~b~{callout.Data.Name}");
 
@@ -179,13 +214,14 @@ namespace FivePRS.Client.Callouts
             }
 
             callout.Cleanup(finalResult == CalloutResult.Completed);
+            SetActive(null);
 
             if (ReferenceEquals(_activeCallout, callout))
             {
                 _activeCallout = null;
                 if (!ct.IsCancellationRequested)
                 {
-                    BaseScript.TriggerServerEvent(EventNames.ServerCalloutEnded, callout.Data.Id, (int)finalResult);
+                    ClientEvents.TriggerServer(EventNames.ServerCalloutEnded, callout.Data.Id, (int)finalResult);
                     _onEnded(callout, finalResult);
                 }
             }
@@ -194,7 +230,7 @@ namespace FivePRS.Client.Callouts
         }
 
         private static void Respond(string callId, OfferResponse response, Vector3 location) =>
-            BaseScript.TriggerServerEvent(EventNames.ServerCalloutResponse, callId, (int)response, location.X, location.Y, location.Z);
+            ClientEvents.TriggerServer(EventNames.ServerCalloutResponse, callId, (int)response, location.X, location.Y, location.Z);
 
         private static async Task<bool> RunAcceptWindowAsync(CancellationToken ct)
         {
@@ -208,7 +244,7 @@ namespace FivePRS.Client.Callouts
                 var remainingMs = end - API.GetGameTimer();
                 if (remainingMs <= 0) return false;
 
-                ClientBrain.ShowHelp($"~y~[ DISPATCH ]~w~ ~g~/er_accept~w~  or  ~r~/er_decline~w~ ({remainingMs / 1000 + 1}s)", -1);
+                ClientBrain.ShowHelp($"~y~[ DISPATCH ]~w~ {Binds.Accept} Accept  {Binds.Decline} Decline ({remainingMs / 1000 + 1}s)", -1);
 
                 await BaseScript.Delay(0);
             }
@@ -269,7 +305,7 @@ namespace FivePRS.Client.Callouts
 
             ClientBrain.ShowNotification(
                 $"~y~[ DISPATCH ]~w~  {codeColor}Code {(int)data.Priority}~w~  ~b~{data.Name}~w~ ~y~#{data.Id}~n~" +
-                $"{data.Description}~n~{distance}~g~/er_accept~w~   ~r~/er_decline");
+                $"{data.Description}~n~{distance}{Binds.Accept} ~g~Accept~w~   {Binds.Decline} ~r~Decline");
         }
 
         private static Blip? CreatePreviewBlip(Vector3 location, CalloutData data)

@@ -65,6 +65,84 @@ window.addEventListener("message", (event) => {
   }
 });
 
+function setupMusic() {
+  const music = config.music ?? {};
+  const tracks = (Array.isArray(music.tracks) ? music.tracks : []).filter(Boolean);
+  if (tracks.length === 0) return;
+
+  if (music.shuffle) {
+    for (let i = tracks.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [tracks[i], tracks[j]] = [tracks[j], tracks[i]];
+    }
+  }
+
+  const audio = new Audio();
+  audio.volume = Math.max(0, Math.min(1, Number(music.volume ?? 0.3)));
+  let index = 0;
+
+  const toggle = document.getElementById("music-toggle");
+  const label = document.getElementById("music-label");
+  const waves = document.getElementById("music-waves");
+  const mutedIcon = document.getElementById("music-muted");
+
+  let muted = false;
+  try {
+    muted = localStorage.getItem("fiveprs-loadscreen-muted") === "1";
+  } catch {
+    muted = false;
+  }
+
+  function render() {
+    audio.muted = muted;
+    label.textContent = muted ? "Music off" : "Music on";
+    toggle.setAttribute("aria-pressed", String(muted));
+    waves.hidden = muted;
+    mutedIcon.hidden = !muted;
+  }
+
+  function play() {
+    audio.play().catch(() => {
+      document.addEventListener("click", () => audio.play().catch(() => {}), { once: true });
+    });
+  }
+
+  function load(i) {
+    index = i % tracks.length;
+    audio.src = tracks[index];
+    play();
+  }
+
+  let failures = 0;
+  audio.addEventListener("playing", () => {
+    failures = 0;
+  });
+  audio.addEventListener("ended", () => load(index + 1));
+  audio.addEventListener("error", () => {
+    failures += 1;
+    if (failures < tracks.length) {
+      load(index + 1);
+    } else {
+      toggle.hidden = true;
+    }
+  });
+
+  toggle.addEventListener("click", (event) => {
+    event.stopPropagation();
+    muted = !muted;
+    try {
+      localStorage.setItem("fiveprs-loadscreen-muted", muted ? "1" : "0");
+    } catch {}
+    render();
+    if (!muted && audio.paused) play();
+  });
+
+  toggle.hidden = false;
+  render();
+  load(0);
+}
+
 showWelcome();
 showTip();
 setInterval(showTip, 7000);
+setupMusic();
