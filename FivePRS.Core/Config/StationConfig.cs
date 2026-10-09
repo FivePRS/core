@@ -82,8 +82,6 @@ namespace FivePRS.Core.Config
             return position is { Length: >= 3 } ? position : null;
         }
 
-        public bool HasOwnPoint(StationPoint point) => point != StationPoint.Duty && PointFor(point) is not null;
-
         public bool Serves(Department department, string? agencyId) =>
             Department == department &&
             (Agencies.Count == 0 || agencyId is null || agencyId.Length == 0 ||

@@ -33,8 +33,10 @@ namespace FivePRS.Police.Config
             Props = uniform.Props
                 .Select(p => new PropEntry { PropId = p.Slot, DrawableId = p.Drawable, TextureId = p.Texture })
                 .ToArray(),
-            MalePedModel   = NullIfEmpty(uniform.PedModels?.Male),
-            FemalePedModel = NullIfEmpty(uniform.PedModels?.Female),
+            MalePedModel           = NullIfEmpty(uniform.PedModels?.Male),
+            FemalePedModel         = NullIfEmpty(uniform.PedModels?.Female),
+            FallbackMalePedModel   = NullIfEmpty(ConfigManager.PoliceLoadouts.FallbackPedModels.Male),
+            FallbackFemalePedModel = NullIfEmpty(ConfigManager.PoliceLoadouts.FallbackPedModels.Female),
         };
 
         public static string TierName(LoadoutTier tier) => tier switch

@@ -43,7 +43,7 @@ namespace FivePRS.Tests
         }
 
         [Fact]
-        public void PointFor_FallsBackOnlyForDuty()
+        public void PointFor_ReturnsOnlyCompletePoints()
         {
             var station = new StationDef
             {
@@ -57,9 +57,6 @@ namespace FivePRS.Tests
             Assert.Equal(new[] { 4f, 5f, 6f }, station.PointFor(StationPoint.Armory));
             Assert.Null(station.PointFor(StationPoint.Locker));
             Assert.Null(station.PointFor(StationPoint.Garage));
-            Assert.True(station.HasOwnPoint(StationPoint.Armory));
-            Assert.False(station.HasOwnPoint(StationPoint.Duty));
-            Assert.False(station.HasOwnPoint(StationPoint.Garage));
         }
 
         [Fact]

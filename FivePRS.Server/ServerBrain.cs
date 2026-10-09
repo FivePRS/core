@@ -56,6 +56,8 @@ namespace FivePRS.Server
             EventHandlers[EventNames.ServerCalloutEnded]     += new Action<Player, string, int>(OnCalloutEnded);
             EventHandlers[EventNames.ServerSetUnitStatus]    += new Action<Player, int>(OnSetUnitStatus);
             EventHandlers[EventNames.ServerAttachToCall]     += new Action<Player, string>(OnAttachToCall);
+            EventHandlers[EventNames.ServerSetAiCallouts]    += new Action<Player, bool>(OnSetAiCallouts);
+            EventHandlers[EventNames.LocalServerIconResult]  += new Action<bool, string>(ServerIcon.OnDownloaded);
 
             Tick += DispatchTickAsync;
             RegisterAdminCommands();
@@ -306,6 +308,14 @@ namespace FivePRS.Server
 
             foreach (var award in _dispatch.End(ServerId(player), callId, (CalloutResult)result))
                 await AwardXpAsync(award.UnitId, award.Amount, callId);
+        }
+
+        private void OnSetAiCallouts([FromSource] Player player, bool enabled)
+        {
+            if (_dispatch.SetAiCallouts(ServerId(player), enabled))
+                Notify(player, enabled
+                    ? "Dispatch | ~g~AI callouts on.~w~ Dispatch will offer you calls again."
+                    : "Dispatch | ~o~AI callouts off.~w~ Player 911 calls still reach you.");
         }
 
         private void OnSetUnitStatus([FromSource] Player player, int status)

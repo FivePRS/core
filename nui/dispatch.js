@@ -59,6 +59,11 @@ function renderSelf(self, calls) {
   setText("self-call", self.callId ? `#${self.callId}` : "None");
   document.getElementById("self-status").replaceChildren(statusPill(self.status));
 
+  for (const button of dispatchTab.querySelectorAll("[data-ai]")) {
+    button.classList.toggle("active", button.dataset.ai === String(self.aiCallouts));
+    button.disabled = false;
+  }
+
   const leadsCall = calls.some((call) => call.isPrimary);
   for (const button of dispatchTab.querySelectorAll("[data-status]")) {
     button.classList.toggle("active", button.dataset.status === self.status);
@@ -144,6 +149,9 @@ dispatchTab.addEventListener("click", (event) => {
 
   if (target.dataset.status) {
     post("setStatus", { status: target.dataset.status });
+  } else if (target.dataset.ai) {
+    for (const button of dispatchTab.querySelectorAll("[data-ai]")) button.disabled = true;
+    post("aiCallouts", { enabled: target.dataset.ai === "true" });
   } else if (target.dataset.action === "attach") {
     post("attach", { callId: target.dataset.call });
   } else if (target.dataset.action === "clear") {

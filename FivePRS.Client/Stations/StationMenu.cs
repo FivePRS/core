@@ -68,7 +68,7 @@ namespace FivePRS.Client.Stations
         {
             var page = new MenuPage { Title = station.Name, Subtitle = ClientBrain.LocalPlayerData.Callsign };
 
-            foreach (var point in GearPoints.Where(p => !station.HasOwnPoint(p)))
+            foreach (var point in GearPoints.Where(p => !StationService.HasOwnPoint(station, p)))
                 page.Items.Add(new MenuItem { Label = point.ToString(), Submenu = () => PageFor(station, point) });
 
             page.Items.Add(new MenuItem

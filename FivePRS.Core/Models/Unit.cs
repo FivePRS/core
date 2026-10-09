@@ -19,6 +19,7 @@ namespace FivePRS.Core.Models
         public int        Rank       { get; set; }
         public UnitStatus Status     { get; set; }
         public string?    CallId     { get; set; }
+        public bool       AiCallouts { get; set; } = true;
         public float      X          { get; set; }
         public float      Y          { get; set; }
         public float      Z          { get; set; }

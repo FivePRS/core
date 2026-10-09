@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CitizenFX.Core;
@@ -24,6 +25,10 @@ namespace FivePRS.Client.Stations
         private const int CollisionTimeoutMs = 5000;
         private const float ParkingClearance = 3f;
 
+        private const float DeriveRadius = 200f;
+
+        private static readonly Dictionary<string, Vector3> DerivedGarages = new();
+
         private static DutyStartMode _pendingMode;
         private static string? _pendingStationId;
 
@@ -47,10 +52,39 @@ namespace FivePRS.Client.Stations
         public static Vector3 PositionOf(StationDef station) =>
             new(station.DutyPoint[0], station.DutyPoint[1], station.DutyPoint[2]);
 
-        public static Vector3 PositionOf(StationDef station, StationPoint point)
+        public static Vector3 PositionOf(StationDef station, StationPoint point) =>
+            PointPosition(station, point) ?? PositionOf(station);
+
+        public static bool HasOwnPoint(StationDef station, StationPoint point) =>
+            point != StationPoint.Duty && PointPosition(station, point) is not null;
+
+        public static Vector3? PointPosition(StationDef station, StationPoint point)
         {
-            var position = station.PointFor(point) ?? station.DutyPoint;
-            return new Vector3(position[0], position[1], position[2]);
+            var configured = station.PointFor(point);
+            if (configured is not null) return new Vector3(configured[0], configured[1], configured[2]);
+            if (point != StationPoint.Garage) return null;
+
+            var spot = station.Parking.FirstOrDefault(p => p.Length >= 3);
+            if (spot is not null) return new Vector3(spot[0], spot[1], spot[2]);
+
+            return DerivedGarage(station);
+        }
+
+        private static Vector3? DerivedGarage(StationDef station)
+        {
+            if (DerivedGarages.TryGetValue(station.Id, out var cached)) return cached;
+            if (DistanceTo(station) > DeriveRadius) return null;
+
+            var duty    = PositionOf(station);
+            var node    = Vector3.Zero;
+            var heading = 0f;
+            if (!API.GetClosestVehicleNodeWithHeading(duty.X, duty.Y, duty.Z, ref node, ref heading, 1, 3f, 0)) return null;
+
+            var kerb = Vector3.Zero;
+            var position = API.GetSafeCoordForPed(node.X, node.Y, node.Z, true, ref kerb, 16) ? kerb : node;
+
+            DerivedGarages[station.Id] = position;
+            return position;
         }
 
         public static float DistanceTo(StationDef station) =>

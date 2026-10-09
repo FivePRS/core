@@ -8,12 +8,12 @@ using FivePRS.Client.Menu;
 using FivePRS.Core.Config;
 using FivePRS.Core.Events;
 using FivePRS.Core.Models;
+using FivePRS.Core.Text;
 
 namespace FivePRS.Client.Stations
 {
     public class StationMarkers : BaseScript
     {
-        private const string InteractCommand = "fiveprs_station";
         private const float DrawDistance = 25f;
         private const float InteractDistance = 1.5f;
         private const int ScanIntervalMs = 500;
@@ -34,8 +34,8 @@ namespace FivePRS.Client.Stations
             EventHandlers[EventNames.LocalDutyChanged] += new Action<bool, int>((_, __) => RefreshBlips());
             EventHandlers["onClientResourceStop"]      += new Action<string>(OnResourceStop);
 
-            API.RegisterCommand(InteractCommand, new Action<int, List<object>, string>((_, __, ___) => Interact()), false);
-            API.RegisterKeyMapping(InteractCommand, "FivePRS: Use station point", "keyboard", "E");
+            API.RegisterCommand(KeyCommands.Interact, new Action<int, List<object>, string>((_, __, ___) => Interact()), false);
+            API.RegisterKeyMapping(KeyCommands.Interact, "FivePRS: Interact", "keyboard", "E");
 
             Tick += OnTick;
         }
@@ -64,7 +64,7 @@ namespace FivePRS.Client.Stations
             DrawPoint(_nearest, _nearestPoint);
 
             if (_nearestDistance <= InteractDistance && !CompactMenu.IsOpen)
-                ClientBrain.ShowHelp($"{Binds.For(InteractCommand)} {Prompt(_nearest, _nearestPoint)}", 0);
+                ClientBrain.ShowHelp($"{Binds.Interact} {Prompt(_nearest, _nearestPoint)}", 0);
         }
 
         private static string Prompt(StationDef station, StationPoint point) => point switch
@@ -95,7 +95,7 @@ namespace FivePRS.Client.Stations
 
                 foreach (var point in Points)
                 {
-                    if (point != StationPoint.Duty && (!canUse || !station.HasOwnPoint(point))) continue;
+                    if (point != StationPoint.Duty && (!canUse || !StationService.HasOwnPoint(station, point))) continue;
 
                     var distance = Vector3.Distance(position, StationService.PositionOf(station, point));
                     if (distance < _nearestDistance)

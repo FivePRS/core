@@ -27,6 +27,7 @@ namespace FivePRS.Core.Events
         public const string ServerCalloutEnded      = "FivePRS:Server:CalloutEnded";
         public const string ServerSetUnitStatus     = "FivePRS:Server:SetUnitStatus";
         public const string ServerAttachToCall      = "FivePRS:Server:AttachToCall";
+        public const string ServerSetAiCallouts     = "FivePRS:Server:SetAiCallouts";
         public const string ServerCivilianRequest   = "FivePRS:Server:CivilianRequest";
         public const string ServerCharacterCreate   = "FivePRS:Server:CharacterCreate";
         public const string ServerCharacterSelect   = "FivePRS:Server:CharacterSelect";
@@ -51,6 +52,8 @@ namespace FivePRS.Core.Events
 
         public const string LocalDutyChanged        = "FivePRS:Local:DutyChanged";
         public const string LocalOpenMenu           = "FivePRS:Local:OpenMenu";
+        public const string LocalServerIconDownload = "FivePRS:Local:ServerIconDownload";
+        public const string LocalServerIconResult   = "FivePRS:Local:ServerIconResult";
         public const string LocalCalloutReceived    = "FivePRS:Local:CalloutReceived";
         public const string LocalSuspectCuffed      = "FivePRS:Local:SuspectCuffed";
         public const string LocalSuspectUncuffed    = "FivePRS:Local:SuspectUncuffed";

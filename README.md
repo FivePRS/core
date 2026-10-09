@@ -33,6 +33,7 @@ set fiveprs_server_icon          true       # use the FivePRS icon unless load_s
 
 add_ace group.admin fiveprs.admin allow
 add_ace group.police fiveprs.department.police allow
+add_ace resource.fiveprs command.load_server_icon allow   # lets FivePRS set the server icon
 
 ensure fiveprs
 ```
@@ -62,7 +63,7 @@ Press `F5` or use `/fiveprs` to open the FivePRS menu. It opens on the most rele
 The Duty tab shows the player's rank and XP and lets them pick a department, agency and callsign before going on duty. Only departments the player is permitted to join are offered. Callsigns are up to 12 letters, numbers or hyphens, are saved to the player's profile, and must be unique among units on duty; leaving it blank uses the agency's default (for example `LSPD-12`). While on duty, the tab shows the player's unit and a Go off duty button.
 
 ### Dispatch
-On-duty units get a Dispatch tab, which the menu opens on by default. It shows your unit and status, any incoming call with Accept and Decline buttons and a countdown, your active call with an End call button, every active call with its territory and assigned units, and all units on duty. From here you can set your status, attach to a call as backup and set a waypoint to a call. The accept, decline and end call keys still work alongside the buttons.
+On-duty units get a Dispatch tab, which the menu opens on by default. It shows your unit and status, any incoming call with Accept and Decline buttons and a countdown, your active call with an End call button, every active call with its territory and assigned units, and all units on duty. From here you can set your status, attach to a call as backup and set a waypoint to a call. Turning AI callouts off stops dispatch offering you AI callouts while player 911 calls still reach you, for servers that mix player and NPC roleplay; the choice is remembered, and `/er_aicallouts` toggles it (bindable under FivePRS in the key bindings). The accept, decline and end call keys still work alongside the buttons.
 
 The menu lives in `nui/` as plain HTML, CSS and JavaScript, so it can be restyled without rebuilding the resource.
 
@@ -102,7 +103,7 @@ Other client resources can read the local player's FivePRS state with `exports.f
 ## Branding
 The menu nameplate, the notification logo, the server icon and the department icons are loaded from the FivePRS CDN. The URLs live under `branding` in `config/settings.json` and can point to your own images. The department icons under `branding.departments` (`police`, `ems`, `fire` and `civilian`) are shown on the Duty, Dispatch, Civilian and 911 tabs and in the station menu; a missing image is simply left out.
 
-The server icon is downloaded on start and cached in `data/server_icon.png`, which is used if the download fails. It is only applied when `fiveprs_server_icon` is `true` and no icon has been loaded with `load_server_icon`.
+The server icon is downloaded on start and cached in `data/server_icon.png`, which is used if the download fails. It is only applied when `fiveprs_server_icon` is `true`, no icon has been loaded with `load_server_icon`, and `server.cfg` allows FivePRS to run the command with `add_ace resource.fiveprs command.load_server_icon allow`.
 
 ## Loading Screen
 FivePRS hands each joining player's name, agency and rank to the loading screen. The official `fiveprs_loadscreen` addon in the [addons repository](https://github.com/FivePRS/addons) uses it for a welcome back card; any loading screen can read it from `window.nuiHandoverData.fiveprs`.
@@ -116,14 +117,14 @@ FivePRS hands each joining player's name, agency and rank to the loading screen.
 | `department` | `Police`, `EMS` or `Fire` |
 | `agencies` | Agency IDs that use the station; empty means every agency in the department |
 | `dutyPoint`, `heading` | Marker position `[x, y, z]`, also where players teleport to |
-| `armory`, `locker`, `garage` | Optional `[x, y, z]` markers for each service; without them, the services are offered at the duty point |
+| `armory`, `locker`, `garage` | `[x, y, z]` markers for each service. Without `garage`, the first parking spot or the pavement by the nearest road is used. Without `armory` or `locker`, that service is offered at the duty point instead |
 | `parking` | Optional vehicle spots `[x, y, z, heading]`; the first free one is used, otherwise the nearest road to the garage |
 | `blip` | Optional `{ "sprite": 60, "color": 3 }` to override the department's default blip |
 
-Pressing `E` on the duty point opens the Duty tab, or the station menu while on duty with that station's department. The station menu sits on the right of the screen and is used with the arrow keys or mouse wheel, Enter and Backspace:
+Each service has its own marker for on-duty members of the station's department; Mission Row ships with its armory, locker room and garage set. Pressing `E` (FivePRS: Interact) on a marker opens it. On the duty point it opens the Duty tab, or the station menu while on duty. The station menu sits on the right of the screen and is used with the arrow keys or mouse wheel, Enter and Backspace:
 
 - **Armory:** rank kits from `police_loadouts.json` (Recruit, Officer at rank 3, Senior Officer at rank 5, Command at rank 8), each weapon on its own, body armour, ammo refills and returning weapons. A weapon can set a `label` to change its menu name.
-- **Locker:** the patrol uniform, the command uniform from rank 8, and your own clothes.
+- **Locker:** the patrol uniform, the command uniform from rank 8, and your own clothes. Uniforms are freemode clothing; players using a standard GTA ped get `fallbackPedModels` from `police_loadouts.json` (the GTA police officer models by default) instead.
 - **Garage:** every model from `police_vehicles.json` your rank unlocks, parked outside, and returning your vehicle when it is near the garage. You have one vehicle at a time.
 
 To get coordinates, stand where you want a point and run `/fprs_coords` for a duty point, or `/fprs_coords armory`, `locker` or `garage`. Sit in a parked vehicle for a parking spot. The values are copied to the clipboard in `stations.json` format and printed to the F8 console.

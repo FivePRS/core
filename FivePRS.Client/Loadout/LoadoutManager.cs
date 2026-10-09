@@ -41,7 +41,10 @@ namespace FivePRS.Client.Loadout
             if (_savedComponents is null)
                 SaveAppearance(ped.Handle);
 
-            var pedModel = API.IsPedMale(ped.Handle) ? outfit.MalePedModel : outfit.FemalePedModel;
+            var male     = API.IsPedMale(ped.Handle);
+            var own      = male ? outfit.MalePedModel : outfit.FemalePedModel;
+            var fallback = own is null && !IsFreemode(_savedModel);
+            var pedModel = own ?? (fallback ? (male ? outfit.FallbackMalePedModel : outfit.FallbackFemalePedModel) : null);
             var target   = pedModel is not null ? API.GetHashKey(pedModel) : _savedModel;
 
             if (target != 0 && API.GetEntityModel(ped.Handle) != target && await ChangeModelAsync(new Model(target)))
@@ -51,6 +54,8 @@ namespace FivePRS.Client.Loadout
                 if (pedModel is null) RestoreSavedClothing(ped.Handle);
                 ReissueWeapons(ped.Handle);
             }
+
+            if (fallback) return;
 
             ApplyComponents(ped.Handle, outfit.Components);
             ApplyProps(ped.Handle, outfit.Props);
@@ -149,6 +154,9 @@ namespace FivePRS.Client.Loadout
             Current = null;
             Debug.WriteLine("[LoadoutManager] Loadout stripped.");
         }
+
+        private static bool IsFreemode(int model) =>
+            model == API.GetHashKey("mp_m_freemode_01") || model == API.GetHashKey("mp_f_freemode_01");
 
         private static void RestoreSavedClothing(int ped)
         {

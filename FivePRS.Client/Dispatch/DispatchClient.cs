@@ -6,6 +6,7 @@ using CitizenFX.Core.Native;
 using FivePRS.Core.Config;
 using FivePRS.Core.Events;
 using FivePRS.Core.Models;
+using FivePRS.Core.Text;
 using Newtonsoft.Json;
 
 namespace FivePRS.Client.Dispatch
@@ -30,6 +31,8 @@ namespace FivePRS.Client.Dispatch
             API.RegisterCommand("er_calls",  new Action<int, List<object>, string>(OnCallsCommand),  false);
             API.RegisterCommand("er_attach", new Action<int, List<object>, string>(OnAttachCommand), false);
             API.RegisterCommand("er_status", new Action<int, List<object>, string>(OnStatusCommand), false);
+            API.RegisterCommand(KeyCommands.AiCallouts, new Action<int, List<object>, string>((_, __, ___) => AiCallouts.Toggle()), false);
+            API.RegisterKeyMapping(KeyCommands.AiCallouts, "FivePRS: Toggle AI callouts", "keyboard", "");
         }
 
         private void OnSnapshot(string json)
@@ -58,7 +61,11 @@ namespace FivePRS.Client.Dispatch
 
         private void OnDutyChanged(bool isOnDuty, int departmentId)
         {
-            if (isOnDuty) return;
+            if (isOnDuty)
+            {
+                AiCallouts.Restore();
+                return;
+            }
 
             Snapshot    = new DispatchSnapshot();
             _lastCallId = null;

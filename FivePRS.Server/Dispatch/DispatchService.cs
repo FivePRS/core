@@ -170,7 +170,7 @@ namespace FivePRS.Server.Dispatch
 
             foreach (var unit in _units.Values)
             {
-                if (unit.Info.Status != UnitStatus.Available) continue;
+                if (unit.Info.Status != UnitStatus.Available || !unit.Info.AiCallouts) continue;
                 if (unit.Info.CallId is not null || unit.PendingCall is not null) continue;
                 if (now < unit.NextOfferUtc) continue;
                 if (unit.HasPosition && !TerritoryMap.IsInJurisdiction(unit.Agency, unit.Info.Territory)) continue;
@@ -296,6 +296,19 @@ namespace FivePRS.Server.Dispatch
             unit.Info.Status = status;
             if (status == UnitStatus.Available)
                 unit.NextOfferUtc = Max(unit.NextOfferUtc, _clock().AddSeconds(Settings.PostCompleteCooldownSeconds));
+
+            IsDirty = true;
+            return true;
+        }
+
+        public bool SetAiCallouts(int unitId, bool enabled)
+        {
+            if (!_units.TryGetValue(unitId, out var unit)) return false;
+            if (unit.Info.AiCallouts == enabled) return true;
+
+            unit.Info.AiCallouts = enabled;
+            if (enabled)
+                unit.NextOfferUtc = Max(unit.NextOfferUtc, _clock().AddSeconds(Settings.NoCalloutRetrySeconds));
 
             IsDirty = true;
             return true;
@@ -524,6 +537,7 @@ namespace FivePRS.Server.Dispatch
             Rank       = info.Rank,
             Status     = info.Status,
             CallId     = info.CallId,
+            AiCallouts = info.AiCallouts,
             X          = info.X,
             Y          = info.Y,
             Z          = info.Z,

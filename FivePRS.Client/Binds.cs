@@ -1,17 +1,18 @@
 using CitizenFX.Core.Native;
+using FivePRS.Core.Text;
 
 namespace FivePRS.Client
 {
     public static class Binds
     {
-        public static string Menu    => For("fiveprs");
-        public static string Profile => For("er_profile");
-        public static string Accept  => For("er_accept");
-        public static string Decline => For("er_decline");
-        public static string EndCall => For("er_end_callout");
-        public static string Cuff    => For("er_cuff");
-        public static string Uncuff  => For("er_uncuff");
-        public static string Escort  => For("er_escort");
+        public static string Menu     => For(KeyCommands.Menu);
+        public static string Interact => For(KeyCommands.Interact);
+        public static string Accept   => For(KeyCommands.Accept);
+        public static string Decline  => For(KeyCommands.Decline);
+        public static string EndCall  => For(KeyCommands.EndCall);
+        public static string Cuff     => For(KeyCommands.Cuff);
+        public static string Uncuff   => For(KeyCommands.Uncuff);
+        public static string Escort   => For(KeyCommands.Escort);
 
         public static string For(string command) =>
             $"~INPUT_{(uint)API.GetHashKey(command) | 0x80000000:X8}~";

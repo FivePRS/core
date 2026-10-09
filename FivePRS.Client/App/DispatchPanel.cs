@@ -26,6 +26,9 @@ namespace FivePRS.Client.App
             ClientEvents.TriggerServer(EventNames.ServerSetUnitStatus, (int)status);
         }
 
+        public static void SetAiCallouts(IDictionary<string, object> data) =>
+            AiCallouts.Set(NuiData.GetBool(data, "enabled"));
+
         public static void Attach(IDictionary<string, object> data)
         {
             if (NuiData.TryGetString(data, "callId", out var callId))
@@ -79,6 +82,7 @@ namespace FivePRS.Client.App
                     Status     = self.Status.ToString(),
                     self.CallId,
                     Territory  = map.FindTerritory(self.Territory)?.Name,
+                    self.AiCallouts,
                 },
                 calls = snapshot.Calls.Select(call => new
                 {

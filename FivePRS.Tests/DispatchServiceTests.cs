@@ -69,6 +69,24 @@ namespace FivePRS.Tests
         }
 
         [Fact]
+        public void Tick_AiCalloutsOff_ReceivesNoOffersUntilTurnedBackOn()
+        {
+            _dispatch.SetOnDuty(Officer, "Officer", Department.Police, 1);
+            Assert.True(_dispatch.SetAiCallouts(Officer, false));
+            Advance(_settings.InitialGraceSeconds);
+
+            Assert.Empty(_dispatch.Tick());
+            Assert.Contains(Officer, _dispatch.UnitsInDepartment(Department.Police));
+            Assert.False(_dispatch.CreateSnapshot().Units.Single().AiCallouts);
+
+            Assert.True(_dispatch.SetAiCallouts(Officer, true));
+            Assert.Empty(_dispatch.Tick());
+            Advance(_settings.NoCalloutRetrySeconds);
+
+            Assert.Equal(Officer, Assert.Single(_dispatch.Tick()).UnitId);
+        }
+
+        [Fact]
         public void Tick_BusyUnit_ReceivesNoOffers()
         {
             _dispatch.SetOnDuty(Officer, "Officer", Department.Police, 1);

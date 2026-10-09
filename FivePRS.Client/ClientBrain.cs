@@ -36,28 +36,28 @@ namespace FivePRS.Client
             EventHandlers[EventNames.ClientRankedUp]          += new Action<int>(OnRankedUp);
             EventHandlers[EventNames.ClientEndCallout]        += new Action(() => CalloutDispatcher.EndCalloutPressed = true);
 
-            API.RegisterCommand("er_accept",  new Action<int, List<object>, string>((_, __, ___) =>
+            API.RegisterCommand(KeyCommands.Accept, new Action<int, List<object>, string>((_, __, ___) =>
             {
                 CalloutDispatcher.AcceptPressed = true;
             }), false);
-            API.RegisterCommand("er_decline", new Action<int, List<object>, string>((_, __, ___) =>
+            API.RegisterCommand(KeyCommands.Decline, new Action<int, List<object>, string>((_, __, ___) =>
             {
                 CalloutDispatcher.DeclinePressed = true;
             }), false);
-            API.RegisterCommand("er_end_callout", new Action<int, List<object>, string>((_, __, ___) =>
+            API.RegisterCommand(KeyCommands.EndCall, new Action<int, List<object>, string>((_, __, ___) =>
             {
                 CalloutDispatcher.EndCalloutPressed = true;
             }), false);
 
-            API.RegisterCommand("er_cuff", new Action<int, List<object>, string>(async (_, __, ___) =>
+            API.RegisterCommand(KeyCommands.Cuff, new Action<int, List<object>, string>(async (_, __, ___) =>
             {
                 await ArrestManager.TryCuffNearestAsync();
             }), false);
-            API.RegisterCommand("er_uncuff", new Action<int, List<object>, string>((_, __, ___) =>
+            API.RegisterCommand(KeyCommands.Uncuff, new Action<int, List<object>, string>((_, __, ___) =>
             {
                 ArrestManager.Uncuff();
             }), false);
-            API.RegisterCommand("er_escort", new Action<int, List<object>, string>(async (_, __, ___) =>
+            API.RegisterCommand(KeyCommands.Escort, new Action<int, List<object>, string>(async (_, __, ___) =>
             {
                 var vehicle = Game.PlayerPed.CurrentVehicle;
                 if (vehicle == null || !vehicle.Exists())
@@ -80,7 +80,7 @@ namespace FivePRS.Client
                     "~y~FivePRS Commands~w~~n~" +
                     "~b~/fiveprs~w~ — Open the FivePRS menu (duty, dispatch and more)~n~" +
                     "~b~/er_profile~w~ — View rank and XP~n~" +
-                    "~b~/er_accept~w~ — Accept incoming callout~n~" +
+                    "~b~/er_accept_call~w~ — Accept incoming callout~n~" +
                     "~b~/er_decline~w~ — Decline incoming callout~n~" +
                     "~b~/er_end_callout~w~ — End active callout~n~" +
                     "~b~/er_calls~w~ — List active calls~n~" +
@@ -92,12 +92,12 @@ namespace FivePRS.Client
                     "~b~/fprs_coords~w~ — Copy your position for stations.json");
             }), false);
 
-            API.RegisterKeyMapping("er_accept",      "FivePRS: Accept callout",              "keyboard", "Y");
-            API.RegisterKeyMapping("er_decline",     "FivePRS: Decline callout",             "keyboard", "N");
-            API.RegisterKeyMapping("er_end_callout", "FivePRS: End active callout",          "keyboard", "END");
-            API.RegisterKeyMapping("er_cuff",        "FivePRS: Cuff nearest suspect",        "keyboard", "G");
-            API.RegisterKeyMapping("er_uncuff",      "FivePRS: Release cuffed suspect",      "keyboard", "");
-            API.RegisterKeyMapping("er_escort",      "FivePRS: Escort suspect to vehicle",   "keyboard", "H");
+            API.RegisterKeyMapping(KeyCommands.Accept,  "FivePRS: Accept callout",            "keyboard", "Y");
+            API.RegisterKeyMapping(KeyCommands.Decline, "FivePRS: Decline callout",           "keyboard", "N");
+            API.RegisterKeyMapping(KeyCommands.EndCall, "FivePRS: End active callout",        "keyboard", "END");
+            API.RegisterKeyMapping(KeyCommands.Cuff,    "FivePRS: Cuff nearest suspect",      "keyboard", "G");
+            API.RegisterKeyMapping(KeyCommands.Uncuff,  "FivePRS: Release cuffed suspect",    "keyboard", "");
+            API.RegisterKeyMapping(KeyCommands.Escort,  "FivePRS: Escort suspect to vehicle", "keyboard", "H");
             API.RegisterKeyMapping("er_profile",     "FivePRS: View rank and XP",            "keyboard", "F6");
             API.RegisterKeyMapping("er_help",        "FivePRS: Show command list",           "keyboard", "");
 

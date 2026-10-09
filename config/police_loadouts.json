@@ -64,5 +64,6 @@
             { "slot": 1, "drawable": -1, "texture": -1 }
         ]
     },
+    "fallbackPedModels": { "male": "s_m_y_cop_01", "female": "s_f_y_cop_01" },
     "agencies": {}
 }

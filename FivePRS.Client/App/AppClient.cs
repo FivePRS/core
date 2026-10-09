@@ -8,6 +8,7 @@ using FivePRS.Client.Dispatch;
 using FivePRS.Core.Config;
 using FivePRS.Core.Events;
 using FivePRS.Core.Models;
+using FivePRS.Core.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
@@ -41,14 +42,15 @@ namespace FivePRS.Client.App
             DispatchClient.SnapshotUpdated += Refresh;
             CalloutDispatcher.StateChanged += Refresh;
 
-            API.RegisterCommand("fiveprs", new Action<int, List<object>, string>((_, __, ___) => Toggle()), false);
-            API.RegisterKeyMapping("fiveprs", "FivePRS: Open menu", "keyboard", "F5");
+            API.RegisterCommand(KeyCommands.Menu, new Action<int, List<object>, string>((_, __, ___) => Toggle()), false);
+            API.RegisterKeyMapping(KeyCommands.Menu, "FivePRS: Open menu", "keyboard", "F5");
 
             RegisterCallback("appClose",     _    => Close());
             RegisterCallback("dutyEnter",    data => OnDutyEnter(data));
             RegisterCallback("dutyOff",      _    => DutyPanel.GoOffDuty());
             RegisterCallback("setStatus",    data => DispatchPanel.SetStatus(data));
             RegisterCallback("attach",       data => DispatchPanel.Attach(data));
+            RegisterCallback("aiCallouts",   data => DispatchPanel.SetAiCallouts(data));
             RegisterCallback("waypoint",     data => DispatchPanel.Waypoint(data));
             RegisterCallback("offerAccept",  _    => CalloutDispatcher.AcceptOffer());
             RegisterCallback("offerDecline", _    => CalloutDispatcher.DeclineOffer());
