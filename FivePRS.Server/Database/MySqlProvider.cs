@@ -1,4 +1,5 @@
 using System;
+using System.Data.Common;
 using System.Threading.Tasks;
 using MySqlConnector;
 using FivePRS.Core.Models;
@@ -8,6 +9,10 @@ namespace FivePRS.Server.Database
     public sealed class MySqlProvider : IDatabaseProvider
     {
         private readonly string _connectionString;
+
+        public SqlDialect Dialect => SqlDialect.MySql;
+
+        public DbConnection CreateConnection() => new MySqlConnection(_connectionString);
 
         public MySqlProvider(string connectionString)
         {

@@ -14,6 +14,11 @@ namespace FivePRS.Server.Database
         public const string AdminSetDept     = "admin.setdept";
         public const string AdminOffDuty     = "admin.offduty";
         public const string AdminEndCall     = "admin.endcall";
+        public const string CharacterCreated = "civ.character.create";
+        public const string CharacterDeleted = "civ.character.delete";
+        public const string LicenseIssued    = "civ.license.issue";
+        public const string VehicleRegistered = "civ.vehicle.register";
+        public const string VehicleRemoved   = "civ.vehicle.remove";
     }
 
     public sealed class AuditEntry

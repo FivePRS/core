@@ -19,6 +19,8 @@ namespace FivePRS.Server.Database
 
         public bool IsReady { get; private set; }
 
+        public CivilianStore Civilians { get; private set; } = null!;
+
         public async Task InitializeAsync(DatabaseType dbType, string? connectionString)
         {
             if (dbType == DatabaseType.MySQL)
@@ -36,6 +38,10 @@ namespace FivePRS.Server.Database
             }
 
             await _provider.InitializeAsync();
+
+            Civilians = new CivilianStore(_provider);
+            await Civilians.InitializeAsync();
+
             IsReady = true;
 
             Debug.WriteLine($"[FivePRS] Database ({dbType}) ready.");

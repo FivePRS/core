@@ -4,8 +4,7 @@ namespace FivePRS.Client
 {
     public static class Binds
     {
-        public static string Duty    => For("duty");
-        public static string Mdt     => For("mdt");
+        public static string Menu    => For("fiveprs");
         public static string Profile => For("er_profile");
         public static string Accept  => For("er_accept");
         public static string Decline => For("er_decline");

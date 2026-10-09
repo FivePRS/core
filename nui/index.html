@@ -2,139 +2,230 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>FivePRS MDT</title>
+  <title>FivePRS</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="entry" class="entry" hidden>
-    <div class="entry-card" role="dialog" aria-labelledby="entry-title">
-      <div class="lightbar" aria-hidden="true"></div>
-
-      <p class="panel-title">FivePRS</p>
-      <h1 id="entry-title" class="entry-title"></h1>
-
-      <div class="entry-profile">
-        <div>
-          <p class="entry-label">Rank</p>
-          <p id="entry-rank" class="entry-rank"></p>
-        </div>
-        <div class="entry-xp">
-          <div class="entry-xp-head">
-            <p class="entry-label">Experience</p>
-            <p id="entry-xp" class="entry-label"></p>
-          </div>
-          <div class="xp-track" aria-hidden="true"><div id="entry-xp-bar" class="xp-bar"></div></div>
-        </div>
-      </div>
-
-      <p class="panel-title entry-section">Department</p>
-      <div id="entry-departments" class="option-row"></div>
-
-      <p id="entry-agency-title" class="panel-title entry-section">Agency</p>
-      <div id="entry-agencies" class="option-grid"></div>
-
-      <label for="entry-callsign" class="panel-title entry-section entry-field-label">Callsign</label>
-      <input id="entry-callsign" class="entry-input" type="text" autocomplete="off" spellcheck="false">
-      <p class="entry-label entry-hint">Letters, numbers and hyphens. Leave blank to use your agency's default.</p>
-
-      <p id="entry-empty" class="entry-message" hidden>No departments are available to you on this server.</p>
-      <p id="entry-error" class="entry-message entry-error" hidden></p>
-
-      <div class="entry-actions">
-        <button id="entry-cancel" type="button" class="button">Cancel</button>
-        <button id="entry-enter" type="button" class="button primary">Go on duty</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="mdt" class="mdt" hidden>
-    <header class="mdt-header">
+  <div id="app" class="app" hidden>
+    <header class="app-header">
       <div class="lightbar" aria-hidden="true"></div>
       <div class="brand">
         <span class="wordmark">five<span class="red">p</span><span class="blue">rs</span></span>
-        <span class="brand-label">Mobile Data Terminal</span>
       </div>
+      <nav id="tabs" class="tabs" role="tablist"></nav>
       <div class="header-meta">
         <span id="clock" class="clock"></span>
-        <button id="close" class="icon-button" type="button" aria-label="Close MDT">&times;</button>
+        <button id="close" class="icon-button" type="button" aria-label="Close">&times;</button>
       </div>
     </header>
 
-    <main class="mdt-body">
-      <aside class="panel self">
-        <p class="panel-title">My unit</p>
-        <p id="self-callsign" class="callsign"></p>
-        <p id="self-name" class="muted"></p>
-        <p id="self-agency" class="muted"></p>
+    <main class="app-body">
+      <section id="tab-duty" class="tab duty" role="tabpanel" hidden>
+        <div class="duty-column">
+          <h1 id="duty-title" class="duty-title"></h1>
 
-        <dl class="facts">
-          <div><dt>Status</dt><dd id="self-status"></dd></div>
-          <div><dt>Area</dt><dd id="self-territory"></dd></div>
-          <div><dt>Assigned call</dt><dd id="self-call"></dd></div>
-        </dl>
-
-        <div id="offer" class="call-card offer" hidden>
-          <p class="panel-title">Incoming call</p>
-          <p id="offer-title" class="call-card-title"></p>
-          <p id="offer-description" class="muted call-card-detail"></p>
-          <div class="offer-track" aria-hidden="true"><div id="offer-bar" class="offer-bar"></div></div>
-          <div class="call-card-actions">
-            <button id="offer-accept" type="button" class="button primary" data-action="offer-accept">Accept</button>
-            <button type="button" class="button" data-action="offer-decline">Decline</button>
+          <div class="duty-profile">
+            <div>
+              <p class="duty-label">Rank</p>
+              <p id="duty-rank" class="duty-rank"></p>
+            </div>
+            <div class="duty-xp">
+              <div class="duty-xp-head">
+                <p class="duty-label">Experience</p>
+                <p id="duty-xp" class="duty-label"></p>
+              </div>
+              <div class="xp-track" aria-hidden="true"><div id="duty-xp-bar" class="xp-bar"></div></div>
+            </div>
           </div>
-        </div>
 
-        <div id="active-call" class="call-card" hidden>
-          <p class="panel-title">Active call</p>
-          <p id="active-title" class="call-card-title"></p>
-          <div class="call-card-actions">
-            <button type="button" class="button danger" data-action="end-call">End call</button>
+          <div id="duty-off-form">
+            <p class="panel-title duty-section">Department</p>
+            <div id="duty-departments" class="option-row"></div>
+
+            <p id="duty-agency-title" class="panel-title duty-section">Agency</p>
+            <div id="duty-agencies" class="option-grid"></div>
+
+            <label for="duty-callsign" class="panel-title duty-section duty-field-label">Callsign</label>
+            <input id="duty-callsign" class="duty-input" type="text" autocomplete="off" spellcheck="false">
+            <p class="duty-label duty-hint">Letters, numbers and hyphens. Leave blank to use your agency's default.</p>
+
+            <p id="duty-empty" class="duty-message" hidden>No departments are available to you on this server.</p>
+            <p id="duty-error" class="duty-message duty-error" hidden></p>
+
+            <div class="duty-actions">
+              <button id="duty-enter" type="button" class="button primary">Go on duty</button>
+            </div>
           </div>
-        </div>
 
-        <p class="panel-title">Set status</p>
-        <div class="status-buttons">
-          <button type="button" class="button" data-status="Available">Available</button>
-          <button type="button" class="button" data-status="Busy">Busy</button>
-        </div>
-        <p id="status-hint" class="hint"></p>
-      </aside>
-
-      <section class="panel calls">
-        <div class="panel-head">
-          <p class="panel-title">Active calls</p>
-          <span id="call-count" class="count"></span>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr><th>Call</th><th>Type</th><th>Area</th><th>Units</th><th></th></tr>
-            </thead>
-            <tbody id="calls"></tbody>
-          </table>
-          <p id="calls-empty" class="empty" hidden>No active calls.</p>
+          <div id="duty-on-panel" hidden>
+            <p class="panel-title duty-section">On duty</p>
+            <div class="duty-unit">
+              <p id="duty-unit-callsign" class="callsign"></p>
+              <p id="duty-unit-agency" class="muted"></p>
+            </div>
+            <div class="duty-actions">
+              <button id="duty-off" type="button" class="button danger">Go off duty</button>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section class="panel units">
-        <div class="panel-head">
-          <p class="panel-title">Units</p>
-          <span id="unit-count" class="count"></span>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr><th>Callsign</th><th>Officer</th><th>Area</th><th>Status</th></tr>
-            </thead>
-            <tbody id="units"></tbody>
-          </table>
+      <section id="tab-dispatch" class="tab dispatch" role="tabpanel" hidden>
+        <aside class="panel self">
+          <p class="panel-title">My unit</p>
+          <p id="self-callsign" class="callsign"></p>
+          <p id="self-name" class="muted"></p>
+          <p id="self-agency" class="muted"></p>
+
+          <dl class="facts">
+            <div><dt>Status</dt><dd id="self-status"></dd></div>
+            <div><dt>Area</dt><dd id="self-territory"></dd></div>
+            <div><dt>Assigned call</dt><dd id="self-call"></dd></div>
+          </dl>
+
+          <div id="offer" class="call-card offer" hidden>
+            <p class="panel-title">Incoming call</p>
+            <p id="offer-title" class="call-card-title"></p>
+            <p id="offer-description" class="muted call-card-detail"></p>
+            <div class="offer-track" aria-hidden="true"><div id="offer-bar" class="offer-bar"></div></div>
+            <div class="call-card-actions">
+              <button id="offer-accept" type="button" class="button primary" data-action="offer-accept">Accept</button>
+              <button type="button" class="button" data-action="offer-decline">Decline</button>
+            </div>
+          </div>
+
+          <div id="active-call" class="call-card" hidden>
+            <p class="panel-title">Active call</p>
+            <p id="active-title" class="call-card-title"></p>
+            <div class="call-card-actions">
+              <button type="button" class="button danger" data-action="end-call">End call</button>
+            </div>
+          </div>
+
+          <p class="panel-title">Set status</p>
+          <div class="status-buttons">
+            <button type="button" class="button" data-status="Available">Available</button>
+            <button type="button" class="button" data-status="Busy">Busy</button>
+          </div>
+          <p id="status-hint" class="hint"></p>
+        </aside>
+
+        <section class="panel calls">
+          <div class="panel-head">
+            <p class="panel-title">Active calls</p>
+            <span id="call-count" class="count"></span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Call</th><th>Type</th><th>Area</th><th>Units</th><th></th></tr>
+              </thead>
+              <tbody id="calls"></tbody>
+            </table>
+            <p id="calls-empty" class="empty" hidden>No active calls.</p>
+          </div>
+        </section>
+
+        <section class="panel units">
+          <div class="panel-head">
+            <p class="panel-title">Units</p>
+            <span id="unit-count" class="count"></span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Callsign</th><th>Officer</th><th>Area</th><th>Status</th></tr>
+              </thead>
+              <tbody id="units"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+      <section id="tab-civilian" class="tab civilian" role="tabpanel" hidden>
+        <aside class="panel civ-sidebar">
+          <div class="panel-head">
+            <p class="panel-title">Characters</p>
+            <span id="civ-character-count" class="count"></span>
+          </div>
+          <div id="civ-characters" class="civ-characters"></div>
+
+          <div class="civ-sidebar-foot">
+            <button id="civ-new" type="button" class="button">New character</button>
+
+            <form id="civ-form" class="civ-form" hidden>
+              <label class="civ-field">
+                <span class="duty-label">First name</span>
+                <input name="firstName" class="duty-input" autocomplete="off" spellcheck="false" required>
+              </label>
+              <label class="civ-field">
+                <span class="duty-label">Last name</span>
+                <input name="lastName" class="duty-input" autocomplete="off" spellcheck="false" required>
+              </label>
+              <label class="civ-field">
+                <span class="duty-label">Date of birth</span>
+                <input name="dateOfBirth" class="duty-input" type="date" required>
+              </label>
+              <label class="civ-field">
+                <span class="duty-label">Gender</span>
+                <select name="gender" class="duty-input" required></select>
+              </label>
+              <div class="civ-form-actions">
+                <button type="button" class="button" data-action="cancel-character">Cancel</button>
+                <button type="submit" class="button primary">Create</button>
+              </div>
+            </form>
+          </div>
+        </aside>
+
+        <div class="civ-main">
+          <p id="civ-error" class="civ-error" hidden></p>
+          <p id="civ-loading" class="panel empty">Loading records…</p>
+          <p id="civ-empty" class="panel empty" hidden>Create a character to apply for licenses and register vehicles.</p>
+
+          <div id="civ-profile" class="civ-profile" hidden>
+            <section class="panel civ-identity">
+              <div>
+                <p class="panel-title">Identity</p>
+                <p id="civ-name" class="civ-name"></p>
+                <p id="civ-details" class="muted"></p>
+              </div>
+              <button id="civ-delete" type="button" class="button small danger">Delete character</button>
+            </section>
+
+            <section class="panel">
+              <div class="panel-head">
+                <p class="panel-title">Licenses</p>
+              </div>
+              <div id="civ-licenses" class="civ-licenses"></div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-head">
+                <p class="panel-title">Vehicles</p>
+                <span id="civ-vehicle-count" class="count"></span>
+              </div>
+              <div class="civ-register">
+                <p id="civ-current-vehicle" class="muted"></p>
+                <button id="civ-register" type="button" class="button small primary">Register this vehicle</button>
+              </div>
+              <table>
+                <thead>
+                  <tr><th>Plate</th><th>Model</th><th>Status</th><th></th></tr>
+                </thead>
+                <tbody id="civ-vehicles"></tbody>
+              </table>
+              <p id="civ-vehicles-empty" class="empty" hidden>No registered vehicles.</p>
+            </section>
+          </div>
         </div>
       </section>
     </main>
   </div>
 
   <script src="common.js"></script>
-  <script src="mdt.js"></script>
-  <script src="entry.js"></script>
+  <script src="duty.js"></script>
+  <script src="dispatch.js"></script>
+  <script src="civilian.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

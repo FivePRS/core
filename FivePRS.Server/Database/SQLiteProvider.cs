@@ -1,4 +1,5 @@
 using System;
+using System.Data.Common;
 using System.Globalization;
 using System.IO;
 using System.Threading.Tasks;
@@ -10,6 +11,10 @@ namespace FivePRS.Server.Database
     public sealed class SQLiteProvider : IDatabaseProvider
     {
         private readonly string _connectionString;
+
+        public SqlDialect Dialect => SqlDialect.Sqlite;
+
+        public DbConnection CreateConnection() => new SqliteConnection(_connectionString);
 
         public SQLiteProvider(string dbPath)
         {

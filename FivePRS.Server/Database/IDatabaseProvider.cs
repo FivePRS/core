@@ -1,3 +1,4 @@
+using System.Data.Common;
 using System.Threading.Tasks;
 using FivePRS.Core.Models;
 
@@ -5,6 +6,10 @@ namespace FivePRS.Server.Database
 {
     public interface IDatabaseProvider
     {
+        SqlDialect Dialect { get; }
+
+        DbConnection CreateConnection();
+
         Task InitializeAsync();
 
         Task<PlayerData?> GetPlayerAsync(string license);

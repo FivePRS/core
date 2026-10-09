@@ -1,0 +1,239 @@
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using CitizenFX.Core;
+using CitizenFX.Core.Native;
+using FivePRS.Client.Callouts;
+using FivePRS.Client.Dispatch;
+using FivePRS.Core.Events;
+using FivePRS.Core.Models;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
+
+namespace FivePRS.Client.App
+{
+    public class AppClient : BaseScript
+    {
+        private static readonly JsonSerializerSettings JsonSettings = new()
+        {
+            ContractResolver = new CamelCasePropertyNamesContractResolver(),
+        };
+
+        private bool _open;
+
+        public AppClient()
+        {
+            EventHandlers[EventNames.ClientReceivePlayerData] += new Action<string>(OnPlayerData);
+            EventHandlers[EventNames.ClientEntryOptions]      += new Action<string>(OnEntryOptions);
+            EventHandlers[EventNames.ClientEntryRejected]     += new Action<string>(OnRejected);
+            EventHandlers[EventNames.ClientCivilianState]     += new Action<string>(OnCivilianState);
+            EventHandlers[EventNames.ClientCivilianError]     += new Action<string>(OnCivilianError);
+            EventHandlers[EventNames.LocalDutyChanged]        += new Action<bool, int>(OnDutyChanged);
+            EventHandlers["onClientResourceStop"]             += new Action<string>(OnResourceStop);
+
+            DispatchClient.SnapshotUpdated += Refresh;
+            CalloutDispatcher.StateChanged += Refresh;
+
+            API.RegisterCommand("fiveprs", new Action<int, List<object>, string>((_, __, ___) => Toggle()), false);
+            API.RegisterKeyMapping("fiveprs", "FivePRS: Open menu", "keyboard", "F5");
+
+            RegisterCallback("appClose",     _    => Close());
+            RegisterCallback("dutyEnter",    data => OnDutyEnter(data));
+            RegisterCallback("dutyOff",      _    => DutyPanel.GoOffDuty());
+            RegisterCallback("setStatus",    data => DispatchPanel.SetStatus(data));
+            RegisterCallback("attach",       data => DispatchPanel.Attach(data));
+            RegisterCallback("waypoint",     data => DispatchPanel.Waypoint(data));
+            RegisterCallback("offerAccept",  _    => CalloutDispatcher.AcceptOffer());
+            RegisterCallback("offerDecline", _    => CalloutDispatcher.DeclineOffer());
+            RegisterCallback("endCall",      _    => CalloutDispatcher.EndActiveCall());
+            RegisterCallback("civCreateCharacter", data => CivilianPanel.CreateCharacter(data));
+            RegisterCallback("civSelectCharacter", data => CivilianPanel.SelectCharacter(data));
+            RegisterCallback("civDeleteCharacter", data => CivilianPanel.DeleteCharacter(data));
+            RegisterCallback("civApplyLicense",    data => CivilianPanel.ApplyLicense(data));
+            RegisterCallback("civRegisterVehicle", _    => OnRegisterVehicle());
+            RegisterCallback("civRemoveVehicle",   data => CivilianPanel.RemoveVehicle(data));
+            RegisterCallback("civSetVehicleStolen", data => CivilianPanel.SetVehicleStolen(data));
+        }
+
+        private void OnPlayerData(string json)
+        {
+            try
+            {
+                var profile = JsonConvert.DeserializeObject<PlayerData>(json);
+                if (profile is null) return;
+                DutyPanel.SetProfile(profile);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[AppClient] Failed to parse player data: {ex.Message}");
+                return;
+            }
+
+            Refresh();
+        }
+
+        private void OnEntryOptions(string json)
+        {
+            try
+            {
+                DutyPanel.SetAllowed(JsonConvert.DeserializeObject<List<int>>(json) ?? new List<int>());
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[AppClient] Failed to parse entry options: {ex.Message}");
+                return;
+            }
+
+            Refresh();
+        }
+
+        private void OnRejected(string message)
+        {
+            if (_open)
+                Send("rejected", message);
+            else
+                ClientBrain.ShowNotification($"~r~{message}");
+        }
+
+        private void OnCivilianState(string json)
+        {
+            try
+            {
+                CivilianPanel.SetState(json);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[AppClient] Failed to parse civilian state: {ex.Message}");
+                return;
+            }
+
+            Refresh();
+        }
+
+        private void OnCivilianError(string message)
+        {
+            if (_open)
+                Send("civilianError", message);
+            else
+                ClientBrain.ShowNotification($"~r~{message}");
+        }
+
+        private void OnRegisterVehicle()
+        {
+            var error = CivilianPanel.RegisterVehicle();
+            if (error is not null)
+                Send("civilianError", error);
+        }
+
+        private void OnDutyChanged(bool isOnDuty, int departmentId)
+        {
+            DutyPanel.SetOnDuty(isOnDuty);
+            Close();
+        }
+
+        private void OnDutyEnter(IDictionary<string, object> data)
+        {
+            var error = DutyPanel.Enter(data);
+            if (error is not null)
+                Send("rejected", error);
+        }
+
+        private void Toggle()
+        {
+            if (_open)
+            {
+                Close();
+                return;
+            }
+
+            if (!DutyPanel.IsLoaded)
+            {
+                ClientBrain.ShowNotification("~r~Your profile hasn't loaded yet. Please wait.");
+                return;
+            }
+
+            Open();
+        }
+
+        private void Open()
+        {
+            if (!_open)
+                Tick += HoldFocusAsync;
+
+            _open = true;
+            NuiFocus.Take();
+            Send("open", BuildState());
+            CivilianPanel.RequestState();
+        }
+
+        private void Close()
+        {
+            if (!_open) return;
+
+            _open = false;
+            Tick -= HoldFocusAsync;
+            NuiFocus.Release();
+            Send("close", null);
+        }
+
+        private void Refresh()
+        {
+            if (_open)
+                Send("update", BuildState());
+        }
+
+        private async Task HoldFocusAsync()
+        {
+            if (_open)
+                NuiFocus.EnsureTaken();
+
+            await Delay(250);
+        }
+
+        private void OnResourceStop(string resourceName)
+        {
+            if (resourceName == API.GetCurrentResourceName() && _open)
+                NuiFocus.Release();
+        }
+
+        private static object BuildState()
+        {
+            var dispatch = DispatchPanel.BuildView();
+            var tabs     = new List<string> { "duty" };
+            if (dispatch is not null) tabs.Add("dispatch");
+            tabs.Add("civilian");
+
+            var defaultTab = dispatch is not null ? "dispatch" : DutyPanel.HasDepartment ? "duty" : "civilian";
+
+            return new
+            {
+                Tabs       = tabs,
+                DefaultTab = defaultTab,
+                Duty       = DutyPanel.BuildView(),
+                Dispatch   = dispatch,
+                Civilian   = CivilianPanel.BuildView(),
+            };
+        }
+
+        private static void Send(string type, object? payload) =>
+            API.SendNuiMessage(JsonConvert.SerializeObject(new { screen = "app", type, payload }, JsonSettings));
+
+        private void RegisterCallback(string name, Action<IDictionary<string, object>> handler)
+        {
+            API.RegisterNuiCallbackType(name);
+            EventHandlers[$"__cfx_nui:{name}"] += new Action<IDictionary<string, object>, CallbackDelegate>((data, callback) =>
+            {
+                try
+                {
+                    handler(data);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[AppClient] NUI callback '{name}' failed: {ex.Message}");
+                }
+
+                callback("ok");
+            });
+        }
+    }
+}

@@ -11,6 +11,8 @@ namespace FivePRS.Core.Events
         public const string ClientEndCallout        = "FivePRS:Client:EndCallout";
         public const string ClientEntryOptions      = "FivePRS:Client:EntryOptions";
         public const string ClientEntryRejected     = "FivePRS:Client:EntryRejected";
+        public const string ClientCivilianState     = "FivePRS:Client:CivilianState";
+        public const string ClientCivilianError     = "FivePRS:Client:CivilianError";
 
         public const string ServerPlayerConnected   = "FivePRS:Server:PlayerConnected";
         public const string ServerToggleDuty        = "FivePRS:Server:ToggleDuty";
@@ -20,6 +22,14 @@ namespace FivePRS.Core.Events
         public const string ServerCalloutEnded      = "FivePRS:Server:CalloutEnded";
         public const string ServerSetUnitStatus     = "FivePRS:Server:SetUnitStatus";
         public const string ServerAttachToCall      = "FivePRS:Server:AttachToCall";
+        public const string ServerCivilianRequest   = "FivePRS:Server:CivilianRequest";
+        public const string ServerCharacterCreate   = "FivePRS:Server:CharacterCreate";
+        public const string ServerCharacterSelect   = "FivePRS:Server:CharacterSelect";
+        public const string ServerCharacterDelete   = "FivePRS:Server:CharacterDelete";
+        public const string ServerLicenseApply      = "FivePRS:Server:LicenseApply";
+        public const string ServerVehicleRegister   = "FivePRS:Server:VehicleRegister";
+        public const string ServerVehicleRemove     = "FivePRS:Server:VehicleRemove";
+        public const string ServerVehicleSetStolen  = "FivePRS:Server:VehicleSetStolen";
 
         public const string LocalDutyChanged        = "FivePRS:Local:DutyChanged";
         public const string LocalCalloutReceived    = "FivePRS:Local:CalloutReceived";

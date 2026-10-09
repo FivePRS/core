@@ -5,5 +5,7 @@
     "postCompleteCooldownSeconds": 60,
     "postDeclineCooldownSeconds": 45,
     "postFailCooldownSeconds": 30,
-    "noCalloutRetrySeconds": 30
+    "noCalloutRetrySeconds": 30,
+    "maxCharacters": 3,
+    "maxVehiclesPerCharacter": 5
 }

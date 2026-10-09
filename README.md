@@ -34,6 +34,7 @@ set fiveprs_db_connection        ""         # MySQL connection string, or a cust
 set fiveprs_max_xp               500        # cap on XP awarded per call
 set fiveprs_xp_multiplier        1.0
 set fiveprs_restrict_departments false      # true requires the department ACE below
+set fiveprs_server_icon        true       # use the FivePRS icon unless load_server_icon sets your own
 
 add_ace group.admin fiveprs.admin allow
 add_ace group.police fiveprs.department.police allow
@@ -58,16 +59,30 @@ Admin commands work from the server console or in game with `fiveprs.admin`:
 | `fprs_offduty <id>` | Force a player off duty |
 | `fprs_endcall <call id>` | Close an active call |
 
-## Going On Duty
-Press `F5` or use `/duty` to open the duty menu. It shows the player's rank and XP and lets them pick a department, agency and callsign before going on duty. Only departments the player is permitted to join are offered. Callsigns are up to 12 letters, numbers or hyphens, are saved to the player's profile, and must be unique among units on duty; leaving it blank uses the agency's default (for example `LSPD-12`). While on duty, `F5` / `/duty` takes the player off duty.
+## FivePRS Menu
+Press `F5` or use `/fiveprs` to open the FivePRS menu. It opens on the most relevant tab, and only shows tabs the player can use.
+
+### Duty
+The Duty tab shows the player's rank and XP and lets them pick a department, agency and callsign before going on duty. Only departments the player is permitted to join are offered. Callsigns are up to 12 letters, numbers or hyphens, are saved to the player's profile, and must be unique among units on duty; leaving it blank uses the agency's default (for example `LSPD-12`). While on duty, the tab shows the player's unit and a Go off duty button.
+
+### Dispatch
+On-duty units get a Dispatch tab, which the menu opens on by default. It shows your unit and status, any incoming call with Accept and Decline buttons and a countdown, your active call with an End call button, every active call with its territory and assigned units, and all units on duty. From here you can set your status, attach to a call as backup and set a waypoint to a call. The accept, decline and end call keys still work alongside the buttons.
+
+The menu lives in `nui/` as plain HTML, CSS and JavaScript, so it can be restyled without rebuilding the resource.
+
+### Civilian
+Every player has a Civilian tab for roleplay records:
+
+- **Characters:** create up to `maxCharacters` characters (name, date of birth, gender) and pick the active one. Deleting a character removes its licenses and vehicles.
+- **Licenses:** license types come from `config/licenses.json`. Types with `"selfService": true` can be applied for from the tab and are issued immediately; others must be issued by law enforcement. Licenses can be valid, suspended or revoked.
+- **Vehicles:** sit in the driver's seat and register the vehicle; the server reads the plate from the vehicle itself, so registrations always match a real car. Each character can register up to `maxVehiclesPerCharacter` vehicles, plates are unique server-wide, and owners can report a vehicle stolen or recovered.
+
+`maxCharacters` and `maxVehiclesPerCharacter` are set in `config/settings.json`.
 
 ## Loading Screen
 `fiveprs_loadscreen` is an optional addon in `fiveprs_addons` with a FivePRS-branded loading screen: load progress, rotating tips and a welcome back card with the player's agency and rank. Add `ensure fiveprs_loadscreen` to `server.cfg` to use it, and set your server name and tips in its `config.js`. Leave it out if your server already has a loading screen.
 
 For background music, put `.mp3` or `.ogg` files in the addon's `music/` folder and list them under `music.tracks` in `config.js`, along with `volume` and `shuffle`. Direct links to audio files also work. No music ships with FivePRS, so only use tracks you have the rights to. Players can mute it from the button in the top-right corner, and the choice is remembered.
-
-## Mobile Data Terminal
-On-duty units open the MDT with `F7` or `/mdt`. It shows your unit and status, every active call with its territory and assigned units, and all units on duty. From the MDT you can set your status, attach to a call as backup and set a waypoint to a call. The interface lives in `nui/` as plain HTML, CSS and JavaScript, so it can be restyled without rebuilding the resource.
 
 ## Jurisdictions
 `config/jurisdictions.json` defines territories as map polygons and the agencies that patrol them. Players choose an agency within their department from the duty menu, and dispatch only offers calls to units inside their agency's territory. An agency with no territories is unrestricted. The bundled split (Los Santos for LSPD, Blaine County for BCSO) is a coarse default; adjust the polygons to suit your server.

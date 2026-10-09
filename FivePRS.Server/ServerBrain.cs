@@ -8,6 +8,7 @@ using CitizenFX.Core.Native;
 using FivePRS.Core.Config;
 using FivePRS.Core.Events;
 using FivePRS.Core.Models;
+using FivePRS.Server.Civilian;
 using FivePRS.Server.Database;
 using FivePRS.Server.Dispatch;
 using FivePRS.Server.Permissions;
@@ -32,6 +33,7 @@ namespace FivePRS.Server
             var resource = API.GetCurrentResourceName();
             ConfigManager.LoadSettings(API.LoadResourceFile(resource, "config/settings.json"));
             ConfigManager.LoadJurisdictions(API.LoadResourceFile(resource, "config/jurisdictions.json"));
+            ConfigManager.LoadLicenses(API.LoadResourceFile(resource, "config/licenses.json"));
 
             _dispatch    = new DispatchService(
                 () => DateTime.UtcNow,
@@ -56,7 +58,9 @@ namespace FivePRS.Server
 
             Tick += DispatchTickAsync;
             RegisterAdminCommands();
+            RegisterCivilianEvents();
 
+            ServerIcon.ApplyDefault();
             _ = InitDbAsync();
         }
 
@@ -69,6 +73,7 @@ namespace FivePRS.Server
 
                 var dbType = dbTypeRaw == "mysql" ? DatabaseType.MySQL : DatabaseType.SQLite;
                 await _db.InitializeAsync(dbType, string.IsNullOrEmpty(connString) ? null : connString);
+                _civilians = new CivilianService(_db.Civilians, () => ConfigManager.Settings, () => ConfigManager.Licenses, () => DateTime.UtcNow);
 
                 Debug.WriteLine("[FivePRS] ServerBrain online.");
             }

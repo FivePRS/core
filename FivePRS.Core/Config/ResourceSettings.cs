@@ -24,5 +24,11 @@ namespace FivePRS.Core.Config
 
         [JsonProperty("noCalloutRetrySeconds")]
         public int NoCalloutRetrySeconds { get; set; } = 30;
+
+        [JsonProperty("maxCharacters")]
+        public int MaxCharacters { get; set; } = 3;
+
+        [JsonProperty("maxVehiclesPerCharacter")]
+        public int MaxVehiclesPerCharacter { get; set; } = 5;
     }
 }

@@ -77,7 +77,7 @@ namespace FivePRS.Client
             {
                 ShowNotification(
                     "~y~FivePRS Commands~w~~n~" +
-                    "~b~/duty~w~ — Choose department, agency and callsign, or go off duty~n~" +
+                    "~b~/fiveprs~w~ — Open the FivePRS menu (duty, dispatch and more)~n~" +
                     "~b~/er_profile~w~ — View rank and XP~n~" +
                     "~b~/er_accept~w~ — Accept incoming callout~n~" +
                     "~b~/er_decline~w~ — Decline incoming callout~n~" +
@@ -124,7 +124,7 @@ namespace FivePRS.Client
                 Debug.WriteLine($"[FivePRS] Profile loaded: {data.Name} | Rank {data.Rank} | {data.Department}");
 
                 if (!data.IsOnDuty)
-                    ShowNotification($"~y~Welcome to FivePRS!~w~ Press {Binds.Duty} to go on duty.");
+                    ShowNotification($"~y~Welcome to FivePRS!~w~ Press {Binds.Menu} to open the FivePRS menu.");
             }
             catch (Exception ex)
             {

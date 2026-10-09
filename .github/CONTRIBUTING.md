@@ -53,6 +53,13 @@ dotnet build FivePRS.sln -c Release
 dotnet test FivePRS.Tests/FivePRS.Tests.csproj -c Release --no-build
 ```
 
+Database tests use a temporary SQLite file. To run the civilian store tests against MySQL instead, set `FIVEPRS_TEST_MYSQL` to a connection string for an empty test database, for example a throwaway container:
+
+```
+docker run -d --name fiveprs-mysql-test -e MYSQL_ROOT_PASSWORD=fiveprs -e MYSQL_DATABASE=fiveprs -p 33306:3306 mysql:8.4
+FIVEPRS_TEST_MYSQL="Server=127.0.0.1;Port=33306;Database=fiveprs;User=root;Password=fiveprs;" dotnet test FivePRS.Tests/FivePRS.Tests.csproj -c Release
+```
+
 Compiled outputs land in `bin/client/` and `bin/server/`.
 
 **Testing locally**
