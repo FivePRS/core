@@ -17,6 +17,16 @@ The core engine is currently in the architectural phase. We are focusing on:
 - **Dynamic AI:** Smarter NPC interactions and scene management.
 - **Extensible:** Built to be easily expanded via the `addons` repository.
 
+## Installation
+Run `publish.ps1` to build two bundles in `dist/`:
+
+| Bundle | Contents |
+|---|---|
+| `fiveprs.zip` | The `fiveprs` resource, required |
+| `fiveprs_addons.zip` | A `[fiveprs_addons]` folder with every optional addon, such as `fiveprs_loadscreen` |
+
+Extract both into your server's `resources/` folder, then `ensure fiveprs` and each addon you want after the configuration below. Addons live in `addons/<resource_name>/` in this repository; any folder there with an `fxmanifest.lua` is bundled automatically.
+
 ## Server Configuration
 ```cfg
 set fiveprs_db_type              "sqlite"   # or "mysql"
@@ -27,6 +37,9 @@ set fiveprs_restrict_departments false      # true requires the department ACE b
 
 add_ace group.admin fiveprs.admin allow
 add_ace group.police fiveprs.department.police allow
+
+ensure fiveprs
+ensure fiveprs_loadscreen
 ```
 
 | Permission | Grants |
@@ -49,7 +62,7 @@ Admin commands work from the server console or in game with `fiveprs.admin`:
 When a player spawns, an entry screen shows their rank and XP and lets them pick a department and agency, then go on duty or continue as a civilian. Only departments the player is permitted to join are offered. Reopen it with `/fiveprs` while off duty, or turn it off with `"showEntryScreen": false` in `config/settings.json`.
 
 ## Loading Screen
-`fiveprs_loadscreen` is an optional companion resource with a FivePRS-branded loading screen: load progress, rotating tips and a welcome back card with the player's agency and rank. Add `ensure fiveprs_loadscreen` to `server.cfg` to use it, and set your server name and tips in its `config.js`. Leave it out if your server already has a loading screen.
+`fiveprs_loadscreen` is an optional addon in `fiveprs_addons` with a FivePRS-branded loading screen: load progress, rotating tips and a welcome back card with the player's agency and rank. Add `ensure fiveprs_loadscreen` to `server.cfg` to use it, and set your server name and tips in its `config.js`. Leave it out if your server already has a loading screen.
 
 ## Mobile Data Terminal
 On-duty units open the MDT with `F7` or `/mdt`. It shows your unit and status, every active call with its territory and assigned units, and all units on duty. From the MDT you can set your status, attach to a call as backup and set a waypoint to a call. The interface lives in `nui/` as plain HTML, CSS and JavaScript, so it can be restyled without rebuilding the resource.

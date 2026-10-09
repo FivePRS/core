@@ -50,17 +50,24 @@ Open `FivePRS.sln` and build with Visual Studio, or run:
 
 ```
 dotnet build FivePRS.sln -c Release
+dotnet test FivePRS.Tests/FivePRS.Tests.csproj -c Release --no-build
 ```
 
-Compiled outputs land in `bin/client/` and `bin/server/` as configured in each project file.
+Compiled outputs land in `bin/client/` and `bin/server/`.
 
 **Testing locally**
 
-Copy the relevant DLLs from `bin/` to your FiveM server's `resources/FivePRS/` directory and restart the resource. There is no automated test suite yet; manual in-server testing is the current validation path.
+Run `publish.ps1` from the repository root. It builds the core and writes `dist/fiveprs/` and `dist/[fiveprs_addons]/`, ready to copy into your FiveM server's `resources/` directory. Restart the resource after copying.
 
 ---
 
 ## Project Structure
+
+| Path | Purpose |
+|---|---|
+| `FivePRS.*/`, `config/`, `nui/`, `fxmanifest.lua` | Everything that ships in the `fiveprs` resource |
+| `addons/<resource_name>/` | Optional standalone resources bundled into `fiveprs_addons` |
+| `publish.ps1` | Builds the core and packages both bundles into `dist/` |
 
 | Project | Purpose |
 |---|---|
@@ -68,6 +75,7 @@ Copy the relevant DLLs from `bin/` to your FiveM server's `resources/FivePRS/` d
 | `FivePRS.Client` | Client-side scripting: agency management, callout dispatch, vehicle spawning, loadouts. |
 | `FivePRS.Server` | Server-side scripting: player data, XP, database abstraction. |
 | `FivePRS.Police` | Police department implementation: callouts, vehicles, loadouts. |
+| `FivePRS.Tests` | xUnit tests for config, territories and client assembly compatibility with FiveM's runtime. |
 
 Callout packs and plugin extensions are built as separate class libraries and dropped into the `callouts/` or `plugins/` folders at runtime. They reference `FivePRS.Core` and `FivePRS.Client` but are never compiled into the core solution.
 

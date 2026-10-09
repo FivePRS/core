@@ -27,7 +27,7 @@
   </ItemGroup>
 
   <Target Name="CopySqliteNatives" AfterTargets="Build">
-    <Copy SourceFiles="$(PkgSQLitePCLRaw_lib_e_sqlite3)\runtimes\win-x64\native\e_sqlite3.dll;$(PkgSQLitePCLRaw_lib_e_sqlite3)\runtimes\linux-x64\native\libe_sqlite3.so"
+    <Copy SourceFiles="$(PkgSQLitePCLRaw_lib_e_sqlite3)\runtimes\win-x64\native\e_sqlite3.dll;$(PkgSQLitePCLRaw_lib_e_sqlite3)\runtimes\linux-musl-x64\native\libe_sqlite3.so"
           DestinationFolder="$(OutputPath)"
           SkipUnchangedFiles="true" />
   </Target>

@@ -30,6 +30,7 @@ namespace FivePRS.Server.Database
             else
             {
                 var resourcePath = API.GetResourcePath(API.GetCurrentResourceName());
+                SqliteNativeLoader.Load(Path.Combine(resourcePath, "server"));
                 _provider = new SQLiteProvider(connectionString ?? Path.Combine(resourcePath, "data", "fiveprs.db"));
             }
 

@@ -24,11 +24,28 @@ namespace FivePRS.Client.Callouts
         private readonly List<Entity> _trackedEntities = new();
         private readonly List<Blip>   _trackedBlips    = new();
 
-        protected T? TrackEntity<T>(T? entity) where T : Entity
+        protected Ped? TrackEntity(Ped? ped)
+        {
+            Track(ped);
+            return ped;
+        }
+
+        protected Vehicle? TrackEntity(Vehicle? vehicle)
+        {
+            Track(vehicle);
+            return vehicle;
+        }
+
+        protected Prop? TrackEntity(Prop? prop)
+        {
+            Track(prop);
+            return prop;
+        }
+
+        private void Track(Entity? entity)
         {
             if (entity is not null)
                 _trackedEntities.Add(entity);
-            return entity;
         }
 
         protected Blip TrackBlip(Blip blip)

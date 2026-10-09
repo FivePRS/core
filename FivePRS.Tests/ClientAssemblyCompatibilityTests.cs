@@ -48,6 +48,23 @@ namespace FivePRS.Tests
                 "Avoid readonly structs, readonly members, in/ref readonly parameters, ref structs, unmanaged constraints and init accessors in client code.");
         }
 
+        [Theory]
+        [MemberData(nameof(ClientAssemblies))]
+        public void ClientAssembly_HasNoAttributesOnGenericParameters(string fileName)
+        {
+            using var stream = File.OpenRead(Path.Combine(RepoRoot(), "bin", "client", fileName));
+            using var pe     = new PEReader(stream);
+            var reader       = pe.GetMetadataReader();
+
+            var count = reader.CustomAttributes
+                .Select(handle => reader.GetCustomAttribute(handle).Parent.Kind)
+                .Count(kind => kind == HandleKind.GenericParameter || kind == HandleKind.GenericParameterConstraint);
+
+            Assert.True(count == 0,
+                $"{fileName} has {count} custom attribute(s) on generic parameters or constraints, which FiveM's client runtime rejects with BadImageFormatException. " +
+                "With nullable enabled these come from constrained generics such as 'where T : SomeClass'; use non-generic overloads in client code.");
+        }
+
         private static string RepoRoot()
         {
             var dir = new DirectoryInfo(AppContext.BaseDirectory);
