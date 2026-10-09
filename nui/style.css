@@ -72,15 +72,11 @@ body {
   gap: 12px;
 }
 
-.wordmark {
-  font-weight: 800;
-  font-style: italic;
-  font-size: 20px;
-  letter-spacing: -0.02em;
+.brand-logo {
+  display: block;
+  height: 28px;
+  width: auto;
 }
-
-.wordmark .red { color: var(--red); }
-.wordmark .blue { color: var(--blue); }
 
 .brand-label,
 .clock,
@@ -277,6 +273,12 @@ th {
   background: rgba(251, 191, 36, 0.06);
 }
 
+.call-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .call-card-title {
   margin-top: 6px;
   font-weight: 600;
@@ -295,6 +297,8 @@ th {
 
 .call-card-actions .button {
   flex: 1;
+  min-width: 0;
+  white-space: nowrap;
 }
 
 .offer-track {
@@ -731,4 +735,145 @@ tr.mine td {
   justify-content: space-between;
   gap: 12px;
   padding: 0 16px 12px;
+}
+
+.records {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 12px;
+  padding: 12px;
+}
+
+.rec-sidebar {
+  min-height: 0;
+}
+
+.rec-search {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 16px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.rec-search .duty-input {
+  height: 38px;
+}
+
+.rec-modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.rec-results-title {
+  padding: 14px 16px 8px;
+}
+
+.rec-result-flag {
+  margin-top: 6px;
+}
+
+.rec-plate {
+  margin-top: 4px;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.rec-flags {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.rec-license {
+  align-items: flex-start;
+}
+
+.rec-license .option-name {
+  margin-bottom: 4px;
+}
+
+.rec-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 16px 16px;
+}
+
+.rec-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.civ-field .rec-description {
+  height: auto;
+  min-height: 72px;
+  padding: 10px 14px;
+  font-family: inherit;
+  font-size: 14px;
+  letter-spacing: normal;
+  text-transform: none;
+  resize: vertical;
+}
+
+.rec-form-actions {
+  grid-template-columns: auto;
+  justify-content: end;
+}
+
+.rec-history {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 16px 16px;
+}
+
+.rec-entry {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.rec-entry-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rec-entry-head .actions {
+  margin-left: auto;
+}
+
+.rec-entry-meta {
+  font-size: 12px;
+}
+
+.rec-entry-text {
+  margin-top: 6px;
+  white-space: pre-wrap;
+}
+
+.em-intro {
+  margin-top: 6px;
+}
+
+.em-active {
+  margin-top: 24px;
+}
+
+.em-anonymous {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.em-call-text {
+  max-width: 420px;
+  white-space: normal;
 }

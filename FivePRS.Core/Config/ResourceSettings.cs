@@ -30,5 +30,17 @@ namespace FivePRS.Core.Config
 
         [JsonProperty("maxVehiclesPerCharacter")]
         public int MaxVehiclesPerCharacter { get; set; } = 5;
+
+        [JsonProperty("maxFine")]
+        public int MaxFine { get; set; } = 10000;
+
+        [JsonProperty("emergencyCallCooldownSeconds")]
+        public int EmergencyCallCooldownSeconds { get; set; } = 60;
+
+        [JsonProperty("emergencyCallTimeoutMinutes")]
+        public int EmergencyCallTimeoutMinutes { get; set; } = 15;
+
+        [JsonProperty("branding")]
+        public BrandingSettings Branding { get; set; } = new();
     }
 }

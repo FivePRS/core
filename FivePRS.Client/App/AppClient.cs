@@ -5,6 +5,7 @@ using CitizenFX.Core;
 using CitizenFX.Core.Native;
 using FivePRS.Client.Callouts;
 using FivePRS.Client.Dispatch;
+using FivePRS.Core.Config;
 using FivePRS.Core.Events;
 using FivePRS.Core.Models;
 using Newtonsoft.Json;
@@ -28,6 +29,10 @@ namespace FivePRS.Client.App
             EventHandlers[EventNames.ClientEntryRejected]     += new Action<string>(OnRejected);
             EventHandlers[EventNames.ClientCivilianState]     += new Action<string>(OnCivilianState);
             EventHandlers[EventNames.ClientCivilianError]     += new Action<string>(OnCivilianError);
+            EventHandlers[EventNames.ClientLookupResult]      += new Action<string>(OnLookupResult);
+            EventHandlers[EventNames.ClientLookupError]       += new Action<string>(OnLookupError);
+            EventHandlers[EventNames.ClientEmergencyStatus]   += new Action<string>(OnEmergencyStatus);
+            EventHandlers[EventNames.ClientEmergencyError]    += new Action<string>(OnEmergencyError);
             EventHandlers[EventNames.LocalDutyChanged]        += new Action<bool, int>(OnDutyChanged);
             EventHandlers["onClientResourceStop"]             += new Action<string>(OnResourceStop);
 
@@ -53,6 +58,17 @@ namespace FivePRS.Client.App
             RegisterCallback("civRegisterVehicle", _    => OnRegisterVehicle());
             RegisterCallback("civRemoveVehicle",   data => CivilianPanel.RemoveVehicle(data));
             RegisterCallback("civSetVehicleStolen", data => CivilianPanel.SetVehicleStolen(data));
+            RegisterCallback("recSearchName",   data => RecordsPanel.SearchName(data));
+            RegisterCallback("recSearchPlate",  data => RecordsPanel.SearchPlate(data));
+            RegisterCallback("recOpen",         data => RecordsPanel.Open(data));
+            RegisterCallback("recBack",         _    => { RecordsPanel.CloseRecord(); Refresh(); });
+            RegisterCallback("recIssue",        data => RecordsPanel.Issue(data));
+            RegisterCallback("recResolve",      data => RecordsPanel.Resolve(data));
+            RegisterCallback("recSetLicense",   data => RecordsPanel.SetLicense(data));
+            RegisterCallback("recFlagVehicle",  data => RecordsPanel.FlagVehicle(data));
+            RegisterCallback("emCall",          data => EmergencyPanel.Call(data));
+            RegisterCallback("emCancel",        _    => EmergencyPanel.Cancel());
+            RegisterCallback("callClear",       data => EmergencyPanel.ClearCall(data));
         }
 
         private void OnPlayerData(string json)
@@ -118,6 +134,52 @@ namespace FivePRS.Client.App
                 ClientBrain.ShowNotification($"~r~{message}");
         }
 
+        private void OnLookupResult(string json)
+        {
+            try
+            {
+                RecordsPanel.SetResult(json);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[AppClient] Failed to parse lookup result: {ex.Message}");
+                return;
+            }
+
+            Refresh();
+        }
+
+        private void OnLookupError(string message)
+        {
+            if (_open)
+                Send("recordsError", message);
+            else
+                ClientBrain.ShowNotification($"~r~{message}");
+        }
+
+        private void OnEmergencyStatus(string json)
+        {
+            try
+            {
+                EmergencyPanel.SetStatus(json);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[AppClient] Failed to parse 911 status: {ex.Message}");
+                return;
+            }
+
+            Refresh();
+        }
+
+        private void OnEmergencyError(string message)
+        {
+            if (_open)
+                Send("emergencyError", message);
+            else
+                ClientBrain.ShowNotification($"~r~{message}");
+        }
+
         private void OnRegisterVehicle()
         {
             var error = CivilianPanel.RegisterVehicle();
@@ -128,6 +190,7 @@ namespace FivePRS.Client.App
         private void OnDutyChanged(bool isOnDuty, int departmentId)
         {
             DutyPanel.SetOnDuty(isOnDuty);
+            if (!isOnDuty) RecordsPanel.Clear();
             Close();
         }
 
@@ -164,6 +227,7 @@ namespace FivePRS.Client.App
             NuiFocus.Take();
             Send("open", BuildState());
             CivilianPanel.RequestState();
+            EmergencyPanel.RequestStatus();
         }
 
         private void Close()
@@ -200,18 +264,24 @@ namespace FivePRS.Client.App
         {
             var dispatch = DispatchPanel.BuildView();
             var tabs     = new List<string> { "duty" };
+            var records  = RecordsPanel.BuildView();
             if (dispatch is not null) tabs.Add("dispatch");
+            if (records is not null) tabs.Add("records");
             tabs.Add("civilian");
+            tabs.Add("emergency");
 
             var defaultTab = dispatch is not null ? "dispatch" : DutyPanel.HasDepartment ? "duty" : "civilian";
 
             return new
             {
                 Tabs       = tabs,
+                Nameplate  = ConfigManager.Settings.Branding.Nameplate,
                 DefaultTab = defaultTab,
                 Duty       = DutyPanel.BuildView(),
                 Dispatch   = dispatch,
+                Records    = records,
                 Civilian   = CivilianPanel.BuildView(),
+                Emergency  = EmergencyPanel.BuildView(),
             };
         }
 

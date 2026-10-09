@@ -101,6 +101,8 @@ namespace FivePRS.Client
 
             Tick += WaitForSpawnTick;
             Tick += DrawHelpTick;
+
+            CreateNotificationLogo(res, ConfigManager.Settings.Branding.NotificationLogo);
         }
 
         private async Task WaitForSpawnTick()
@@ -124,7 +126,7 @@ namespace FivePRS.Client
                 Debug.WriteLine($"[FivePRS] Profile loaded: {data.Name} | Rank {data.Rank} | {data.Department}");
 
                 if (!data.IsOnDuty)
-                    ShowNotification($"~y~Welcome to FivePRS!~w~ Press {Binds.Menu} to open the FivePRS menu.");
+                    ShowHelp($"~y~Welcome to FivePRS!~w~ Press {Binds.Menu} to open the FivePRS menu.", 10_000);
             }
             catch (Exception ex)
             {
@@ -161,10 +163,28 @@ namespace FivePRS.Client
             }
         }
 
-        public static void ShowNotification(string message)
+        private static void CreateNotificationLogo(string resource, string url)
         {
+            if (string.IsNullOrWhiteSpace(url)) return;
+
+            var txd = API.CreateRuntimeTxd(NotificationTxd);
+            var dui = API.CreateDui($"https://cfx-nui-{resource}/nui/dui-image.html#{url}", NotificationLogoSize, NotificationLogoSize);
+            API.CreateRuntimeTextureFromDuiHandle(txd, NotificationTexture, API.GetDuiHandle(dui));
+        }
+
+        public static void ShowNotification(string message, string? subject = null)
+        {
+            var body = message;
+            if (subject is null)
+            {
+                var split = message.IndexOf(SubjectSeparator, StringComparison.Ordinal);
+                subject = split > 0 ? message.Substring(0, split) : string.Empty;
+                if (split > 0) body = message.Substring(split + SubjectSeparator.Length);
+            }
+
             API.SetNotificationTextEntry(LongTextEntry);
-            AddLongText(message);
+            AddLongText(body);
+            API.SetNotificationMessage(NotificationTxd, NotificationTexture, false, 0, NotificationSender, subject);
             API.DrawNotification(false, true);
         }
 
@@ -191,6 +211,11 @@ namespace FivePRS.Client
         }
 
         private const string LongTextEntry = "CELL_EMAIL_BCON";
+        private const string NotificationTxd = "fiveprs_ui";
+        private const string NotificationTexture = "logo";
+        private const string NotificationSender = "~b~FivePRS";
+        private const int NotificationLogoSize = 128;
+        private const string SubjectSeparator = " | ";
         private const int MinHelpDurationMs = 100;
 
         private static string? _helpText;

@@ -24,7 +24,7 @@ namespace FivePRS.Client.Dispatch
         public DispatchClient()
         {
             EventHandlers[EventNames.ClientDispatchSnapshot] += new Action<string>(OnSnapshot);
-            EventHandlers[EventNames.ClientNotify]           += new Action<string>(ClientBrain.ShowNotification);
+            EventHandlers[EventNames.ClientNotify]           += new Action<string>(message => ClientBrain.ShowNotification(message));
             EventHandlers[EventNames.LocalDutyChanged]       += new Action<bool, int>(OnDutyChanged);
 
             API.RegisterCommand("er_calls",  new Action<int, List<object>, string>(OnCallsCommand),  false);
@@ -75,7 +75,7 @@ namespace FivePRS.Client.Dispatch
 
             if (Snapshot.Calls.Count == 0)
             {
-                ClientBrain.ShowNotification("~y~[ DISPATCH ]~w~ No active calls.");
+                ClientBrain.ShowNotification("No active calls.", "~y~Dispatch");
                 return;
             }
 
@@ -89,7 +89,7 @@ namespace FivePRS.Client.Dispatch
                 return $"~y~#{call.Id}~w~ {call.Name} (Code {(int)call.Priority}){area} ~b~{string.Join(", ", callsigns)}";
             });
 
-            ClientBrain.ShowNotification("~y~[ DISPATCH ]~w~ Active calls~n~" + string.Join("~n~", lines));
+            ClientBrain.ShowNotification(string.Join("~n~", lines), "~y~Active calls");
         }
 
         private static void OnAttachCommand(int source, List<object> args, string raw)

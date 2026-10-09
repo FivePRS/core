@@ -60,7 +60,13 @@ namespace FivePRS.Server.Dispatch
             public float             X           { get; set; }
             public float             Y           { get; set; }
             public float             Z           { get; set; }
+            public bool              IsEmergency { get; set; }
+            public string            Description { get; set; } = string.Empty;
+            public string            CallerName  { get; set; } = string.Empty;
+            public int               CallerId    { get; set; }
         }
+
+        public const string EmergencyCallName = "911 Call";
 
         private readonly Func<DateTime>         _clock;
         private readonly Func<ResourceSettings> _settings;
@@ -71,6 +77,7 @@ namespace FivePRS.Server.Dispatch
         private readonly Dictionary<string, Call>             _calls          = new();
         private readonly Dictionary<string, CalloutDefinition> _catalog       = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, DateTime>         _lastDispatched = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<int, DateTime>            _lastEmergency  = new();
 
         private int _nextCallNumber = 1000;
 
@@ -157,6 +164,7 @@ namespace FivePRS.Server.Dispatch
         {
             var now = _clock();
             ExpireStaleOffers(now);
+            ExpireUnansweredEmergencies(now);
 
             var offers = new List<DispatchOffer>();
 
@@ -320,6 +328,78 @@ namespace FivePRS.Server.Dispatch
             IsDirty = true;
         }
 
+        public (string? CallId, string? Error) CreateEmergencyCall(int callerId, string callerName, Department department,
+            string description, float x, float y, float z)
+        {
+            var now = _clock();
+
+            var open = FindOpenEmergency(callerId);
+            if (open is not null) return (null, $"You already have an open 911 call (#{open.Id}).");
+
+            if (_lastEmergency.TryGetValue(callerId, out var last) &&
+                (now - last).TotalSeconds < Settings.EmergencyCallCooldownSeconds)
+            {
+                var wait = Settings.EmergencyCallCooldownSeconds - (int)(now - last).TotalSeconds;
+                return (null, $"Please wait {wait}s before calling 911 again.");
+            }
+
+            var call = new Call
+            {
+                Id          = (_nextCallNumber++).ToString(),
+                Definition  = new CalloutDefinition { Name = EmergencyCallName, Department = department, Priority = CalloutPriority.High },
+                Status      = CallStatus.Active,
+                OfferedUtc  = now,
+                HasLocation = true,
+                Territory   = _territories().Resolve(x, y)?.Id,
+                X           = x,
+                Y           = y,
+                Z           = z,
+                IsEmergency = true,
+                Description = description,
+                CallerName  = callerName,
+                CallerId    = callerId,
+            };
+
+            _calls[call.Id]         = call;
+            _lastEmergency[callerId] = now;
+            IsDirty = true;
+            return (call.Id, null);
+        }
+
+        public bool CancelEmergencyCall(int callerId, string callId)
+        {
+            if (!_calls.TryGetValue(callId, out var call) || !call.IsEmergency || call.CallerId != callerId) return false;
+
+            CloseCall(call, Settings.PostCompleteCooldownSeconds);
+            return true;
+        }
+
+        public int? ClearEmergencyCall(int unitId, string callId)
+        {
+            if (!_calls.TryGetValue(callId, out var call) || !call.IsEmergency || !call.Attached.Contains(unitId)) return null;
+
+            CloseCall(call, Settings.PostCompleteCooldownSeconds);
+            return call.CallerId;
+        }
+
+        public int? GetEmergencyCaller(string callId) =>
+            _calls.TryGetValue(callId, out var call) && call.IsEmergency ? call.CallerId : null;
+
+        public EmergencyCallStatus? GetEmergencyStatus(int callerId)
+        {
+            var call = FindOpenEmergency(callerId);
+            return call is null ? null : new EmergencyCallStatus
+            {
+                CallId      = call.Id,
+                Department  = call.Definition.Department,
+                Description = call.Description,
+                Responding  = call.Attached.Count(_units.ContainsKey),
+            };
+        }
+
+        public IEnumerable<int> UnitsInDepartment(Department department) =>
+            _units.Values.Where(u => u.Info.Department == department).Select(u => u.Info.ServerId).ToList();
+
         public UnitInfo? GetUnit(int unitId) =>
             _units.TryGetValue(unitId, out var unit) ? unit.Info : null;
 
@@ -340,10 +420,13 @@ namespace FivePRS.Server.Dispatch
                         Priority    = c.Definition.Priority,
                         Territory   = c.Territory,
                         PrimaryUnit = c.PrimaryUnit,
-                        Units       = new[] { c.PrimaryUnit }.Concat(c.Attached).ToList(),
+                        Units       = (c.IsEmergency ? c.Attached : new[] { c.PrimaryUnit }.Concat(c.Attached)).ToList(),
                         X           = c.X,
                         Y           = c.Y,
                         Z           = c.Z,
+                        IsEmergency = c.IsEmergency,
+                        Description = c.IsEmergency ? c.Description : null,
+                        Caller      = c.IsEmergency ? c.CallerName : null,
                     })
                     .ToList(),
             };
@@ -361,6 +444,23 @@ namespace FivePRS.Server.Dispatch
 
             foreach (var call in stale)
                 Respond(call.PrimaryUnit, call.Id, OfferResponse.Declined, 0f, 0f, 0f);
+        }
+
+        private Call? FindOpenEmergency(int callerId) =>
+            _calls.Values.FirstOrDefault(c => c.IsEmergency && c.CallerId == callerId);
+
+        private void ExpireUnansweredEmergencies(DateTime now)
+        {
+            var timeout = TimeSpan.FromMinutes(Settings.EmergencyCallTimeoutMinutes);
+            var stale = _calls.Values
+                .Where(c => c.IsEmergency && now - c.OfferedUtc > timeout && !c.Attached.Any(_units.ContainsKey))
+                .ToList();
+
+            foreach (var call in stale)
+            {
+                _calls.Remove(call.Id);
+                IsDirty = true;
+            }
         }
 
         private CalloutDefinition? PickCallout(Department department, DateTime now)

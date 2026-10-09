@@ -70,11 +70,22 @@ On-duty units get a Dispatch tab, which the menu opens on by default. It shows y
 
 The menu lives in `nui/` as plain HTML, CSS and JavaScript, so it can be restyled without rebuilding the resource.
 
+### Records
+On-duty police get a Records tab. Search for a person by name or a vehicle by plate to open their record: identity, an active-warrant flag, licenses, registered vehicles and history. From a record, officers can:
+
+- add a citation (with a fine up to `maxFine` in `config/settings.json`), arrest, warning or warrant;
+- mark an active warrant as served or cleared;
+- issue, suspend, revoke or reinstate any license type, including ones that are not self-service;
+- mark a registered vehicle stolen or recovered.
+
+Every change is stamped with the officer's name and callsign and written to the audit log. If the person's owner is online, they get a notification and their Civilian tab updates. A character with an active warrant cannot be deleted.
+
 ### Civilian
 Every player has a Civilian tab for roleplay records:
 
 - **Characters:** create up to `maxCharacters` characters (name, date of birth, gender) and pick the active one. Deleting a character removes its licenses and vehicles.
 - **Licenses:** license types come from `config/licenses.json`. Types with `"selfService": true` can be applied for from the tab and are issued immediately; others must be issued by law enforcement. Licenses can be valid, suspended or revoked.
+- **Record:** a read-only history of citations, arrests, warnings and warrants added by law enforcement.
 - **Vehicles:** sit in the driver's seat and register the vehicle; the server reads the plate from the vehicle itself, so registrations always match a real car. Each character can register up to `maxVehiclesPerCharacter` vehicles, plates are unique server-wide, and owners can report a vehicle stolen or recovered.
 
 `maxCharacters` and `maxVehiclesPerCharacter` are set in `config/settings.json`.

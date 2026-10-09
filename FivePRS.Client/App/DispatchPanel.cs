@@ -16,7 +16,7 @@ namespace FivePRS.Client.App
 
         public static void SetStatus(IDictionary<string, object> data)
         {
-            if (!TryGetString(data, "status", out var value) ||
+            if (!NuiData.TryGetString(data, "status", out var value) ||
                 !Enum.TryParse<UnitStatus>(value, true, out var status) ||
                 (status != UnitStatus.Available && status != UnitStatus.Busy))
             {
@@ -28,13 +28,13 @@ namespace FivePRS.Client.App
 
         public static void Attach(IDictionary<string, object> data)
         {
-            if (TryGetString(data, "callId", out var callId))
+            if (NuiData.TryGetString(data, "callId", out var callId))
                 ClientEvents.TriggerServer(EventNames.ServerAttachToCall, callId);
         }
 
         public static void Waypoint(IDictionary<string, object> data)
         {
-            if (!TryGetString(data, "callId", out var callId)) return;
+            if (!NuiData.TryGetString(data, "callId", out var callId)) return;
 
             var call = DispatchClient.Snapshot.Calls.FirstOrDefault(c => c.Id == callId);
             if (call is null || (call.X == 0f && call.Y == 0f)) return;
@@ -92,6 +92,10 @@ namespace FivePRS.Client.App
                         .Where(callsign => callsign is not null)
                         .ToList(),
                     IsPrimary   = call.PrimaryUnit == self.ServerId,
+                    call.IsEmergency,
+                    call.Description,
+                    call.Caller,
+                    CanClear    = call.IsEmergency && self.CallId == call.Id,
                 }),
                 units = snapshot.Units
                     .OrderBy(u => u.Callsign, StringComparer.OrdinalIgnoreCase)
@@ -106,12 +110,6 @@ namespace FivePRS.Client.App
                         Territory = map.FindTerritory(unit.Territory)?.Name,
                     }),
             };
-        }
-
-        private static bool TryGetString(IDictionary<string, object> data, string key, out string value)
-        {
-            value = data.TryGetValue(key, out var raw) ? raw?.ToString() ?? string.Empty : string.Empty;
-            return value.Length > 0;
         }
     }
 }

@@ -37,6 +37,18 @@ namespace FivePRS.Tests
         }
 
         [Fact]
+        public void SplitComponents_NeverSplitsSurrogatePair()
+        {
+            var text = new string('a', GameText.MaxComponentBytes - 2) + "🚓🚓";
+
+            var parts = GameText.SplitComponents(text);
+
+            Assert.Equal(text, string.Concat(parts));
+            Assert.All(parts, part => Assert.False(char.IsHighSurrogate(part[part.Length - 1])));
+            Assert.All(parts, part => Assert.True(Encoding.UTF8.GetByteCount(part) <= GameText.MaxComponentBytes));
+        }
+
+        [Fact]
         public void SplitComponents_NeverSplitsMultiByteCharacter()
         {
             var text = new string('a', GameText.MaxComponentBytes - 1) + "——";

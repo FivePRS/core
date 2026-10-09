@@ -341,6 +341,82 @@ namespace FivePRS.Tests
             return callId;
         }
 
+        private const int Caller = 50;
+
+        private string CreateEmergency(int caller = Caller)
+        {
+            var (callId, error) = _dispatch.CreateEmergencyCall(caller, "Jane Doe", Department.Police, "Shots fired", 100f, -900f, 30f);
+            Assert.Null(error);
+            return callId!;
+        }
+
+        [Fact]
+        public void EmergencyCall_AppearsInSnapshotWithCallerAndNoUnits()
+        {
+            var callId = CreateEmergency();
+
+            var call = Assert.Single(_dispatch.CreateSnapshot().Calls);
+            Assert.Equal(callId, call.Id);
+            Assert.True(call.IsEmergency);
+            Assert.Equal("Shots fired", call.Description);
+            Assert.Equal("Jane Doe", call.Caller);
+            Assert.Empty(call.Units);
+        }
+
+        [Fact]
+        public void EmergencyCall_OnePerCaller_AndCooldownAfterClose()
+        {
+            var callId = CreateEmergency();
+            Assert.NotNull(_dispatch.CreateEmergencyCall(Caller, "Jane Doe", Department.Police, "Again", 0f, 0f, 0f).Error);
+
+            Assert.True(_dispatch.CancelEmergencyCall(Caller, callId));
+            Assert.NotNull(_dispatch.CreateEmergencyCall(Caller, "Jane Doe", Department.Police, "Again", 0f, 0f, 0f).Error);
+
+            Advance(_settings.EmergencyCallCooldownSeconds + 1);
+            Assert.Null(_dispatch.CreateEmergencyCall(Caller, "Jane Doe", Department.Police, "Again", 0f, 0f, 0f).Error);
+        }
+
+        [Fact]
+        public void EmergencyCall_OnlyCallerCanCancel()
+        {
+            var callId = CreateEmergency();
+
+            Assert.False(_dispatch.CancelEmergencyCall(Caller + 1, callId));
+            Assert.True(_dispatch.CancelEmergencyCall(Caller, callId));
+            Assert.Empty(_dispatch.CreateSnapshot().Calls);
+        }
+
+        [Fact]
+        public void EmergencyCall_AttachedUnitClears_AndAwardsNoXp()
+        {
+            _dispatch.SetOnDuty(Officer, "Officer", Department.Police, 1);
+            var callId = CreateEmergency();
+
+            Assert.Null(_dispatch.ClearEmergencyCall(Officer, callId));
+            Assert.True(_dispatch.Attach(Officer, callId));
+            Assert.Equal(1, _dispatch.GetEmergencyStatus(Caller)!.Responding);
+            Assert.Empty(_dispatch.End(Officer, callId, CalloutResult.Completed));
+
+            Assert.Equal(Caller, _dispatch.ClearEmergencyCall(Officer, callId));
+            Assert.Null(_dispatch.GetEmergencyStatus(Caller));
+            Assert.Equal(UnitStatus.Available, _dispatch.GetUnit(Officer)!.Status);
+            Assert.Null(_dispatch.GetUnit(Officer)!.CallId);
+        }
+
+        [Fact]
+        public void EmergencyCall_ExpiresOnlyWhenUnanswered()
+        {
+            _dispatch.SetOnDuty(Officer, "Officer", Department.Police, 1);
+            var answered = CreateEmergency();
+            var unanswered = CreateEmergency(Caller + 1);
+            _dispatch.Attach(Officer, answered);
+
+            Advance(_settings.EmergencyCallTimeoutMinutes * 60 + 1);
+            _dispatch.Tick();
+
+            Assert.Equal(new[] { answered }, _dispatch.CreateSnapshot().Calls.Select(c => c.Id));
+        }
+
         private void Advance(int seconds) => _now = _now.AddSeconds(seconds);
 
         private static CalloutDefinition Definition(string name, Department department, int xp, int cooldown = 0) => new()

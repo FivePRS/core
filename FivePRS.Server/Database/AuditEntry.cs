@@ -19,6 +19,12 @@ namespace FivePRS.Server.Database
         public const string LicenseIssued    = "civ.license.issue";
         public const string VehicleRegistered = "civ.vehicle.register";
         public const string VehicleRemoved   = "civ.vehicle.remove";
+        public const string RecordIssued     = "records.issue";
+        public const string WarrantResolved  = "records.warrant.resolve";
+        public const string LicenseStatusSet = "records.license";
+        public const string VehicleFlagged   = "records.vehicle";
+        public const string EmergencyCall    = "911.call";
+        public const string EmergencyCleared = "911.clear";
     }
 
     public sealed class AuditEntry

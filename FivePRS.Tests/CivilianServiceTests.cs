@@ -1,56 +1,36 @@
 using System;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using FivePRS.Core.Civilian;
 using FivePRS.Core.Config;
 using FivePRS.Server.Civilian;
 using FivePRS.Server.Database;
-using Microsoft.Data.Sqlite;
-using MySqlConnector;
 using Xunit;
 
 namespace FivePRS.Tests
 {
-    public sealed class CivilianServiceTests : IAsyncLifetime, IDisposable
+    [Collection(TestDatabase.Collection)]
+    public sealed class CivilianServiceTests : IAsyncLifetime
     {
         private const string Owner = "license:owner";
         private const string Other = "license:other";
 
-        private readonly string _path = Path.Combine(Path.GetTempPath(), $"fiveprs-civ-{Guid.NewGuid():N}.db");
         private readonly ResourceSettings _settings = new() { MaxCharacters = 2, MaxVehiclesPerCharacter = 2 };
+        private TestDatabase _database = null!;
         private CivilianStore _store = null!;
         private CivilianService _service = null!;
 
         public async Task InitializeAsync()
         {
-            var mySql = Environment.GetEnvironmentVariable("FIVEPRS_TEST_MYSQL");
-            IDatabaseProvider provider;
-            if (string.IsNullOrEmpty(mySql))
-            {
-                provider = new SQLiteProvider(_path);
-            }
-            else
-            {
-                await DropCivilianTablesAsync(mySql);
-                provider = new MySqlProvider(mySql);
-            }
-
-            await provider.InitializeAsync();
-            _store = new CivilianStore(provider);
-            await _store.InitializeAsync();
+            _database = await TestDatabase.CreateAsync();
+            _store = _database.Store;
             _service = new CivilianService(_store, () => _settings, () => new LicensesConfig(), () => new DateTime(2026, 10, 9));
         }
 
-        public Task DisposeAsync() => Task.CompletedTask;
-
-        private static async Task DropCivilianTablesAsync(string connectionString)
+        public Task DisposeAsync()
         {
-            using var conn = new MySqlConnection(connectionString);
-            await conn.OpenAsync();
-            using var cmd = conn.CreateCommand();
-            cmd.CommandText = "DROP TABLE IF EXISTS fiveprs_licenses, fiveprs_vehicles, fiveprs_characters;";
-            await cmd.ExecuteNonQueryAsync();
+            _database.Dispose();
+            return Task.CompletedTask;
         }
 
         private Task<string?> CreateAsync(string owner = Owner, string first = "john", string dob = "1990-05-01") =>
@@ -165,15 +145,6 @@ namespace FivePRS.Tests
             Assert.NotNull(await _service.RemoveVehicleAsync(Other, vehicle.Id));
             Assert.Null(await _service.RemoveVehicleAsync(Owner, vehicle.Id));
             Assert.Null(await _store.GetVehicleAsync(vehicle.Id));
-        }
-
-        public void Dispose()
-        {
-            SqliteConnection.ClearAllPools();
-            foreach (var file in new[] { _path, _path + "-wal", _path + "-shm" })
-            {
-                if (File.Exists(file)) File.Delete(file);
-            }
         }
     }
 }

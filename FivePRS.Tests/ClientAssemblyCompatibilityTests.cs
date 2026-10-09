@@ -71,6 +71,38 @@ namespace FivePRS.Tests
                 "With nullable enabled these come from constrained generics such as 'where T : SomeClass'; use non-generic overloads in client code.");
         }
 
+        private static readonly string[] BlockedClientMembers =
+        {
+            "System.Char.IsHighSurrogate",
+            "System.Char.IsLowSurrogate",
+            "System.Char.IsSurrogate",
+            "System.Char.IsSurrogatePair",
+        };
+
+        [Theory]
+        [MemberData(nameof(ClientAssemblies))]
+        public void ClientAssembly_DoesNotCallMembersBlockedByFiveM(string fileName)
+        {
+            using var stream = File.OpenRead(Path.Combine(RepoRoot(), "bin", "client", fileName));
+            using var pe     = new PEReader(stream);
+            var reader       = pe.GetMetadataReader();
+
+            var used = reader.MemberReferences
+                .Select(handle => reader.GetMemberReference(handle))
+                .Where(member => member.Parent.Kind == HandleKind.TypeReference)
+                .Select(member =>
+                {
+                    var type = reader.GetTypeReference((TypeReferenceHandle)member.Parent);
+                    return $"{reader.GetString(type.Namespace)}.{reader.GetString(type.Name)}.{reader.GetString(member.Name)}";
+                })
+                .Where(BlockedClientMembers.Contains)
+                .Distinct()
+                .ToList();
+
+            Assert.True(used.Count == 0,
+                $"{fileName} calls {string.Join(", ", used)}, which FiveM's client runtime refuses to run (\"is not accessible\").");
+        }
+
         private static string RepoRoot()
         {
             var dir = new DirectoryInfo(AppContext.BaseDirectory);

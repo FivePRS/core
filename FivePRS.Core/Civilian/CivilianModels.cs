@@ -54,6 +54,7 @@ namespace FivePRS.Core.Civilian
         public int?                   ActiveCharacterId { get; set; }
         public List<LicenseView>      Licenses          { get; set; } = new();
         public List<VehicleInfo>      Vehicles          { get; set; } = new();
+        public List<RecordInfo>       Records           { get; set; } = new();
         public int                    MaxCharacters     { get; set; }
         public int                    MaxVehicles       { get; set; }
     }

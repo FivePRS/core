@@ -59,8 +59,10 @@ namespace FivePRS.Server
             Tick += DispatchTickAsync;
             RegisterAdminCommands();
             RegisterCivilianEvents();
+            RegisterLookupEvents();
+            RegisterEmergencyEvents();
 
-            ServerIcon.ApplyDefault();
+            _ = ServerIcon.ApplyDefaultAsync(ConfigManager.Settings.Branding.ServerIcon);
             _ = InitDbAsync();
         }
 
@@ -74,6 +76,7 @@ namespace FivePRS.Server
                 var dbType = dbTypeRaw == "mysql" ? DatabaseType.MySQL : DatabaseType.SQLite;
                 await _db.InitializeAsync(dbType, string.IsNullOrEmpty(connString) ? null : connString);
                 _civilians = new CivilianService(_db.Civilians, () => ConfigManager.Settings, () => ConfigManager.Licenses, () => DateTime.UtcNow);
+                _lookup    = new LookupService(_db.Civilians, () => ConfigManager.Settings, () => ConfigManager.Licenses);
 
                 Debug.WriteLine("[FivePRS] ServerBrain online.");
             }
@@ -311,9 +314,17 @@ namespace FivePRS.Server
 
         private void OnAttachToCall([FromSource] Player player, string callId)
         {
-            Notify(player, _dispatch.Attach(ServerId(player), callId)
-                ? $"~g~Attached to call ~y~#{callId}~w~. Waypoint set."
-                : $"~r~Unable to attach to call #{callId}.~w~ Check the ID and your status.");
+            if (!_dispatch.Attach(ServerId(player), callId))
+            {
+                Notify(player, $"~r~Unable to attach to call #{callId}.~w~ Check the ID and your status.");
+                return;
+            }
+
+            Notify(player, $"~g~Attached to call ~y~#{callId}~w~. Waypoint set.");
+
+            var caller = _dispatch.GetEmergencyCaller(callId);
+            if (caller is not null)
+                SendEmergencyStatus(caller.Value, "~b~911~w~ | Units are responding to your call.");
         }
 
         private async Task DispatchTickAsync()

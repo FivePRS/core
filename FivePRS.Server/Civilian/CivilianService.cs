@@ -47,7 +47,10 @@ namespace FivePRS.Server.Civilian
             }).ToList();
 
             if (active is not null)
+            {
                 state.Vehicles = await _store.GetVehiclesAsync(active.Id);
+                state.Records  = await _store.GetRecordsAsync(active.Id);
+            }
 
             return state;
         }
@@ -95,6 +98,9 @@ namespace FivePRS.Server.Civilian
         public async Task<string?> DeleteCharacterAsync(string owner, int characterId)
         {
             if (await GetOwnedCharacterAsync(owner, characterId) is null) return "Character not found.";
+
+            var summary = await _store.GetSummaryAsync(characterId);
+            if (summary?.HasActiveWarrant == true) return "A character with an active warrant can't be deleted.";
 
             await _store.DeleteCharacterAsync(characterId);
             return null;

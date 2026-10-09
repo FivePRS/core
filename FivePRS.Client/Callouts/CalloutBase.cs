@@ -151,7 +151,7 @@ namespace FivePRS.Client.Callouts
                 if (dist <= catchDistM)
                 {
                     await TaskManager.AssignTaskAsync(suspect, PedTaskType.PutHandsUp);
-                    ClientBrain.ShowNotification($"~g~Suspect cornered~w~ | Press {Binds.Cuff} to arrest.");
+                    ClientBrain.ShowNotification("~g~Suspect cornered~w~ | Move in and arrest them.");
                     await WaitForArrestAsync(suspect, ct);
                     return;
                 }

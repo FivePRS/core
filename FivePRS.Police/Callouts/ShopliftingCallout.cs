@@ -95,9 +95,9 @@ namespace FivePRS.Police.Callouts
         }
 
         public override void OnCalloutDeclined()
-            => ClientBrain.ShowNotification("~r~[ DISPATCH ]~w~ Shoplifting callout declined.");
+            => ClientBrain.ShowNotification("Shoplifting callout declined.", "~r~Dispatch");
 
         public override void OnCalloutFailed()
-            => ClientBrain.ShowNotification("~r~[ DISPATCH ]~w~ Shoplifting callout cancelled.");
+            => ClientBrain.ShowNotification("Shoplifting callout cancelled.", "~r~Dispatch");
     }
 }

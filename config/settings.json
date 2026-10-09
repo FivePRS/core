@@ -7,5 +7,13 @@
     "postFailCooldownSeconds": 30,
     "noCalloutRetrySeconds": 30,
     "maxCharacters": 3,
-    "maxVehiclesPerCharacter": 5
+    "maxVehiclesPerCharacter": 5,
+    "maxFine": 10000,
+    "emergencyCallCooldownSeconds": 60,
+    "emergencyCallTimeoutMinutes": 15,
+    "branding": {
+        "serverIcon": "https://cdn.fiveprs.org/fiveprs/server_icon.png",
+        "notificationLogo": "https://cdn.fiveprs.org/fiveprs/fiveprs_logo.png",
+        "nameplate": "https://cdn.fiveprs.org/fiveprs/nameplate.png"
+    }
 }

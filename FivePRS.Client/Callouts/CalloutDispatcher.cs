@@ -175,7 +175,7 @@ namespace FivePRS.Client.Callouts
                 callout.SetState(CalloutState.Declined);
 
                 if (!ct.IsCancellationRequested)
-                    ClientBrain.ShowNotification("~r~[ DISPATCH ]~w~ Callout declined.");
+                    ClientBrain.ShowNotification("Callout declined.", "~r~Dispatch");
                 return;
             }
 
@@ -186,7 +186,7 @@ namespace FivePRS.Client.Callouts
             _activeCallout = callout;
             SetActive(callout.Data);
 
-            ClientBrain.ShowNotification($"~g~[ DISPATCH ]~w~ Call ~y~#{callout.Data.Id}~w~ accepted: ~b~{callout.Data.Name}");
+            ClientBrain.ShowNotification($"Call ~y~#{callout.Data.Id}~w~ accepted: ~b~{callout.Data.Name}", "~g~Dispatch");
 
             var finalResult = CalloutResult.Failed;
             using var calloutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -259,7 +259,7 @@ namespace FivePRS.Client.Callouts
                 if (EndCalloutPressed)
                 {
                     EndCalloutPressed = false;
-                    ClientBrain.ShowNotification("~o~[ DISPATCH ]~w~ Callout ended by officer.");
+                    ClientBrain.ShowNotification("Callout ended by officer.", "~o~Dispatch");
                     callout.SetState(CalloutState.Failed);
                     callout.RaiseEnded(CalloutResult.Failed);
                     return;
@@ -304,8 +304,8 @@ namespace FivePRS.Client.Callouts
                 : "";
 
             ClientBrain.ShowNotification(
-                $"~y~[ DISPATCH ]~w~  {codeColor}Code {(int)data.Priority}~w~  ~b~{data.Name}~w~ ~y~#{data.Id}~n~" +
-                $"{data.Description}~n~{distance}{Binds.Accept} ~g~Accept~w~   {Binds.Decline} ~r~Decline");
+                $"~b~{data.Name}~w~ ~y~#{data.Id}~n~{data.Description}~n~{distance}",
+                $"{codeColor}Dispatch · Code {(int)data.Priority}");
         }
 
         private static Blip? CreatePreviewBlip(Vector3 location, CalloutData data)

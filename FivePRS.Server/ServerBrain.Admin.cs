@@ -115,13 +115,23 @@ namespace FivePRS.Server
         private Task<string> EndCallAsync(Player? caller, string[] args)
         {
             var callId = args[0].TrimStart('#');
+            var emergencyCaller = _dispatch.GetEmergencyCaller(callId);
             var primary = _dispatch.ForceClose(callId);
             if (primary is null) return Task.FromResult($"Call #{callId} is not active.");
 
-            var owner = Players[primary.Value];
-            TriggerClientEvent(owner, EventNames.ClientEndCallout);
-            Notify(owner, $"~o~Call #{callId} was closed by dispatch.");
-            Audit(AuditActions.AdminEndCall, caller, GetLicense(owner), $"call #{callId}");
+            string? targetLicense = null;
+            if (primary.Value > 0)
+            {
+                var owner = Players[primary.Value];
+                TriggerClientEvent(owner, EventNames.ClientEndCallout);
+                Notify(owner, $"~o~Call #{callId} was closed by dispatch.");
+                targetLicense = GetLicense(owner);
+            }
+
+            if (emergencyCaller is not null)
+                SendEmergencyStatus(emergencyCaller.Value, $"Your 911 call #{callId} was closed by dispatch.");
+
+            Audit(AuditActions.AdminEndCall, caller, targetLicense, $"call #{callId}");
 
             return Task.FromResult($"Call #{callId} closed.");
         }

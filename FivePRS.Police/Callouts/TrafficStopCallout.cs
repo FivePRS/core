@@ -315,7 +315,7 @@ namespace FivePRS.Police.Callouts
             await TaskManager.AssignTaskAsync(_driver, PedTaskType.PutHandsUp);
 
             ClientBrain.ShowNotification(
-                $"~o~SUSPECT COMPLYING~w~ | Driver has a warrant, press {Binds.Cuff} to arrest.");
+                "~o~SUSPECT COMPLYING~w~ | Driver has an active warrant.");
 
             await WaitForArrestAsync(_driver, ct, $"Press {Binds.Cuff} to arrest the driver");
         }
@@ -397,9 +397,9 @@ namespace FivePRS.Police.Callouts
         }
 
         public override void OnCalloutDeclined()
-            => ClientBrain.ShowNotification("~r~[ DISPATCH ]~w~ Traffic stop declined.");
+            => ClientBrain.ShowNotification("Traffic stop declined.", "~r~Dispatch");
 
         public override void OnCalloutFailed()
-            => ClientBrain.ShowNotification("~r~[ DISPATCH ]~w~ Traffic stop cancelled.");
+            => ClientBrain.ShowNotification("Traffic stop cancelled.", "~r~Dispatch");
     }
 }

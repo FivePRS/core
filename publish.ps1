@@ -40,9 +40,6 @@ if (Test-Path "$Root\config") {
 Info "Copying NUI files..."
 Copy-Item -Recurse "$Root\nui" "$DistDir\nui"
 Copy-Item -Recurse "$Root\scripts" "$DistDir\scripts"
-if (Test-Path "$Root\branding\*") {
-    Copy-Item -Recurse "$Root\branding" "$DistDir\branding"
-}
 
 # 4. Copy client DLLs  (bin\client -> client)
 # CitizenFX.* is injected by FiveM at runtime - do NOT bundle it.

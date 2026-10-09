@@ -10,7 +10,7 @@
     <header class="app-header">
       <div class="lightbar" aria-hidden="true"></div>
       <div class="brand">
-        <span class="wordmark">five<span class="red">p</span><span class="blue">rs</span></span>
+        <img id="brand-logo" class="brand-logo" alt="FivePRS">
       </div>
       <nav id="tabs" class="tabs" role="tablist"></nav>
       <div class="header-meta">
@@ -84,7 +84,10 @@
           </dl>
 
           <div id="offer" class="call-card offer" hidden>
-            <p class="panel-title">Incoming call</p>
+            <div class="call-card-head">
+              <p class="panel-title">Incoming call</p>
+              <span id="offer-countdown" class="count"></span>
+            </div>
             <p id="offer-title" class="call-card-title"></p>
             <p id="offer-description" class="muted call-card-detail"></p>
             <div class="offer-track" aria-hidden="true"><div id="offer-bar" class="offer-bar"></div></div>
@@ -141,6 +144,95 @@
           </div>
         </section>
       </section>
+      <section id="tab-records" class="tab records" role="tabpanel" hidden>
+        <aside class="panel rec-sidebar">
+          <div class="panel-head">
+            <p class="panel-title">Search</p>
+          </div>
+          <form id="rec-search" class="rec-search">
+            <div class="rec-modes">
+              <button type="button" class="button small active" data-mode="name">Name</button>
+              <button type="button" class="button small" data-mode="plate">Plate</button>
+            </div>
+            <input id="rec-term" class="duty-input" autocomplete="off" spellcheck="false" placeholder="First or last name">
+            <button type="submit" class="button primary">Search</button>
+          </form>
+          <p id="rec-results-title" class="panel-title rec-results-title" hidden></p>
+          <div id="rec-results" class="civ-characters"></div>
+          <p id="rec-results-empty" class="empty" hidden>No matches.</p>
+        </aside>
+
+        <div class="civ-main">
+          <p id="rec-error" class="civ-error" hidden></p>
+          <p id="rec-placeholder" class="panel empty">Search for a person by name or a vehicle by plate.</p>
+
+          <div id="rec-detail" class="civ-profile" hidden>
+            <section class="panel civ-identity">
+              <div>
+                <p class="panel-title">Person</p>
+                <p id="rec-name" class="civ-name"></p>
+                <p id="rec-details" class="muted"></p>
+                <p id="rec-plate" class="muted rec-plate"></p>
+              </div>
+              <div class="rec-flags">
+                <span id="rec-warrant" class="status status-revoked" hidden>Active warrant</span>
+                <button type="button" class="button small" data-action="back">Back to results</button>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-head"><p class="panel-title">Licenses</p></div>
+              <div id="rec-licenses" class="civ-licenses"></div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-head"><p class="panel-title">Vehicles</p></div>
+              <table>
+                <thead>
+                  <tr><th>Plate</th><th>Model</th><th>Status</th><th></th></tr>
+                </thead>
+                <tbody id="rec-vehicles"></tbody>
+              </table>
+              <p id="rec-vehicles-empty" class="empty" hidden>No registered vehicles.</p>
+            </section>
+
+            <section class="panel">
+              <div class="panel-head"><p class="panel-title">New record</p></div>
+              <form id="rec-form" class="rec-form">
+                <div class="rec-form-row">
+                  <label class="civ-field">
+                    <span class="duty-label">Type</span>
+                    <select name="type" class="duty-input">
+                      <option value="0">Citation</option>
+                      <option value="1">Arrest</option>
+                      <option value="2">Warning</option>
+                      <option value="3">Warrant</option>
+                    </select>
+                  </label>
+                  <label id="rec-fine-field" class="civ-field">
+                    <span class="duty-label">Fine</span>
+                    <input name="fine" class="duty-input" type="number" min="0" step="1" value="0">
+                  </label>
+                </div>
+                <label class="civ-field">
+                  <span class="duty-label">Charges and notes</span>
+                  <textarea name="description" class="duty-input rec-description" rows="3" required></textarea>
+                </label>
+                <div class="civ-form-actions rec-form-actions">
+                  <button type="submit" class="button primary">Add to record</button>
+                </div>
+              </form>
+            </section>
+
+            <section class="panel">
+              <div class="panel-head"><p class="panel-title">History</p></div>
+              <div id="rec-history" class="rec-history"></div>
+              <p id="rec-history-empty" class="empty" hidden>No records.</p>
+            </section>
+          </div>
+        </div>
+      </section>
+
       <section id="tab-civilian" class="tab civilian" role="tabpanel" hidden>
         <aside class="panel civ-sidebar">
           <div class="panel-head">
@@ -216,7 +308,53 @@
               </table>
               <p id="civ-vehicles-empty" class="empty" hidden>No registered vehicles.</p>
             </section>
+
+            <section class="panel">
+              <div class="panel-head"><p class="panel-title">My record</p></div>
+              <div id="civ-records" class="rec-history"></div>
+              <p id="civ-records-empty" class="empty" hidden>Clean record.</p>
+            </section>
           </div>
+        </div>
+      </section>
+      <section id="tab-emergency" class="tab emergency" role="tabpanel" hidden>
+        <div class="duty-column">
+          <h1 class="duty-title">Call 911</h1>
+          <p class="muted em-intro">Your location is sent with the call. Misuse of 911 can be reported to staff.</p>
+
+          <div id="em-active" class="call-card offer em-active" hidden>
+            <div class="call-card-head">
+              <p class="panel-title">Your call</p>
+              <span id="em-call-id" class="count"></span>
+            </div>
+            <p id="em-call-title" class="call-card-title"></p>
+            <p id="em-call-description" class="muted call-card-detail"></p>
+            <p id="em-call-units" class="call-card-detail"></p>
+            <div class="call-card-actions">
+              <button type="button" class="button danger" data-action="em-cancel">Cancel call</button>
+            </div>
+          </div>
+
+          <form id="em-form" class="em-form">
+            <p class="panel-title duty-section">Service</p>
+            <div id="em-services" class="option-row"></div>
+
+            <label class="civ-field duty-section">
+              <span class="duty-label">What is happening?</span>
+              <textarea name="description" class="duty-input rec-description" rows="4" required></textarea>
+            </label>
+
+            <label class="em-anonymous">
+              <input type="checkbox" name="anonymous">
+              <span>Report anonymously</span>
+            </label>
+
+            <p id="em-error" class="duty-message duty-error" hidden></p>
+
+            <div class="duty-actions">
+              <button id="em-submit" type="submit" class="button danger">Call 911</button>
+            </div>
+          </form>
         </div>
       </section>
     </main>
@@ -226,6 +364,8 @@
   <script src="duty.js"></script>
   <script src="dispatch.js"></script>
   <script src="civilian.js"></script>
+  <script src="records.js"></script>
+  <script src="emergency.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

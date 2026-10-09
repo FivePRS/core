@@ -18,6 +18,8 @@ namespace FivePRS.Client.App
 
         public static bool HasDepartment => _profile is not null && _profile.Department != Department.None;
 
+        public static Department Department => _profile?.Department ?? Department.None;
+
         public static void SetProfile(PlayerData profile) => _profile = profile;
 
         public static void SetAllowed(IEnumerable<int> departmentIds) =>

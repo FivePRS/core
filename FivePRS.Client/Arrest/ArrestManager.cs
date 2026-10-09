@@ -105,7 +105,8 @@ namespace FivePRS.Client.Arrest
             StartFollowTask(suspect);
 
             ClientBrain.ShowNotification(
-                $"~g~Suspect cuffed~w~ | {Binds.Uncuff} release | {Binds.Escort} place in vehicle");
+                "~g~Suspect cuffed.");
+            ClientBrain.ShowHelp($"{Binds.Uncuff} Release  {Binds.Escort} Place in vehicle", 6_000);
 
             ClientEvents.TriggerLocal(EventNames.LocalSuspectCuffed, suspect.Handle);
 

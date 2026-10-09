@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Text;
 
 namespace FivePRS.Core.Text
 {
@@ -29,21 +28,32 @@ namespace FivePRS.Core.Text
             var safeLength = 0;
             var byteLimitedLength = 0;
 
-            for (var i = start; i < text.Length; i++)
+            var i = start;
+            while (i < text.Length)
             {
-                var charLength = char.IsHighSurrogate(text[i]) && i + 1 < text.Length ? 2 : 1;
-                bytes += Encoding.UTF8.GetByteCount(text.Substring(i, charLength));
+                var c = text[i];
+                var isPair = c >= '\uD800' && c <= '\uDBFF' && i + 1 < text.Length;
+                var charLength = isPair ? 2 : 1;
+
+                bytes += isPair ? 4 : Utf8Length(c);
                 if (bytes > maxBytes) break;
 
-                if (text[i] == '~') inToken = !inToken;
+                if (c == '~') inToken = !inToken;
 
-                i += charLength - 1;
-                byteLimitedLength = i - start + 1;
+                i += charLength;
+                byteLimitedLength = i - start;
                 if (!inToken) safeLength = byteLimitedLength;
             }
 
             if (safeLength > 0) return safeLength;
             return byteLimitedLength > 0 ? byteLimitedLength : 1;
+        }
+
+        private static int Utf8Length(char c)
+        {
+            if (c < 0x80) return 1;
+            if (c < 0x800) return 2;
+            return 3;
         }
     }
 }

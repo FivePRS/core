@@ -30,23 +30,23 @@ namespace FivePRS.Client.App
 
         public static void CreateCharacter(IDictionary<string, object> data) =>
             ClientEvents.TriggerServer(EventNames.ServerCharacterCreate,
-                GetString(data, "firstName"), GetString(data, "lastName"),
-                GetString(data, "dateOfBirth"), GetString(data, "gender"));
+                NuiData.GetString(data, "firstName"), NuiData.GetString(data, "lastName"),
+                NuiData.GetString(data, "dateOfBirth"), NuiData.GetString(data, "gender"));
 
         public static void SelectCharacter(IDictionary<string, object> data)
         {
-            if (TryGetInt(data, "characterId", out var id))
+            if (NuiData.TryGetInt(data, "characterId", out var id))
                 ClientEvents.TriggerServer(EventNames.ServerCharacterSelect, id);
         }
 
         public static void DeleteCharacter(IDictionary<string, object> data)
         {
-            if (TryGetInt(data, "characterId", out var id))
+            if (NuiData.TryGetInt(data, "characterId", out var id))
                 ClientEvents.TriggerServer(EventNames.ServerCharacterDelete, id);
         }
 
         public static void ApplyLicense(IDictionary<string, object> data) =>
-            ClientEvents.TriggerServer(EventNames.ServerLicenseApply, GetString(data, "type"));
+            ClientEvents.TriggerServer(EventNames.ServerLicenseApply, NuiData.GetString(data, "type"));
 
         public static string? RegisterVehicle()
         {
@@ -59,14 +59,14 @@ namespace FivePRS.Client.App
 
         public static void RemoveVehicle(IDictionary<string, object> data)
         {
-            if (TryGetInt(data, "vehicleId", out var id))
+            if (NuiData.TryGetInt(data, "vehicleId", out var id))
                 ClientEvents.TriggerServer(EventNames.ServerVehicleRemove, id);
         }
 
         public static void SetVehicleStolen(IDictionary<string, object> data)
         {
-            if (!TryGetInt(data, "vehicleId", out var id)) return;
-            var stolen = data.TryGetValue("stolen", out var raw) && raw is bool value && value;
+            if (!NuiData.TryGetInt(data, "vehicleId", out var id)) return;
+            var stolen = NuiData.GetBool(data, "stolen");
             ClientEvents.TriggerServer(EventNames.ServerVehicleSetStolen, id, stolen);
         }
 
@@ -93,25 +93,6 @@ namespace FivePRS.Client.App
             var model = string.IsNullOrEmpty(label) || label == "NULL" ? displayName : label;
 
             return new DrivenVehicle(API.GetVehicleNumberPlateText(vehicle).Trim(), model);
-        }
-
-        private static string GetString(IDictionary<string, object> data, string key) =>
-            data.TryGetValue(key, out var raw) ? raw?.ToString() ?? string.Empty : string.Empty;
-
-        private static bool TryGetInt(IDictionary<string, object> data, string key, out int value)
-        {
-            value = 0;
-            if (!data.TryGetValue(key, out var raw) || raw is null) return false;
-
-            try
-            {
-                value = Convert.ToInt32(raw);
-                return true;
-            }
-            catch (Exception ex) when (ex is FormatException || ex is InvalidCastException || ex is OverflowException)
-            {
-                return false;
-            }
         }
     }
 }

@@ -13,6 +13,10 @@ namespace FivePRS.Core.Events
         public const string ClientEntryRejected     = "FivePRS:Client:EntryRejected";
         public const string ClientCivilianState     = "FivePRS:Client:CivilianState";
         public const string ClientCivilianError     = "FivePRS:Client:CivilianError";
+        public const string ClientLookupResult      = "FivePRS:Client:LookupResult";
+        public const string ClientLookupError       = "FivePRS:Client:LookupError";
+        public const string ClientEmergencyStatus   = "FivePRS:Client:EmergencyStatus";
+        public const string ClientEmergencyError    = "FivePRS:Client:EmergencyError";
 
         public const string ServerPlayerConnected   = "FivePRS:Server:PlayerConnected";
         public const string ServerToggleDuty        = "FivePRS:Server:ToggleDuty";
@@ -30,6 +34,17 @@ namespace FivePRS.Core.Events
         public const string ServerVehicleRegister   = "FivePRS:Server:VehicleRegister";
         public const string ServerVehicleRemove     = "FivePRS:Server:VehicleRemove";
         public const string ServerVehicleSetStolen  = "FivePRS:Server:VehicleSetStolen";
+        public const string ServerLookupName        = "FivePRS:Server:LookupName";
+        public const string ServerLookupPlate       = "FivePRS:Server:LookupPlate";
+        public const string ServerLookupCharacter   = "FivePRS:Server:LookupCharacter";
+        public const string ServerRecordIssue       = "FivePRS:Server:RecordIssue";
+        public const string ServerRecordResolve     = "FivePRS:Server:RecordResolve";
+        public const string ServerLicenseSetStatus  = "FivePRS:Server:LicenseSetStatus";
+        public const string ServerVehicleFlag       = "FivePRS:Server:VehicleFlag";
+        public const string ServerEmergencyCall     = "FivePRS:Server:EmergencyCall";
+        public const string ServerEmergencyCancel   = "FivePRS:Server:EmergencyCancel";
+        public const string ServerEmergencyStatus   = "FivePRS:Server:EmergencyStatus";
+        public const string ServerCallClear         = "FivePRS:Server:CallClear";
 
         public const string LocalDutyChanged        = "FivePRS:Local:DutyChanged";
         public const string LocalCalloutReceived    = "FivePRS:Local:CalloutReceived";

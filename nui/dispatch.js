@@ -18,7 +18,7 @@ function tickOffer() {
   const remaining = Math.max(0, offerDeadline - Date.now());
   const fraction = offerTotalMs > 0 ? remaining / offerTotalMs : 0;
   document.getElementById("offer-bar").style.width = `${(fraction * 100).toFixed(1)}%`;
-  document.getElementById("offer-accept").textContent = `Accept (${Math.ceil(remaining / 1000)}s)`;
+  document.getElementById("offer-countdown").textContent = `${Math.ceil(remaining / 1000)}s`;
   if (remaining <= 0) stopOfferTimer();
 }
 
@@ -73,6 +73,9 @@ function renderCalls(calls, self) {
     const mine = self.callId === call.id;
 
     const actions = el("div", { className: "actions" }, [
+      call.canClear
+        ? el("button", { className: "button small danger", text: "Clear", dataset: { action: "clear", call: call.id } })
+        : null,
       call.hasLocation
         ? el("button", { className: "button small", text: "Waypoint", dataset: { action: "waypoint", call: call.id } })
         : null,
@@ -91,6 +94,7 @@ function renderCalls(calls, self) {
       el("td", {}, [
         el("span", { text: call.name }),
         el("span", { className: `sub code-${call.code}`, text: `Code ${call.code}` }),
+        call.isEmergency ? el("span", { className: "sub muted em-call-text", text: `${call.caller}: ${call.description}` }) : null,
       ]),
       el("td", { className: "muted", text: call.territory ?? "—" }),
       el("td", {}, [el("div", { className: "chips" }, call.units.map((unit) => el("span", { className: "chip", text: unit })))]),
@@ -141,6 +145,9 @@ dispatchTab.addEventListener("click", (event) => {
     post("setStatus", { status: target.dataset.status });
   } else if (target.dataset.action === "attach") {
     post("attach", { callId: target.dataset.call });
+  } else if (target.dataset.action === "clear") {
+    target.disabled = true;
+    post("callClear", { callId: target.dataset.call });
   } else if (target.dataset.action === "waypoint") {
     post("waypoint", { callId: target.dataset.call });
   } else if (target.dataset.action === "offer-accept" || target.dataset.action === "offer-decline") {

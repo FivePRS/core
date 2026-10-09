@@ -8,6 +8,9 @@ namespace FivePRS.Core.Civilian
         public const int MaxNameLength  = 24;
         public const int MaxPlateLength = 8;
         public const int MinimumAge     = 16;
+        public const int MaxDescriptionLength = 500;
+        public const int MinSearchLength = 2;
+        public const int MaxEmergencyLength = 300;
 
         public static readonly string[] Genders = { "Male", "Female", "Other" };
 
@@ -52,6 +55,25 @@ namespace FivePRS.Core.Civilian
                 }
             }
             return false;
+        }
+
+        public static bool TryNormalizeDescription(string? input, out string description)
+        {
+            description = (input ?? string.Empty).Trim();
+            return description.Length > 0 && description.Length <= MaxDescriptionLength;
+        }
+
+        public static bool TryNormalizeSearch(string? input, out string term)
+        {
+            term = (input ?? string.Empty).Trim();
+            if (term.Length < MinSearchLength || term.Length > MaxNameLength * 2 + 1) return false;
+
+            foreach (var c in term)
+            {
+                if (!char.IsLetter(c) && c != ' ' && c != '-' && c != '\'') return false;
+            }
+
+            return true;
         }
 
         public static bool TryNormalizePlate(string? input, out string plate)

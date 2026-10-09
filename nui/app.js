@@ -4,7 +4,9 @@ const tabsNav = document.getElementById("tabs");
 const tabLabels = {
   duty: "Duty",
   dispatch: "Dispatch",
+  records: "Records",
   civilian: "Civilian",
+  emergency: "911",
 };
 
 let activeTab = null;
@@ -27,12 +29,16 @@ function renderTabs(tabs) {
 }
 
 function renderApp(state, opening) {
+  const logo = document.getElementById("brand-logo");
+  if (state.nameplate && logo.getAttribute("src") !== state.nameplate) logo.src = state.nameplate;
   renderTabs(state.tabs);
   if (opening || !state.tabs.includes(activeTab)) activeTab = state.defaultTab;
   selectTab(activeTab);
   renderDuty(state.duty, opening);
   renderDispatch(state.dispatch);
+  renderRecords(state.records, opening);
   renderCivilian(state.civilian, opening);
+  renderEmergency(state.emergency, opening);
 }
 
 function tickClock() {
@@ -50,6 +56,13 @@ screens.app = {
   },
   rejected(message) {
     showDutyError(message);
+  },
+  recordsError(message) {
+    showRecordsError(message);
+    if (recordsView) renderRecords(recordsView, false);
+  },
+  emergencyError(message) {
+    showEmergencyError(message);
   },
   civilianError(message) {
     showCivilianError(message);

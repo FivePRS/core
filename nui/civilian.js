@@ -117,6 +117,24 @@ function renderVehicles(state, currentVehicle) {
   );
 }
 
+function renderOwnRecords(records) {
+  document.getElementById("civ-records").replaceChildren(
+    ...records.map((entry) => {
+      const activeWarrant = entry.type === 3 && entry.active;
+      const meta = [formatDate(entry.createdAt), entry.officerCallsign, entry.fine > 0 ? `$${entry.fine}` : null].filter(Boolean).join(" · ");
+      return el("div", { className: "rec-entry" }, [
+        el("div", { className: "rec-entry-head" }, [
+          el("span", { className: `status status-${recordTones[entry.type]}`, text: activeWarrant ? "Active warrant" : recordTypes[entry.type] }),
+          el("span", { className: "muted rec-entry-meta", text: meta }),
+        ]),
+        el("p", { className: "rec-entry-text", text: entry.description }),
+        entry.resolution ? el("p", { className: "muted rec-entry-meta", text: entry.resolution }) : null,
+      ]);
+    })
+  );
+  document.getElementById("civ-records-empty").hidden = records.length > 0;
+}
+
 function renderCivilian(view, reset) {
   civilianView = view;
   if (reset) {
@@ -160,6 +178,7 @@ function renderCivilian(view, reset) {
 
   renderLicenses(state.licenses);
   renderVehicles(state, view.currentVehicle);
+  renderOwnRecords(state.records ?? []);
 }
 
 characterForm.addEventListener("submit", (event) => {

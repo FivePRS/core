@@ -27,10 +27,13 @@ client_scripts {
 files {
     'nui/index.html',
     'nui/style.css',
+    'nui/dui-image.html',
     'nui/common.js',
     'nui/duty.js',
     'nui/dispatch.js',
     'nui/civilian.js',
+    'nui/records.js',
+    'nui/emergency.js',
     'nui/app.js',
     'client/FivePRS.Core.dll',
     'client/Newtonsoft.Json.dll',
