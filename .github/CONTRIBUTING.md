@@ -64,7 +64,7 @@ Compiled outputs land in `bin/client/` and `bin/server/`.
 
 **Testing locally**
 
-Run `publish.ps1` from the repository root. It builds the core and writes `dist/fiveprs/` and `dist/[fiveprs_addons]/`, ready to copy into your FiveM server's `resources/` directory. Restart the resource after copying.
+Run `publish.ps1` from the repository root. It builds the core and writes `dist/fiveprs/` and `dist/fiveprs.zip`, ready to copy into your FiveM server's `resources/` directory. Restart the resource after copying.
 
 ---
 
@@ -73,8 +73,7 @@ Run `publish.ps1` from the repository root. It builds the core and writes `dist/
 | Path | Purpose |
 |---|---|
 | `FivePRS.*/`, `config/`, `nui/`, `fxmanifest.lua` | Everything that ships in the `fiveprs` resource |
-| `addons/<resource_name>/` | Optional standalone resources bundled into `fiveprs_addons` |
-| `publish.ps1` | Builds the core and packages both bundles into `dist/` |
+| `publish.ps1` | Builds the core and packages it into `dist/` |
 
 | Project | Purpose |
 |---|---|

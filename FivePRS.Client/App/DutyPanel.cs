@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using FivePRS.Client.Agency;
 using FivePRS.Client.Dispatch;
+using FivePRS.Client.Stations;
 using FivePRS.Core.Config;
 using FivePRS.Core.Events;
 using FivePRS.Core.Models;
@@ -48,7 +49,27 @@ namespace FivePRS.Client.App
             if (!Callsign.TryNormalize(rawCallsign, out var callsign))
                 return $"Callsigns can be up to {Callsign.MaxLength} letters, numbers or hyphens.";
 
+            var error = SetStart(data, (Department)departmentId, agencyId);
+            if (error is not null) return error;
+
             ClientEvents.TriggerServer(EventNames.ServerEnterService, departmentId, agencyId, callsign);
+            return null;
+        }
+
+        private static string? SetStart(IDictionary<string, object> data, Department department, string agencyId)
+        {
+            var rawMode = NuiData.GetString(data, "start");
+            if (!Enum.TryParse<DutyStartMode>(rawMode, true, out var mode) || mode == DutyStartMode.Here)
+            {
+                StationService.SetPendingStart(DutyStartMode.Here, null);
+                return null;
+            }
+
+            var station = ConfigManager.Stations.Find(NuiData.GetString(data, "stationId"));
+            if (station is null || !station.Serves(department, agencyId))
+                return "Choose a station first.";
+
+            StationService.SetPendingStart(mode, station.Id);
             return null;
         }
 
@@ -71,6 +92,10 @@ namespace FivePRS.Client.App
                     Id       = (int)d,
                     Name     = d.ToString(),
                     Agencies = map.AgenciesFor(d).Select(a => new { a.Id, a.Name, a.CallsignPrefix }).ToList(),
+                    Stations = ConfigManager.Stations.For(d, null)
+                        .Select(s => new { s.Id, s.Name, s.Agencies, Distance = (int)StationService.DistanceTo(s) })
+                        .OrderBy(s => s.Distance)
+                        .ToList(),
                 })
                 .ToList();
 
@@ -82,6 +107,7 @@ namespace FivePRS.Client.App
                 XpToNext          = profile.XPToNextRank,
                 profile.IsOnDuty,
                 DepartmentId      = (int)profile.Department,
+                Department        = profile.Department.ToString(),
                 AgencyId          = profile.Agency,
                 profile.Callsign,
                 CallsignMaxLength = Callsign.MaxLength,

@@ -7,6 +7,7 @@ const tabLabels = {
   records: "Records",
   civilian: "Civilian",
   emergency: "911",
+  admin: "Admin",
 };
 
 let activeTab = null;
@@ -31,6 +32,7 @@ function renderTabs(tabs) {
 function renderApp(state, opening) {
   const logo = document.getElementById("brand-logo");
   if (state.nameplate && logo.getAttribute("src") !== state.nameplate) logo.src = state.nameplate;
+  setDepartmentIcons(state.icons);
   renderTabs(state.tabs);
   if (opening || !state.tabs.includes(activeTab)) activeTab = state.defaultTab;
   selectTab(activeTab);
@@ -39,6 +41,7 @@ function renderApp(state, opening) {
   renderRecords(state.records, opening);
   renderCivilian(state.civilian, opening);
   renderEmergency(state.emergency, opening);
+  renderAdmin(state.admin, opening);
 }
 
 function tickClock() {

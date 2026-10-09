@@ -877,3 +877,160 @@ tr.mine td {
   max-width: 420px;
   white-space: normal;
 }
+
+.admin {
+  overflow-y: auto;
+}
+
+.admin-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+}
+
+.admin-banner {
+  line-height: 1.5;
+}
+
+.admin-search {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  padding: 0 16px 14px;
+}
+
+.admin-search .duty-input {
+  height: 36px;
+}
+
+.admin-toggles {
+  justify-content: flex-start;
+}
+
+.duty-stations {
+  margin-top: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.cmenu {
+  position: fixed;
+  top: 50%;
+  right: 32px;
+  width: 340px;
+  transform: translateY(-50%);
+  overflow: hidden;
+  background: rgba(7, 9, 15, 0.94);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+}
+
+.cmenu-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.cmenu-title {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.cmenu-subtitle {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.cmenu-items {
+  max-height: 48vh;
+  overflow-y: auto;
+  list-style: none;
+  padding: 6px;
+}
+
+.cmenu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-left: 3px solid transparent;
+  border-radius: 6px;
+}
+
+.cmenu-item.selected {
+  background: rgba(59, 130, 246, 0.16);
+  border-left-color: var(--blue);
+}
+
+.cmenu-item.disabled {
+  color: var(--subtle);
+}
+
+.cmenu-label {
+  flex: 1;
+}
+
+.cmenu-detail {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.cmenu-arrow {
+  color: var(--muted);
+}
+
+.cmenu-foot {
+  display: flex;
+  justify-content: space-between;
+  padding: 9px 16px;
+  font-size: 11px;
+  color: var(--subtle);
+  border-top: 1px solid var(--line);
+}
+
+.unit-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.self .unit-head {
+  margin-top: 6px;
+}
+
+.dept-slot:empty {
+  display: none;
+}
+
+.dept-icon {
+  display: block;
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+}
+
+.dept-slot.small .dept-icon {
+  width: 28px;
+  height: 28px;
+}
+
+.option.with-icon {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.option.with-icon .dept-icon {
+  width: 30px;
+  height: 30px;
+}
+
+.panel-head .dept-slot + .panel-title {
+  margin: 0 auto 0 10px;
+}

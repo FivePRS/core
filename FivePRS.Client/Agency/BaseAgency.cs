@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using CitizenFX.Core;
 using CitizenFX.Core.Native;
+using FivePRS.Client.Stations;
+using FivePRS.Client.VehicleSpawner;
 using FivePRS.Core.Config;
 using FivePRS.Core.Events;
 using FivePRS.Core.Interfaces;
@@ -19,6 +21,12 @@ namespace FivePRS.Client.Agency
         public abstract string AgencyName { get; }
 
         public bool IsActive { get; private set; }
+
+        public static BaseAgency? Active { get; private set; }
+
+        public PatrolVehicleSpawner Vehicles { get; } = new();
+
+        public virtual StationCatalog? BuildCatalog(PlayerData player) => null;
 
         protected static PlayerData CurrentPlayer => ClientBrain.LocalPlayerData;
 
@@ -56,6 +64,8 @@ namespace FivePRS.Client.Agency
             if (shouldBeActive == IsActive) return;
 
             IsActive = shouldBeActive;
+            if (shouldBeActive) Active = this;
+            else if (Active == this) Active = null;
             try
             {
                 if (shouldBeActive)
@@ -90,6 +100,7 @@ namespace FivePRS.Client.Agency
             if (resourceName != API.GetCurrentResourceName() || !IsActive) return;
 
             IsActive = false;
+            if (Active == this) Active = null;
             try { _ = OffDuty(CurrentPlayer); }
             catch (Exception ex) { Debug.WriteLine($"[{AgencyName}] Cleanup on stop failed: {ex.Message}"); }
         }

@@ -18,12 +18,13 @@ function renderEmergencyForm() {
   if (!services.some((service) => service.id === selectedService)) selectedService = services[0]?.id ?? null;
 
   document.getElementById("em-services").replaceChildren(
-    ...services.map((service) =>
-      el("button", {
-        className: `option${service.id === selectedService ? " selected" : ""}`,
+    ...services.map((service) => {
+      const icon = departmentIcon(service.name);
+      return el("button", {
+        className: `option${service.id === selectedService ? " selected" : ""}${icon ? " with-icon" : ""}`,
         dataset: { service: service.id },
-      }, [el("span", { className: "option-name", text: service.name })])
-    )
+      }, [icon, el("span", { className: "option-name", text: service.name })]);
+    })
   );
 
   const submit = document.getElementById("em-submit");

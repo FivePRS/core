@@ -49,6 +49,12 @@
             <input id="duty-callsign" class="duty-input" type="text" autocomplete="off" spellcheck="false">
             <p class="duty-label duty-hint">Letters, numbers and hyphens. Leave blank to use your agency's default.</p>
 
+            <div id="duty-start-section">
+              <p class="panel-title duty-section">Start at</p>
+              <div id="duty-start" class="option-row"></div>
+              <div id="duty-stations" class="option-grid duty-stations"></div>
+            </div>
+
             <p id="duty-empty" class="duty-message" hidden>No departments are available to you on this server.</p>
             <p id="duty-error" class="duty-message duty-error" hidden></p>
 
@@ -59,9 +65,12 @@
 
           <div id="duty-on-panel" hidden>
             <p class="panel-title duty-section">On duty</p>
-            <div class="duty-unit">
-              <p id="duty-unit-callsign" class="callsign"></p>
-              <p id="duty-unit-agency" class="muted"></p>
+            <div class="duty-unit unit-head">
+              <span id="duty-unit-icon" class="dept-slot"></span>
+              <div>
+                <p id="duty-unit-callsign" class="callsign"></p>
+                <p id="duty-unit-agency" class="muted"></p>
+              </div>
             </div>
             <div class="duty-actions">
               <button id="duty-off" type="button" class="button danger">Go off duty</button>
@@ -73,9 +82,14 @@
       <section id="tab-dispatch" class="tab dispatch" role="tabpanel" hidden>
         <aside class="panel self">
           <p class="panel-title">My unit</p>
-          <p id="self-callsign" class="callsign"></p>
-          <p id="self-name" class="muted"></p>
-          <p id="self-agency" class="muted"></p>
+          <div class="unit-head">
+            <span id="self-icon" class="dept-slot"></span>
+            <div>
+              <p id="self-callsign" class="callsign"></p>
+              <p id="self-name" class="muted"></p>
+              <p id="self-agency" class="muted"></p>
+            </div>
+          </div>
 
           <dl class="facts">
             <div><dt>Status</dt><dd id="self-status"></dd></div>
@@ -236,6 +250,7 @@
       <section id="tab-civilian" class="tab civilian" role="tabpanel" hidden>
         <aside class="panel civ-sidebar">
           <div class="panel-head">
+            <span id="civ-icon" class="dept-slot small"></span>
             <p class="panel-title">Characters</p>
             <span id="civ-character-count" class="count"></span>
           </div>
@@ -357,8 +372,63 @@
           </form>
         </div>
       </section>
+      <section id="tab-admin" class="tab admin" role="tabpanel" hidden>
+        <div class="admin-column">
+          <p id="admin-unrestricted" class="civ-error admin-banner" hidden>
+            Department restriction is off, so every player can join every department. Set
+            <span class="mono">fiveprs_restrict_departments true</span> in server.cfg to enforce the roster.
+          </p>
+
+          <section class="panel">
+            <div class="panel-head">
+              <p class="panel-title">Online players</p>
+              <span id="admin-online-count" class="count"></span>
+            </div>
+            <table>
+              <thead>
+                <tr><th>Player</th><th>Rank</th><th>Department</th><th>Roster</th></tr>
+              </thead>
+              <tbody id="admin-online"></tbody>
+            </table>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <p class="panel-title">Find offline players</p>
+            </div>
+            <form id="admin-search" class="admin-search">
+              <input id="admin-query" class="duty-input" autocomplete="off" spellcheck="false" placeholder="Player name">
+              <button type="submit" class="button primary">Search</button>
+            </form>
+            <table>
+              <thead>
+                <tr><th>Player</th><th>Rank</th><th>Department</th><th>Roster</th></tr>
+              </thead>
+              <tbody id="admin-results"></tbody>
+            </table>
+            <p id="admin-results-empty" class="empty" hidden>No players found.</p>
+          </section>
+        </div>
+      </section>
     </main>
   </div>
+
+  <aside id="menu" class="cmenu" hidden>
+    <div class="lightbar" aria-hidden="true"></div>
+    <header class="cmenu-head">
+      <span id="menu-icon" class="dept-slot small"></span>
+      <div>
+        <p id="menu-title" class="cmenu-title"></p>
+        <p id="menu-subtitle" class="cmenu-subtitle"></p>
+      </div>
+    </header>
+    <ol id="menu-items" class="cmenu-items"></ol>
+    <footer class="cmenu-foot">
+      <span>&uarr;&darr; Select</span>
+      <span>Enter Use</span>
+      <span>Backspace <span id="menu-back"></span></span>
+    </footer>
+  </aside>
 
   <script src="common.js"></script>
   <script src="duty.js"></script>
@@ -366,6 +436,8 @@
   <script src="civilian.js"></script>
   <script src="records.js"></script>
   <script src="emergency.js"></script>
+  <script src="admin.js"></script>
+  <script src="menu.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

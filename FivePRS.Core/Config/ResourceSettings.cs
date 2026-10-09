@@ -1,7 +1,15 @@
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace FivePRS.Core.Config
 {
+    public enum DutyEquipmentMode
+    {
+        ByStart,
+        Always,
+        Station
+    }
+
     public sealed class ResourceSettings
     {
         [JsonProperty("dispatchIntervalMinutes")]
@@ -39,6 +47,10 @@ namespace FivePRS.Core.Config
 
         [JsonProperty("emergencyCallTimeoutMinutes")]
         public int EmergencyCallTimeoutMinutes { get; set; } = 15;
+
+        [JsonProperty("dutyEquipment")]
+        [JsonConverter(typeof(StringEnumConverter), true)]
+        public DutyEquipmentMode DutyEquipment { get; set; } = DutyEquipmentMode.ByStart;
 
         [JsonProperty("branding")]
         public BrandingSettings Branding { get; set; } = new();

@@ -137,6 +137,7 @@ function renderOwnRecords(records) {
 
 function renderCivilian(view, reset) {
   civilianView = view;
+  setDepartmentIcon("civ-icon", "civilian");
   if (reset) {
     toggleCharacterForm(false);
     showCivilianError(null);

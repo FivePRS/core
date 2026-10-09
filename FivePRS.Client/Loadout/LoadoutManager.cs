@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using CitizenFX.Core;
 using CitizenFX.Core.Native;
@@ -13,10 +14,26 @@ namespace FivePRS.Client.Loadout
         private static List<ComponentEntry>? _savedComponents;
         private static List<PropEntry>?      _savedProps;
         private static int                   _savedModel;
+        private static readonly List<WeaponEntry> Issued = new();
+
+        private const int FullArmour = 100;
 
         public static LoadoutDefinition? Current { get; private set; }
 
+        public static bool IsInUniform => _savedComponents is not null;
+
         public static async Task ApplyAsync(LoadoutDefinition loadout)
+        {
+            if (!Game.PlayerPed.Exists()) return;
+
+            await WearAsync(loadout);
+            await GiveWeaponsAsync(loadout.Weapons, true);
+
+            Current = loadout;
+            Debug.WriteLine($"[LoadoutManager] Applied loadout '{loadout.Name}'.");
+        }
+
+        public static async Task WearAsync(LoadoutDefinition outfit)
         {
             var ped = Game.PlayerPed;
             if (!ped.Exists()) return;
@@ -24,32 +41,101 @@ namespace FivePRS.Client.Loadout
             if (_savedComponents is null)
                 SaveAppearance(ped.Handle);
 
-            var pedModel = API.IsPedMale(ped.Handle) ? loadout.MalePedModel : loadout.FemalePedModel;
-            if (pedModel is not null && await ChangeModelAsync(new Model(pedModel)))
+            var pedModel = API.IsPedMale(ped.Handle) ? outfit.MalePedModel : outfit.FemalePedModel;
+            var target   = pedModel is not null ? API.GetHashKey(pedModel) : _savedModel;
+
+            if (target != 0 && API.GetEntityModel(ped.Handle) != target && await ChangeModelAsync(new Model(target)))
             {
                 ped = Game.PlayerPed;
                 API.SetPedDefaultComponentVariation(ped.Handle);
+                if (pedModel is null) RestoreSavedClothing(ped.Handle);
+                ReissueWeapons(ped.Handle);
             }
 
-            API.RemoveAllPedWeapons(ped.Handle, true);
-            await BaseScript.Delay(100);
+            ApplyComponents(ped.Handle, outfit.Components);
+            ApplyProps(ped.Handle, outfit.Props);
+        }
 
-            uint currentWeaponHash = 0;
-            foreach (var entry in loadout.Weapons)
+        public static async Task RestoreClothingAsync()
+        {
+            var ped = Game.PlayerPed;
+            if (!ped.Exists() || _savedComponents is null) return;
+
+            if (_savedModel != 0 && API.GetEntityModel(ped.Handle) != _savedModel &&
+                await ChangeModelAsync(new Model(_savedModel)))
             {
-                API.GiveWeaponToPed(ped.Handle, entry.Hash, entry.Ammo, false, false);
-                if (entry.SetAsCurrent)
-                    currentWeaponHash = entry.Hash;
+                ped = Game.PlayerPed;
+                ReissueWeapons(ped.Handle);
             }
 
-            if (currentWeaponHash != 0)
-                API.SetCurrentPedWeapon(ped.Handle, currentWeaponHash, true);
+            RestoreSavedClothing(ped.Handle);
+            ClearSavedAppearance();
+        }
 
-            ApplyComponents(ped.Handle, loadout.Components);
-            ApplyProps(ped.Handle, loadout.Props);
+        public static async Task GiveWeaponsAsync(IEnumerable<WeaponEntry> weapons, bool replace)
+        {
+            var ped = Game.PlayerPed.Handle;
 
-            Current = loadout;
-            Debug.WriteLine($"[LoadoutManager] Applied loadout '{loadout.Name}'.");
+            if (replace)
+            {
+                RemoveWeapons();
+                await BaseScript.Delay(100);
+            }
+
+            uint current = 0;
+            foreach (var entry in weapons)
+            {
+                GiveWeapon(ped, entry);
+                if (entry.SetAsCurrent) current = entry.Hash;
+            }
+
+            if (current != 0)
+                API.SetCurrentPedWeapon(ped, current, true);
+        }
+
+        public static void GiveWeapon(WeaponEntry entry) => GiveWeapon(Game.PlayerPed.Handle, entry);
+
+        public static bool HasWeapon(uint hash) => API.HasPedGotWeapon(Game.PlayerPed.Handle, hash, false);
+
+        public static int RefillAmmo()
+        {
+            var ped     = Game.PlayerPed.Handle;
+            var refills = 0;
+
+            foreach (var entry in Issued.Where(e => API.HasPedGotWeapon(ped, e.Hash, false)))
+            {
+                if (API.GetAmmoInPedWeapon(ped, entry.Hash) >= entry.Ammo) continue;
+
+                API.SetPedAmmo(ped, entry.Hash, entry.Ammo);
+                refills++;
+            }
+
+            return refills;
+        }
+
+        public static void GiveArmour() => API.SetPedArmour(Game.PlayerPed.Handle, FullArmour);
+
+        public static void RemoveWeapons()
+        {
+            API.RemoveAllPedWeapons(Game.PlayerPed.Handle, true);
+            Issued.Clear();
+        }
+
+        private static void GiveWeapon(int ped, WeaponEntry entry)
+        {
+            if (API.HasPedGotWeapon(ped, entry.Hash, false))
+                API.SetPedAmmo(ped, entry.Hash, System.Math.Max(entry.Ammo, API.GetAmmoInPedWeapon(ped, entry.Hash)));
+            else
+                API.GiveWeaponToPed(ped, entry.Hash, entry.Ammo, false, false);
+
+            Issued.RemoveAll(e => e.Hash == entry.Hash);
+            Issued.Add(entry);
+        }
+
+        private static void ReissueWeapons(int ped)
+        {
+            foreach (var entry in Issued)
+                API.GiveWeaponToPed(ped, entry.Hash, entry.Ammo, false, false);
         }
 
         public static async Task StripAsync()
@@ -57,25 +143,24 @@ namespace FivePRS.Client.Loadout
             var ped = Game.PlayerPed;
             if (!ped.Exists()) return;
 
-            API.RemoveAllPedWeapons(ped.Handle, true);
+            RemoveWeapons();
+            await RestoreClothingAsync();
 
-            if (_savedModel != 0 && API.GetEntityModel(ped.Handle) != _savedModel &&
-                await ChangeModelAsync(new Model(_savedModel)))
-            {
-                ped = Game.PlayerPed;
-            }
+            Current = null;
+            Debug.WriteLine("[LoadoutManager] Loadout stripped.");
+        }
 
-            if (_savedComponents is not null)
-                ApplyComponents(ped.Handle, _savedComponents);
+        private static void RestoreSavedClothing(int ped)
+        {
+            if (_savedComponents is not null) ApplyComponents(ped, _savedComponents);
+            if (_savedProps is not null) ApplyProps(ped, _savedProps);
+        }
 
-            if (_savedProps is not null)
-                ApplyProps(ped.Handle, _savedProps);
-
+        private static void ClearSavedAppearance()
+        {
             _savedComponents = null;
             _savedProps      = null;
             _savedModel      = 0;
-            Current          = null;
-            Debug.WriteLine("[LoadoutManager] Loadout stripped.");
         }
 
         private static async Task<bool> ChangeModelAsync(Model model)

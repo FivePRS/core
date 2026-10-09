@@ -11,9 +11,16 @@
     "maxFine": 10000,
     "emergencyCallCooldownSeconds": 60,
     "emergencyCallTimeoutMinutes": 15,
+    "dutyEquipment": "byStart",
     "branding": {
         "serverIcon": "https://cdn.fiveprs.org/fiveprs/server_icon.png",
         "notificationLogo": "https://cdn.fiveprs.org/fiveprs/fiveprs_logo.png",
-        "nameplate": "https://cdn.fiveprs.org/fiveprs/nameplate.png"
+        "nameplate": "https://cdn.fiveprs.org/fiveprs/nameplate.png",
+        "departments": {
+            "police": "https://cdn.fiveprs.org/fiveprs/departments/police.png",
+            "ems": "https://cdn.fiveprs.org/fiveprs/departments/ems.png",
+            "fire": "https://cdn.fiveprs.org/fiveprs/departments/fire.png",
+            "civilian": "https://cdn.fiveprs.org/fiveprs/departments/civilian.png"
+        }
     }
 }

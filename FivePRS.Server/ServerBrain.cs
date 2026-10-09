@@ -42,7 +42,8 @@ namespace FivePRS.Server
                 new Random());
             _permissions = new PermissionService(
                 (playerId, ace) => API.IsPlayerAceAllowed(playerId, ace),
-                () => API.GetConvar("fiveprs_restrict_departments", "false").Equals("true", StringComparison.OrdinalIgnoreCase));
+                () => API.GetConvar("fiveprs_restrict_departments", "false").Equals("true", StringComparison.OrdinalIgnoreCase),
+                IsOnRoster);
 
             EventHandlers["playerConnecting"] += new Action<Player, string, dynamic, dynamic>(OnPlayerConnecting);
             EventHandlers["playerDropped"]    += new Action<Player, string>(OnPlayerDropped);
@@ -61,6 +62,7 @@ namespace FivePRS.Server
             RegisterCivilianEvents();
             RegisterLookupEvents();
             RegisterEmergencyEvents();
+            RegisterRosterEvents();
 
             _ = ServerIcon.ApplyDefaultAsync(ConfigManager.Settings.Branding.ServerIcon);
             _ = InitDbAsync();
@@ -77,6 +79,8 @@ namespace FivePRS.Server
                 await _db.InitializeAsync(dbType, string.IsNullOrEmpty(connString) ? null : connString);
                 _civilians = new CivilianService(_db.Civilians, () => ConfigManager.Settings, () => ConfigManager.Licenses, () => DateTime.UtcNow);
                 _lookup    = new LookupService(_db.Civilians, () => ConfigManager.Settings, () => ConfigManager.Licenses);
+                _roster    = new RosterService(_db.Roster);
+                await _roster.LoadAsync();
 
                 Debug.WriteLine("[FivePRS] ServerBrain online.");
             }

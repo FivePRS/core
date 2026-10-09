@@ -5,6 +5,14 @@ const callsignInput = document.getElementById("duty-callsign");
 let dutyView = null;
 let selectedDepartment = null;
 let selectedAgency = null;
+let selectedStart = "here";
+let selectedStation = null;
+
+const startOptions = [
+  { id: "here", name: "Here", detail: "Vehicle on the nearest road" },
+  { id: "teleport", name: "Station", detail: "Teleport to a station" },
+  { id: "drive", name: "Drive to station", detail: "GPS route, vehicle waiting" },
+];
 let entering = false;
 
 function departmentById(id) {
@@ -22,11 +30,45 @@ function selectDepartment(id) {
   }
 }
 
-function optionButton(name, detail, selected, dataset) {
-  return el("button", { className: `option${selected ? " selected" : ""}`, dataset }, [
+function availableStations() {
+  return (departmentById(selectedDepartment)?.stations ?? []).filter(
+    (station) => station.agencies.length === 0 || !selectedAgency || station.agencies.includes(selectedAgency)
+  );
+}
+
+function formatDistance(meters) {
+  const miles = meters / 1609.34;
+  return miles < 0.1 ? "Nearby" : `${miles.toFixed(1)} mi`;
+}
+
+function renderStart() {
+  const stations = availableStations();
+  document.getElementById("duty-start-section").hidden = stations.length === 0;
+
+  if (stations.length === 0) selectedStart = "here";
+  if (!stations.some((station) => station.id === selectedStation)) selectedStation = stations[0]?.id ?? null;
+
+  document.getElementById("duty-start").replaceChildren(
+    ...startOptions.map((option) =>
+      optionButton(option.name, option.detail, option.id === selectedStart, { start: option.id })
+    )
+  );
+
+  const stationList = document.getElementById("duty-stations");
+  stationList.hidden = selectedStart === "here";
+  stationList.replaceChildren(
+    ...stations.map((station) =>
+      optionButton(station.name, formatDistance(station.distance), station.id === selectedStation, { station: station.id })
+    )
+  );
+}
+
+function optionButton(name, detail, selected, dataset, icon = null) {
+  const text = el("span", {}, [
     el("span", { className: "option-name", text: name }),
     detail ? el("span", { className: "option-detail", text: detail }) : null,
   ]);
+  return el("button", { className: `option${selected ? " selected" : ""}${icon ? " with-icon" : ""}`, dataset }, [icon, text]);
 }
 
 function showDutyError(message) {
@@ -41,7 +83,7 @@ function renderDutyForm() {
   const departments = dutyView.departments ?? [];
   document.getElementById("duty-departments").replaceChildren(
     ...departments.map((department) =>
-      optionButton(department.name, null, department.id === selectedDepartment, { department: department.id })
+      optionButton(department.name, null, department.id === selectedDepartment, { department: department.id }, departmentIcon(department.name))
     )
   );
 
@@ -54,6 +96,8 @@ function renderDutyForm() {
       optionButton(item.name, item.callsignPrefix, item.id === selectedAgency, { agency: item.id })
     )
   );
+
+  renderStart();
 
   document.getElementById("duty-empty").hidden = departments.length > 0;
   dutyEnterButton.disabled = entering || selectedDepartment === null;
@@ -78,6 +122,7 @@ function renderDuty(view, reset) {
   if (view.isOnDuty) {
     setText("duty-unit-callsign", view.unit?.callsign ?? view.callsign);
     setText("duty-unit-agency", view.unit?.agency ?? "");
+    setDepartmentIcon("duty-unit-icon", view.department);
     document.getElementById("duty-off").disabled = false;
     return;
   }
@@ -106,6 +151,12 @@ dutyTab.addEventListener("click", (event) => {
   } else if (target.dataset.agency) {
     selectedAgency = target.dataset.agency;
     renderDutyForm();
+  } else if (target.dataset.start) {
+    selectedStart = target.dataset.start;
+    renderDutyForm();
+  } else if (target.dataset.station) {
+    selectedStation = target.dataset.station;
+    renderDutyForm();
   } else if (target.id === "duty-enter") {
     showDutyError(null);
     entering = true;
@@ -114,6 +165,8 @@ dutyTab.addEventListener("click", (event) => {
       departmentId: selectedDepartment,
       agencyId: selectedAgency ?? "",
       callsign: callsignInput.value.trim(),
+      start: selectedStart,
+      stationId: selectedStation ?? "",
     });
   } else if (target.id === "duty-off") {
     target.disabled = true;

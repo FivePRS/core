@@ -8,10 +8,25 @@ namespace FivePRS.Tests
     public class PermissionServiceTests
     {
         private readonly HashSet<string> _grants = new();
+        private readonly HashSet<string> _roster = new();
         private bool _restrict;
 
         private PermissionService Create() =>
-            new((player, ace) => _grants.Contains($"{player}:{ace}"), () => _restrict);
+            new((player, ace) => _grants.Contains($"{player}:{ace}"), () => _restrict,
+                (player, department) => _roster.Contains($"{player}:{department}"));
+
+        [Fact]
+        public void CanJoinDepartment_Restricted_AllowsRosterMembers()
+        {
+            _restrict = true;
+            _roster.Add("1:EMS");
+
+            var permissions = Create();
+
+            Assert.True(permissions.CanJoinDepartment("1", Department.EMS));
+            Assert.False(permissions.CanJoinDepartment("1", Department.Police));
+            Assert.False(permissions.CanJoinDepartment("2", Department.EMS));
+        }
 
         [Fact]
         public void CanJoinDepartment_Unrestricted_AllowsEveryone()

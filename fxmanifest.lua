@@ -34,6 +34,8 @@ files {
     'nui/civilian.js',
     'nui/records.js',
     'nui/emergency.js',
+    'nui/admin.js',
+    'nui/menu.js',
     'nui/app.js',
     'client/FivePRS.Core.dll',
     'client/Newtonsoft.Json.dll',

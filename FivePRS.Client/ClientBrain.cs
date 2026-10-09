@@ -28,6 +28,7 @@ namespace FivePRS.Client
             ConfigManager.LoadPoliceVehicles( API.LoadResourceFile(res, "config/police_vehicles.json"));
             ConfigManager.LoadPoliceLoadouts( API.LoadResourceFile(res, "config/police_loadouts.json"));
             ConfigManager.LoadJurisdictions(  API.LoadResourceFile(res, "config/jurisdictions.json"));
+            ConfigManager.LoadStations(       API.LoadResourceFile(res, "config/stations.json"));
 
             EventHandlers[EventNames.ClientReceivePlayerData] += new Action<string>(OnReceivePlayerData);
             EventHandlers[EventNames.ClientDutyStatusChanged] += new Action<bool, int>(OnDutyStatusChanged);
@@ -87,7 +88,8 @@ namespace FivePRS.Client
                     "~b~/er_status [available|busy]~w~ — Set unit status~n~" +
                     "~b~/er_cuff~w~ — Cuff nearest suspect~n~" +
                     "~b~/er_uncuff~w~ — Release cuffed suspect~n~" +
-                    "~b~/er_escort~w~ — Place suspect in your vehicle");
+                    "~b~/er_escort~w~ — Place suspect in your vehicle~n~" +
+                    "~b~/fprs_coords~w~ — Copy your position for stations.json");
             }), false);
 
             API.RegisterKeyMapping("er_accept",      "FivePRS: Accept callout",              "keyboard", "Y");
@@ -98,6 +100,8 @@ namespace FivePRS.Client
             API.RegisterKeyMapping("er_escort",      "FivePRS: Escort suspect to vehicle",   "keyboard", "H");
             API.RegisterKeyMapping("er_profile",     "FivePRS: View rank and XP",            "keyboard", "F6");
             API.RegisterKeyMapping("er_help",        "FivePRS: Show command list",           "keyboard", "");
+
+            Exports.Add("getState", new Func<IDictionary<string, object>>(PublicState.Build));
 
             Tick += WaitForSpawnTick;
             Tick += DrawHelpTick;

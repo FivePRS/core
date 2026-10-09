@@ -9,12 +9,17 @@ namespace FivePRS.Server.Permissions
 
         private readonly Func<string, string, bool> _isAceAllowed;
         private readonly Func<bool>                 _restrictDepartments;
+        private readonly Func<string, Department, bool> _isOnRoster;
 
-        public PermissionService(Func<string, string, bool> isAceAllowed, Func<bool> restrictDepartments)
+        public PermissionService(Func<string, string, bool> isAceAllowed, Func<bool> restrictDepartments,
+            Func<string, Department, bool>? isOnRoster = null)
         {
             _isAceAllowed        = isAceAllowed;
             _restrictDepartments = restrictDepartments;
+            _isOnRoster          = isOnRoster ?? ((_, _) => false);
         }
+
+        public bool RestrictsDepartments => _restrictDepartments();
 
         public static string DepartmentAce(Department department) =>
             $"fiveprs.department.{department.ToString().ToLowerInvariant()}";
@@ -26,7 +31,7 @@ namespace FivePRS.Server.Permissions
             if (department == Department.None) return false;
             if (!_restrictDepartments()) return true;
 
-            return IsAdmin(playerId) || _isAceAllowed(playerId, DepartmentAce(department));
+            return IsAdmin(playerId) || _isAceAllowed(playerId, DepartmentAce(department)) || _isOnRoster(playerId, department);
         }
     }
 }

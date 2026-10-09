@@ -74,10 +74,11 @@ namespace FivePRS.Client.App
                     self.ServerId,
                     self.Callsign,
                     self.Name,
-                    Agency    = map.FindAgency(self.Agency)?.Name ?? self.Department.ToString(),
-                    Status    = self.Status.ToString(),
+                    Department = self.Department.ToString(),
+                    Agency     = map.FindAgency(self.Agency)?.Name ?? self.Department.ToString(),
+                    Status     = self.Status.ToString(),
                     self.CallId,
-                    Territory = map.FindTerritory(self.Territory)?.Name,
+                    Territory  = map.FindTerritory(self.Territory)?.Name,
                 },
                 calls = snapshot.Calls.Select(call => new
                 {

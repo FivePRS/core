@@ -6,7 +6,7 @@ using FivePRS.Core.Civilian;
 
 namespace FivePRS.Server.Database
 {
-    public sealed class CivilianStore
+    public sealed class CivilianStore : SqlStore
     {
         private static readonly string[] SqliteSchema =
         {
@@ -111,15 +111,13 @@ namespace FivePRS.Server.Database
         private const string ActiveWarrantExists =
             "EXISTS (SELECT 1 FROM fiveprs_records r WHERE r.character_id = c.id AND r.type = 3 AND r.active = 1)";
 
-        private readonly IDatabaseProvider _db;
-
-        public CivilianStore(IDatabaseProvider db) => _db = db;
-
-        private string LastInsertId => _db.Dialect == SqlDialect.MySql ? "SELECT LAST_INSERT_ID()" : "SELECT last_insert_rowid()";
+        public CivilianStore(IDatabaseProvider db) : base(db)
+        {
+        }
 
         public async Task InitializeAsync()
         {
-            foreach (var statement in _db.Dialect == SqlDialect.MySql ? MySqlSchema : SqliteSchema)
+            foreach (var statement in IsMySql ? MySqlSchema : SqliteSchema)
                 await ExecuteAsync(statement);
         }
 
@@ -170,7 +168,7 @@ namespace FivePRS.Server.Database
 
         public Task SetLicenseAsync(int characterId, string type, LicenseStatus status)
         {
-            var upsert = _db.Dialect == SqlDialect.MySql
+            var upsert = IsMySql
                 ? "ON DUPLICATE KEY UPDATE status = VALUES(status)"
                 : "ON CONFLICT(character_id, type) DO UPDATE SET status = excluded.status";
 
@@ -213,7 +211,7 @@ namespace FivePRS.Server.Database
 
         public Task<List<CharacterSummary>> SearchCharactersAsync(string term, int limit)
         {
-            var fullName = _db.Dialect == SqlDialect.MySql ? "CONCAT(c.first_name, ' ', c.last_name)" : "(c.first_name || ' ' || c.last_name)";
+            var fullName = IsMySql ? "CONCAT(c.first_name, ' ', c.last_name)" : "(c.first_name || ' ' || c.last_name)";
             return QueryAsync(
                 $"SELECT c.id, c.first_name, c.last_name, c.date_of_birth, c.gender, {ActiveWarrantExists} " +
                 $"FROM fiveprs_characters c WHERE c.first_name LIKE @term OR c.last_name LIKE @term OR {fullName} LIKE @term " +
@@ -299,48 +297,5 @@ namespace FivePRS.Server.Database
             Status       = (VehicleStatus)Convert.ToInt32(reader.GetValue(4)),
             RegisteredAt = reader.GetDateTime(5),
         };
-
-        private async Task ExecuteAsync(string sql, params (string Name, object Value)[] parameters)
-        {
-            using var conn = _db.CreateConnection();
-            await conn.OpenAsync();
-            using var cmd = CreateCommand(conn, sql, parameters);
-            await cmd.ExecuteNonQueryAsync();
-        }
-
-        private async Task<object?> ScalarAsync(string sql, params (string Name, object Value)[] parameters)
-        {
-            using var conn = _db.CreateConnection();
-            await conn.OpenAsync();
-            using var cmd = CreateCommand(conn, sql, parameters);
-            return await cmd.ExecuteScalarAsync();
-        }
-
-        private async Task<List<T>> QueryAsync<T>(string sql, Func<DbDataReader, T> read, params (string Name, object Value)[] parameters)
-        {
-            using var conn = _db.CreateConnection();
-            await conn.OpenAsync();
-            using var cmd = CreateCommand(conn, sql, parameters);
-            using var reader = await cmd.ExecuteReaderAsync();
-
-            var rows = new List<T>();
-            while (await reader.ReadAsync())
-                rows.Add(read(reader));
-            return rows;
-        }
-
-        private static DbCommand CreateCommand(DbConnection conn, string sql, (string Name, object Value)[] parameters)
-        {
-            var cmd = conn.CreateCommand();
-            cmd.CommandText = sql;
-            foreach (var (name, value) in parameters)
-            {
-                var parameter = cmd.CreateParameter();
-                parameter.ParameterName = name;
-                parameter.Value = value;
-                cmd.Parameters.Add(parameter);
-            }
-            return cmd;
-        }
     }
 }

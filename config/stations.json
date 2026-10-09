@@ -1,0 +1,25 @@
+{
+    "blips": "always",
+    "stations": [
+        { "id": "mission_row_pd",   "name": "Mission Row Police Station",    "department": "Police", "agencies": ["lspd"], "dutyPoint": [433.6, -981.8, 30.7],    "heading": 90,  "parking": [] },
+        { "id": "vespucci_pd",      "name": "Vespucci Police Station",       "department": "Police", "agencies": ["lspd"], "dutyPoint": [-1108.4, -845.0, 19.3],  "heading": 130, "parking": [] },
+        { "id": "la_mesa_pd",       "name": "La Mesa Police Station",        "department": "Police", "agencies": ["lspd"], "dutyPoint": [826.8, -1290.0, 28.2],   "heading": 90,  "parking": [] },
+        { "id": "davis_pd",         "name": "Davis Police Station",          "department": "Police", "agencies": ["lspd"], "dutyPoint": [360.9, -1584.7, 29.3],   "heading": 50,  "parking": [] },
+        { "id": "vinewood_pd",      "name": "Vinewood Police Station",       "department": "Police", "agencies": ["lspd"], "dutyPoint": [638.6, 1.7, 82.8],       "heading": 250, "parking": [] },
+        { "id": "rockford_pd",      "name": "Rockford Hills Police Station", "department": "Police", "agencies": ["lspd"], "dutyPoint": [-561.4, -131.9, 38.4],   "heading": 200, "parking": [] },
+        { "id": "sandy_so",         "name": "Sandy Shores Sheriff's Office", "department": "Police", "agencies": ["bcso"], "dutyPoint": [1853.8, 3686.4, 34.3],   "heading": 210, "parking": [] },
+        { "id": "paleto_so",        "name": "Paleto Bay Sheriff's Office",   "department": "Police", "agencies": ["bcso"], "dutyPoint": [-448.2, 6012.4, 31.7],   "heading": 45,  "parking": [] },
+
+        { "id": "davis_fd",         "name": "Davis Fire Station",            "department": "Fire",   "agencies": [],       "dutyPoint": [199.8, -1643.9, 29.8],   "heading": 320, "parking": [] },
+        { "id": "rockford_fd",      "name": "Rockford Hills Fire Station",   "department": "Fire",   "agencies": [],       "dutyPoint": [-634.9, -121.8, 39.0],   "heading": 80,  "parking": [] },
+        { "id": "el_burro_fd",      "name": "El Burro Heights Fire Station", "department": "Fire",   "agencies": [],       "dutyPoint": [1193.5, -1464.7, 34.9],  "heading": 0,   "parking": [] },
+        { "id": "sandy_fd",         "name": "Sandy Shores Fire Station",     "department": "Fire",   "agencies": [],       "dutyPoint": [1697.2, 3586.0, 35.6],   "heading": 210, "parking": [] },
+        { "id": "paleto_fd",        "name": "Paleto Bay Fire Station",       "department": "Fire",   "agencies": [],       "dutyPoint": [-379.5, 6118.4, 31.8],   "heading": 45,  "parking": [] },
+
+        { "id": "pillbox",          "name": "Pillbox Hill Medical Center",   "department": "EMS",    "agencies": [],       "dutyPoint": [298.6, -584.5, 43.3],    "heading": 70,  "parking": [] },
+        { "id": "central_ls",       "name": "Central Los Santos Medical",    "department": "EMS",    "agencies": [],       "dutyPoint": [340.5, -1396.0, 32.5],   "heading": 50,  "parking": [] },
+        { "id": "mount_zonah",      "name": "Mount Zonah Medical Center",    "department": "EMS",    "agencies": [],       "dutyPoint": [-449.7, -340.6, 34.5],   "heading": 80,  "parking": [] },
+        { "id": "sandy_medical",    "name": "Sandy Shores Medical Center",   "department": "EMS",    "agencies": [],       "dutyPoint": [1839.6, 3672.9, 34.3],   "heading": 210, "parking": [] },
+        { "id": "paleto_medical",   "name": "Paleto Bay Medical Center",     "department": "EMS",    "agencies": [],       "dutyPoint": [-247.6, 6331.2, 32.4],   "heading": 225, "parking": [] }
+    ]
+}

@@ -17,6 +17,7 @@ namespace FivePRS.Core.Events
         public const string ClientLookupError       = "FivePRS:Client:LookupError";
         public const string ClientEmergencyStatus   = "FivePRS:Client:EmergencyStatus";
         public const string ClientEmergencyError    = "FivePRS:Client:EmergencyError";
+        public const string ClientAdminState        = "FivePRS:Client:AdminState";
 
         public const string ServerPlayerConnected   = "FivePRS:Server:PlayerConnected";
         public const string ServerToggleDuty        = "FivePRS:Server:ToggleDuty";
@@ -45,8 +46,11 @@ namespace FivePRS.Core.Events
         public const string ServerEmergencyCancel   = "FivePRS:Server:EmergencyCancel";
         public const string ServerEmergencyStatus   = "FivePRS:Server:EmergencyStatus";
         public const string ServerCallClear         = "FivePRS:Server:CallClear";
+        public const string ServerAdminRequest      = "FivePRS:Server:AdminRequest";
+        public const string ServerAdminRosterSet    = "FivePRS:Server:AdminRosterSet";
 
         public const string LocalDutyChanged        = "FivePRS:Local:DutyChanged";
+        public const string LocalOpenMenu           = "FivePRS:Local:OpenMenu";
         public const string LocalCalloutReceived    = "FivePRS:Local:CalloutReceived";
         public const string LocalSuspectCuffed      = "FivePRS:Local:SuspectCuffed";
         public const string LocalSuspectUncuffed    = "FivePRS:Local:SuspectUncuffed";

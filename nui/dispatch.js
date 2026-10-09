@@ -54,6 +54,7 @@ function renderSelf(self, calls) {
   setText("self-callsign", self.callsign);
   setText("self-name", self.name);
   setText("self-agency", self.agency);
+  setDepartmentIcon("self-icon", self.department);
   setText("self-territory", self.territory ?? "Unincorporated");
   setText("self-call", self.callId ? `#${self.callId}` : "None");
   document.getElementById("self-status").replaceChildren(statusPill(self.status));
