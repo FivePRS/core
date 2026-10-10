@@ -11,6 +11,10 @@ namespace FivePRS.Tests
         [InlineData("2.0.0", "1.99.99", 1)]
         [InlineData("1.0.0-beta.1", "1.0.0", -1)]
         [InlineData("1.0.0-beta.2", "1.0.0-beta.1", 1)]
+        [InlineData("0.9.0-ptb.10", "0.9.0-ptb.2", 1)]
+        [InlineData("0.9.0-ptb.2", "0.9.0-ptb", 1)]
+        [InlineData("0.9.0-rc.1", "0.9.0-ptb.5", 1)]
+        [InlineData("0.9.0", "0.9.0-ptb.5", 1)]
         [InlineData("1.0", "1.0.0", 0)]
         [InlineData("v1.0.0+build.7", "1.0.0", 0)]
         public void CompareTo_OrdersSemanticVersions(string left, string right, int expected)

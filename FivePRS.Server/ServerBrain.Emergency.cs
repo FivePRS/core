@@ -23,6 +23,12 @@ namespace FivePRS.Server
 
         private async void OnEmergencyCall([FromSource] Player player, int departmentId, string description, bool anonymous)
         {
+            if (!Allow(player, "emergency", l => l.Emergency))
+            {
+                TriggerClientEvent(player, EventNames.ClientEmergencyError, "You're calling too often. Wait a moment and try again.");
+                return;
+            }
+
             var license = GetLicense(player);
             if (license is null) return;
 
@@ -76,15 +82,22 @@ namespace FivePRS.Server
 
         private void OnEmergencyCancel([FromSource] Player player, string callId)
         {
+            if (!Allow(player, "emergency", l => l.Emergency) || !IsCallId(callId)) return;
+
             if (_dispatch.CancelEmergencyCall(ServerId(player), callId))
                 SendEmergencyStatus(ServerId(player), $"~b~911~w~ | Your call #{callId} was cancelled.");
         }
 
-        private void OnEmergencyStatusRequest([FromSource] Player player) =>
-            SendEmergencyStatus(ServerId(player), null);
+        private void OnEmergencyStatusRequest([FromSource] Player player)
+        {
+            if (Allow(player, "requests", l => l.Requests)) SendEmergencyStatus(ServerId(player), null);
+        }
 
         private void OnCallClear([FromSource] Player player, string callId)
         {
+            if (!Allow(player, "dispatch", l => l.Dispatch)) return;
+            if (!IsCallId(callId)) return;
+
             var caller = _dispatch.ClearEmergencyCall(ServerId(player), callId);
             if (caller is null)
             {

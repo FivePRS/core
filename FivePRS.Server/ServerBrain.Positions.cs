@@ -25,6 +25,8 @@ namespace FivePRS.Server
 
         private void OnReportPosition([FromSource] Player player, float x, float y, float z, float heading)
         {
+            if (!Allow(player, "positions", l => l.Positions)) return;
+
             var license  = GetLicense(player);
             var position = SavedPosition.Create(x, y, z, heading);
             if (license is null || position is null) return;
@@ -35,6 +37,8 @@ namespace FivePRS.Server
 
         private async void OnLastPositionRequest([FromSource] Player player)
         {
+            if (!Allow(player, "requests", l => l.Requests)) return;
+
             var license = GetLicense(player);
             if (license is null) return;
 

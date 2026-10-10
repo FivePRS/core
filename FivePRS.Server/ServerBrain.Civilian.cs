@@ -77,6 +77,12 @@ namespace FivePRS.Server
             var license = GetLicense(player);
             if (license is null) return;
 
+            if (!Allow(player, "civilian", l => l.Civilian))
+            {
+                TriggerClientEvent(player, EventNames.ClientCivilianError, "Slow down. Try again in a few seconds.");
+                return;
+            }
+
             if (_civilians is null)
             {
                 TriggerClientEvent(player, EventNames.ClientCivilianError, "Civilian records are not available yet.");

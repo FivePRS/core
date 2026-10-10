@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CitizenFX.Core;
@@ -17,12 +18,11 @@ namespace FivePRS.Server.Http
     {
         private const int DefaultTimeoutMs = 60_000;
 
-        private static readonly Dictionary<int, TaskCompletionSource<HttpResult>> Pending = new();
-        private static int _nextId;
+        private static readonly Dictionary<string, TaskCompletionSource<HttpResult>> Pending = new();
 
         public static async Task<HttpResult> GetAsync(string url, string savePath = "", string accept = "", string check = "", int timeoutMs = DefaultTimeoutMs)
         {
-            var id = ++_nextId;
+            var id = Guid.NewGuid().ToString("N");
             var completion = new TaskCompletionSource<HttpResult>();
             Pending[id] = completion;
 
@@ -34,9 +34,9 @@ namespace FivePRS.Server.Http
             return finished == completion.Task ? completion.Task.Result : new HttpResult { Error = "timed out" };
         }
 
-        public static void OnResponse(int id, int status, string body, string error)
+        public static void OnResponse(string id, int status, string body, string error)
         {
-            if (Pending.TryGetValue(id, out var completion))
+            if (id is not null && Pending.TryGetValue(id, out var completion))
                 completion.TrySetResult(new HttpResult { Status = status, Body = body ?? string.Empty, Error = error ?? string.Empty });
         }
     }

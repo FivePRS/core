@@ -1,26 +1,26 @@
-![FivePRS Logo](https://cmap.pics/ibNxG/uXr_2c.png/raw) 
+![FivePRS Logo](https://cmap.pics/ibNxG/uXr_2c.png/raw)
 
-**FivePRS Core** is the primary framework engine designed for FiveM, providing a high performance, modular alternative for scripted emergency response gameplay.
+**FivePRS** is a free, open-source public response framework for FiveM: police, fire and EMS roleplay in one resource, with server-side dispatch, real jurisdictions, records, civilian life and an in-car terminal.
 
 > [!CAUTION]
-> FivePRS is not yet ready for production use and is only public at this stage for transparency and community contributions/feedback.
+> FivePRS is in public testing. Expect bugs, and back up your database before updating. Report problems in [Issues](https://github.com/FivePRS/core/issues) or on [Discord](https://discord.gg/zHyzHWKuM2).
 
-## Project Status: Under Development
-The core engine is currently in the architectural phase. We are focusing on:
-* **Event Routing:** Efficient handling of multi departmental calls.
-* **Unified API:** A robust set of tools for developers to build callouts.
-* **Performance:** Minimizing resmon usage while maximizing immersion.
-
-## Key Features (Planned)
-- **Multi Agency Support:** Native logic for PD, Fire, and Medical.
-- **Modular Design:** Load only the systems your server needs.
-- **Dynamic AI:** Smarter NPC interactions and scene management.
-- **Extensible:** Built to be easily expanded via the `addons` repository.
+The full documentation lives at **[fiveprs.org/docs](https://fiveprs.org/docs)**.
 
 ## Installation
-Run `publish.ps1` to build `dist/fiveprs.zip`, then extract it into your server's `resources/` folder and `ensure fiveprs` after the configuration below.
+1. Download `fiveprs.zip` from the latest [release](https://github.com/FivePRS/core/releases).
+2. Extract it into your server's `resources/` folder, so you have `resources/fiveprs/fxmanifest.lua`.
+3. Add the [server configuration](#server-configuration) below to `server.cfg`, ending with `ensure fiveprs`.
+4. Start the server. The console shows `[FivePRS] Database (SQLite) ready.` and `[FivePRS] ServerBrain online.`
 
-Optional official addons, such as the `fiveprs_loadscreen` loading screen, are published separately as `fiveprs_addons.zip` from the [FivePRS addons repository](https://github.com/FivePRS/addons).
+FivePRS runs on Windows and Linux servers. It uses SQLite out of the box, so there is nothing else to set up; MySQL is supported too.
+
+Optional official addons (a loading screen, Discord rich presence and a Notes app) are in the [addons repository](https://github.com/FivePRS/addons): download `fiveprs_addons.zip` from its releases.
+
+To update, see [Updates](#updates): FivePRS tells you when a new release is out and can download it for you. What changed in each release is in the [changelog](CHANGELOG.md).
+
+### Building from source
+On Windows, run `publish.ps1` to build everything and package `dist/fiveprs.zip`. Run the tests with `dotnet test`.
 
 ## Server Configuration
 ```cfg
@@ -161,11 +161,14 @@ The roster only takes effect when `fiveprs_restrict_departments` is `true`; the 
 Other client resources can read the local player's FivePRS state with `exports.fiveprs:getState()`. It returns `name`, `onDuty`, `department` and `rank`. While on duty, it also returns `agency`, `callsign`, `status` and `territory`, plus `callId` and `call` while assigned to a call. The official `fiveprs_presence` addon uses it for Discord rich presence.
 
 ## Updates
-FivePRS checks the [core repository's releases](https://github.com/FivePRS/core/releases) on start and every `checkIntervalHours`. When a newer version is out, the console shows it with a summary of the release notes, and admins are told when they join. Run `fiveprs_update` in the server console (or in game with `fiveprs.admin`) to download the release and unpack it into `data/updates/<version>/`, without its `config/` and `data/` folders. Stop the server, copy that folder's contents over `resources/fiveprs`, and start it again; your settings and database are kept.
+FivePRS checks the [core repository's releases](https://github.com/FivePRS/core/releases) on start and every `checkIntervalHours`. When a newer version is out, the console shows it with a summary of the release notes, and admins are told when they join. Run `fiveprs_update` in the server console (or in game with `fiveprs.admin`) to download the release and unpack it into `data/updates/<version>/`, without its `config/` and `data/` folders. Stop the server, copy that folder's contents over `resources/fiveprs`, and start it again; your settings and database are kept. If the new version changes the database, FivePRS updates it on start and logs each step (`Applied database migration ...`). With SQLite it first saves a copy to `data/backups/`; with MySQL, back up the database yourself before updating.
 
 Settings are under `updates` in `config/settings.json`: `checkForUpdates`, `repository`, `assetName` (the release file to download, `fiveprs.zip`), `checkIntervalHours` and `includePreReleases`.
 
-To publish a release, set `version` in `fxmanifest.lua`, run `publish.ps1`, and create a GitHub release tagged `v<version>` with `dist/fiveprs.zip` attached.
+To publish a release, move the `Unreleased` entries in `CHANGELOG.md` under a new version heading, set the same `version` in `fxmanifest.lua`, commit, and push a tag named `v<version>`. GitHub Actions checks the versions match, builds and tests, and creates the release with `fiveprs.zip` attached and that changelog section as its notes. Versions with a suffix, like `0.9.0-ptb.1`, are published as pre-releases, and servers running a pre-release are offered newer pre-releases automatically.
+
+## Rate limits
+Each player can only send so many requests to the server in a short time, so one player can't flood dispatch, records or the database. Requests over the limit are ignored, the player is told to slow down where it matters (911 calls, records, civilian actions), and the console logs the first one in each window. Limits are under `rateLimits` in `config/settings.json`, as a `limit` per `perSeconds` for each kind of request; set `enabled` to `false` to turn them off.
 
 ## Spawning
 Players are returned to where they last were when they join, with their last character active. Positions are saved every `saveIntervalSeconds` while playing and when they leave. Turn it off with `spawn.restoreLastLocation` in `config/settings.json`.

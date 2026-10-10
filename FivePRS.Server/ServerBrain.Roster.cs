@@ -12,6 +12,9 @@ namespace FivePRS.Server
 {
     public partial class ServerBrain
     {
+        private const int MaxLicenseLength = 60;
+        private const int MaxQueryLength = 64;
+
         private RosterService? _roster;
 
         private void RegisterRosterEvents()
@@ -28,13 +31,15 @@ namespace FivePRS.Server
 
         private async void OnAdminRequest([FromSource] Player player, string query)
         {
-            if (!_permissions.IsAdmin(player.Handle)) return;
-            await SendAdminStateAsync(player, query);
+            if (!_permissions.IsAdmin(player.Handle) || !Allow(player, "admin", l => l.Admin)) return;
+            await SendAdminStateAsync(player, TrimQuery(query));
         }
 
         private async void OnAdminRosterSet([FromSource] Player player, string license, int departmentId, bool granted, string query)
         {
-            if (!_permissions.IsAdmin(player.Handle) || _roster is null) return;
+            if (!_permissions.IsAdmin(player.Handle) || _roster is null || !Allow(player, "admin", l => l.Admin)) return;
+            if (!IsLicense(license)) return;
+            query = TrimQuery(query);
             if (!Enum.IsDefined(typeof(Department), departmentId) || departmentId == (int)Department.None) return;
 
             var department = (Department)departmentId;
@@ -54,6 +59,15 @@ namespace FivePRS.Server
                 Debug.WriteLine($"[FivePRS] Roster change failed for {player.Name}: {ex}");
                 Notify(player, "~r~Roster change failed. Check the server console.");
             }
+        }
+
+        private static bool IsLicense(string? license) =>
+            license is not null && license.Length <= MaxLicenseLength && license.StartsWith("license:", StringComparison.Ordinal);
+
+        private static string TrimQuery(string? query)
+        {
+            var trimmed = (query ?? string.Empty).Trim();
+            return trimmed.Length > MaxQueryLength ? trimmed.Substring(0, MaxQueryLength) : trimmed;
         }
 
         private async Task ApplyRosterChangeAsync(string license, Department department, bool granted)

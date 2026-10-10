@@ -58,6 +58,9 @@ namespace FivePRS.Core.Config
         [JsonProperty("updates")]
         public UpdateSettings Updates { get; set; } = new();
 
+        [JsonProperty("rateLimits")]
+        public RateLimitSettings RateLimits { get; set; } = new();
+
         [JsonProperty("terminal")]
         public TerminalSettings Terminal { get; set; } = new();
 

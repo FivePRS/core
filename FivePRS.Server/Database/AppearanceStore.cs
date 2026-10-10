@@ -5,23 +5,9 @@ namespace FivePRS.Server.Database
 {
     public sealed class AppearanceStore : SqlStore
     {
-        private const string SqliteSchema = @"CREATE TABLE IF NOT EXISTS fiveprs_appearances (
-                character_id INTEGER PRIMARY KEY,
-                data         TEXT    NOT NULL,
-                updated_at   TEXT    NOT NULL)";
-
-        private const string MySqlSchema = @"CREATE TABLE IF NOT EXISTS `fiveprs_appearances` (
-                `character_id` INT UNSIGNED NOT NULL,
-                `data`         MEDIUMTEXT   NOT NULL,
-                `updated_at`   DATETIME(6)  NOT NULL,
-                PRIMARY KEY (`character_id`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
-
         public AppearanceStore(IDatabaseProvider db) : base(db)
         {
         }
-
-        public Task InitializeAsync() => ExecuteAsync(IsMySql ? MySqlSchema : SqliteSchema);
 
         public async Task<string?> GetAsync(int characterId)
         {

@@ -57,7 +57,7 @@ namespace FivePRS.Server
                 return;
             }
 
-            var latest = ReleaseFeed.Latest(response.Body, settings.AssetName, settings.IncludePreReleases);
+            var latest = ReleaseFeed.Latest(response.Body, settings.AssetName, settings.IncludePreReleases || installed.IsPreRelease);
             _availableUpdate = latest is not null && latest.Version.IsNewerThan(installed) ? latest : null;
 
             if (_availableUpdate is null)

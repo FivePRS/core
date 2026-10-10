@@ -14,6 +14,9 @@ namespace FivePRS.Server
 {
     public partial class ServerBrain
     {
+        private const bool Lookups = true;
+        private const bool Records = false;
+
         private LookupService? _lookup;
 
         private void RegisterLookupEvents()
@@ -28,16 +31,16 @@ namespace FivePRS.Server
         }
 
         private void OnLookupName([FromSource] Player player, string term) =>
-            RunLookup(player, (lookup, _) => lookup.SearchByNameAsync(term));
+            RunLookup(player, Lookups, (lookup, _) => lookup.SearchByNameAsync(term));
 
         private void OnLookupPlate([FromSource] Player player, string plate) =>
-            RunLookup(player, (lookup, _) => lookup.SearchByPlateAsync(plate));
+            RunLookup(player, Lookups, (lookup, _) => lookup.SearchByPlateAsync(plate));
 
         private void OnLookupCharacter([FromSource] Player player, int characterId) =>
-            RunLookup(player, (lookup, _) => lookup.GetRecordAsync(characterId));
+            RunLookup(player, Lookups, (lookup, _) => lookup.GetRecordAsync(characterId));
 
         private void OnRecordIssue([FromSource] Player player, int characterId, int type, string description, int fine) =>
-            RunLookup(player, async (lookup, officer) =>
+            RunLookup(player, Records, async (lookup, officer) =>
             {
                 var error = await lookup.IssueRecordAsync(officer, characterId, type, description, fine);
                 if (error is not null) return (null, error);
@@ -49,7 +52,7 @@ namespace FivePRS.Server
             });
 
         private void OnRecordResolve([FromSource] Player player, int recordId, bool served) =>
-            RunLookup(player, async (lookup, officer) =>
+            RunLookup(player, Records, async (lookup, officer) =>
             {
                 var (characterId, error) = await lookup.ResolveWarrantAsync(officer, recordId, served);
                 if (error is not null || characterId is null) return (null, error ?? "Warrant not found.");
@@ -60,7 +63,7 @@ namespace FivePRS.Server
             });
 
         private void OnLicenseSetStatus([FromSource] Player player, int characterId, string type, int status) =>
-            RunLookup(player, async (lookup, officer) =>
+            RunLookup(player, Records, async (lookup, officer) =>
             {
                 var error = await lookup.SetLicenseStatusAsync(characterId, type, status);
                 if (error is not null) return (null, error);
@@ -73,7 +76,7 @@ namespace FivePRS.Server
             });
 
         private void OnVehicleFlag([FromSource] Player player, int vehicleId, bool stolen) =>
-            RunLookup(player, async (lookup, officer) =>
+            RunLookup(player, Records, async (lookup, officer) =>
             {
                 var (characterId, error) = await lookup.SetVehicleStolenAsync(vehicleId, stolen);
                 if (error is not null || characterId is null) return (null, error ?? "Vehicle not found.");
@@ -83,8 +86,14 @@ namespace FivePRS.Server
                 return await lookup.GetRecordAsync(characterId.Value);
             });
 
-        private async void RunLookup(Player player, Func<LookupService, OfficerInfo, Task<(LookupResult? Result, string? Error)>> action)
+        private async void RunLookup(Player player, bool lookups, Func<LookupService, OfficerInfo, Task<(LookupResult? Result, string? Error)>> action)
         {
+            if (lookups ? !Allow(player, "lookups", l => l.Lookups) : !Allow(player, "records", l => l.Records))
+            {
+                TriggerClientEvent(player, EventNames.ClientLookupError, "Slow down. Try again in a few seconds.");
+                return;
+            }
+
             if (!TryGetOfficer(player, out var officer))
             {
                 TriggerClientEvent(player, EventNames.ClientLookupError, "Records are only available to on-duty police.");

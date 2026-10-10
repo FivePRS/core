@@ -52,8 +52,30 @@ namespace FivePRS.Core.Updates
 
             if (PreRelease.Length == 0) return other.PreRelease.Length == 0 ? 0 : 1;
             if (other.PreRelease.Length == 0) return -1;
-            return string.CompareOrdinal(PreRelease, other.PreRelease);
+            return ComparePreRelease(PreRelease, other.PreRelease);
         }
+
+        private static int ComparePreRelease(string left, string right)
+        {
+            var a = left.Split('.');
+            var b = right.Split('.');
+
+            for (var i = 0; i < Math.Min(a.Length, b.Length); i++)
+            {
+                var aNumeric = int.TryParse(a[i], out var aNumber);
+                var bNumeric = int.TryParse(b[i], out var bNumber);
+
+                var result = aNumeric && bNumeric ? aNumber.CompareTo(bNumber)
+                    : aNumeric ? -1
+                    : bNumeric ? 1
+                    : string.CompareOrdinal(a[i], b[i]);
+                if (result != 0) return result;
+            }
+
+            return a.Length.CompareTo(b.Length);
+        }
+
+        public bool IsPreRelease => PreRelease.Length > 0;
 
         public bool IsNewerThan(ReleaseVersion other) => CompareTo(other) > 0;
 

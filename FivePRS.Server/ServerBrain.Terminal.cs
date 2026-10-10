@@ -15,6 +15,8 @@ namespace FivePRS.Server
 
         private async void OnSetWallpaper([FromSource] Player player, string value)
         {
+            if (!Allow(player, "civilian", l => l.Civilian)) return;
+
             var license = GetLicense(player);
             if (license is null || !_db.IsReady) return;
 

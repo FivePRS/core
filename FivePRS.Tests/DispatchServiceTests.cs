@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using FivePRS.Core.Config;
 using FivePRS.Core.Jurisdiction;
@@ -433,6 +434,44 @@ namespace FivePRS.Tests
             _dispatch.Tick();
 
             Assert.Equal(new[] { answered }, _dispatch.CreateSnapshot().Calls.Select(c => c.Id));
+        }
+
+        [Fact]
+        public void RegisterCallouts_InvalidDefinitions_AreRejected()
+        {
+            var tooLong = Definition(new string('x', 65), Department.Police, xp: 10);
+            var noDepartment = Definition("Ghost", Department.None, xp: 10);
+            var heavy = Definition("Heavy", Department.Police, xp: 10);
+            heavy.Weight = 1000;
+            var badPriority = Definition("Odd", Department.Police, xp: 10);
+            badPriority.Priority = (CalloutPriority)99;
+            var negativeXp = Definition("Debt", Department.Police, xp: -5);
+
+            var accepted = _dispatch.RegisterCallouts(new[] { tooLong, noDepartment, heavy, badPriority, negativeXp, null });
+
+            Assert.Equal(0, accepted);
+            Assert.Equal(2, _dispatch.CatalogCount);
+        }
+
+        [Fact]
+        public void RegisterCallouts_XpAboveMax_IsCapped()
+        {
+            var greedy = Definition("Greedy", Department.Police, xp: 100_000);
+
+            Assert.Equal(1, _dispatch.RegisterCallouts(new[] { greedy }, maxXp: 500));
+            Assert.Equal(500, greedy.XPReward);
+        }
+
+        [Fact]
+        public void RegisterCallouts_CatalogFull_RejectsNewNamesButUpdatesExisting()
+        {
+            var many = new List<CalloutDefinition>();
+            for (var i = 0; i < 600; i++) many.Add(Definition($"Callout {i}", Department.Police, xp: 10));
+
+            _dispatch.RegisterCallouts(many);
+
+            Assert.Equal(500, _dispatch.CatalogCount);
+            Assert.Equal(1, _dispatch.RegisterCallouts(new[] { Definition("Traffic Stop", Department.Police, xp: 20) }));
         }
 
         private void Advance(int seconds) => _now = _now.AddSeconds(seconds);

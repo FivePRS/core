@@ -20,6 +20,7 @@ namespace FivePRS.Server
     public partial class ServerBrain : BaseScript
     {
         private const int SnapshotIntervalMs = 5_000;
+        private const int MaxCalloutCatalogJson = 200_000;
 
         private readonly ConcurrentDictionary<string, PlayerData> _cache = new();
         private readonly DatabaseManager _db = new();
@@ -58,7 +59,7 @@ namespace FivePRS.Server
             EventHandlers[EventNames.ServerSetUnitStatus]    += new Action<Player, int>(OnSetUnitStatus);
             EventHandlers[EventNames.ServerAttachToCall]     += new Action<Player, string>(OnAttachToCall);
             EventHandlers[EventNames.ServerSetAiCallouts]    += new Action<Player, bool>(OnSetAiCallouts);
-            EventHandlers[EventNames.LocalHttpResponse]      += new Action<int, int, string, string>(HttpBridge.OnResponse);
+            EventHandlers[EventNames.LocalHttpResponse]      += new Action<string, int, string, string>(HttpBridge.OnResponse);
 
             Tick += DispatchTickAsync;
             RegisterAdminCommands();
@@ -137,6 +138,7 @@ namespace FivePRS.Server
 
         private void OnPlayerDropped([FromSource] Player player, string reason)
         {
+            _rateLimiter.Forget(player.Handle);
             _dispatch.SetOffDuty(ServerId(player));
 
             var license = GetLicense(player);
@@ -150,6 +152,7 @@ namespace FivePRS.Server
 
         private async void OnPlayerReady([FromSource] Player player)
         {
+            if (!Allow(player, "requests", l => l.Requests)) return;
             var license = GetLicense(player);
             if (license is null) return;
 
@@ -176,6 +179,7 @@ namespace FivePRS.Server
 
         private async void OnEnterService([FromSource] Player player, int departmentId, string agencyId, string callsign)
         {
+            if (!Allow(player, "dispatch", l => l.Dispatch)) return;
             if (!TryGetCached(player, out var license, out var data) || data.IsOnDuty) return;
             if (!Enum.IsDefined(typeof(Department), departmentId) || departmentId == (int)Department.None) return;
 
@@ -268,6 +272,7 @@ namespace FivePRS.Server
 
         private async void OnToggleDuty([FromSource] Player player)
         {
+            if (!Allow(player, "dispatch", l => l.Dispatch)) return;
             if (!TryGetCached(player, out var license, out var data)) return;
             if (!data.IsOnDuty && data.Department == Department.None) return;
 
@@ -292,14 +297,15 @@ namespace FivePRS.Server
 
         private void OnRegisterCallouts([FromSource] Player player, string json)
         {
-            if (!_dispatch.IsOnDuty(ServerId(player))) return;
+            if (!Allow(player, "dispatch", l => l.Dispatch)) return;
+            if (!_dispatch.IsOnDuty(ServerId(player)) || json is null || json.Length > MaxCalloutCatalogJson) return;
 
             try
             {
                 var definitions = JsonConvert.DeserializeObject<List<CalloutDefinition>>(json);
                 if (definitions is null) return;
 
-                _dispatch.RegisterCallouts(definitions);
+                if (_dispatch.RegisterCallouts(definitions, ReadMaxXp()) == 0) return;
                 Debug.WriteLine($"[FivePRS] Dispatch catalog has {_dispatch.CatalogCount} callout(s).");
             }
             catch (Exception ex)
@@ -310,13 +316,16 @@ namespace FivePRS.Server
 
         private void OnCalloutResponse([FromSource] Player player, string callId, int response, float x, float y, float z)
         {
+            if (!Allow(player, "dispatch", l => l.Dispatch)) return;
+            if (!IsCallId(callId) || !IsFinite(x) || !IsFinite(y) || !IsFinite(z)) return;
             if (!Enum.IsDefined(typeof(OfferResponse), response)) return;
             _dispatch.Respond(ServerId(player), callId, (OfferResponse)response, x, y, z);
         }
 
         private async void OnCalloutEnded([FromSource] Player player, string callId, int result)
         {
-            if (!Enum.IsDefined(typeof(CalloutResult), result)) return;
+            if (!Allow(player, "dispatch", l => l.Dispatch)) return;
+            if (!IsCallId(callId) || !Enum.IsDefined(typeof(CalloutResult), result)) return;
 
             foreach (var award in _dispatch.End(ServerId(player), callId, (CalloutResult)result))
                 await AwardXpAsync(award.UnitId, award.Amount, callId);
@@ -324,6 +333,7 @@ namespace FivePRS.Server
 
         private void OnSetAiCallouts([FromSource] Player player, bool enabled)
         {
+            if (!Allow(player, "dispatch", l => l.Dispatch)) return;
             if (_dispatch.SetAiCallouts(ServerId(player), enabled))
                 Notify(player, enabled
                     ? "Dispatch | ~g~AI callouts on.~w~ Dispatch will offer you calls again."
@@ -332,6 +342,7 @@ namespace FivePRS.Server
 
         private void OnSetUnitStatus([FromSource] Player player, int status)
         {
+            if (!Allow(player, "dispatch", l => l.Dispatch)) return;
             if (!Enum.IsDefined(typeof(UnitStatus), status)) return;
 
             if (!_dispatch.SetStatus(ServerId(player), (UnitStatus)status))
@@ -340,6 +351,9 @@ namespace FivePRS.Server
 
         private void OnAttachToCall([FromSource] Player player, string callId)
         {
+            if (!Allow(player, "dispatch", l => l.Dispatch)) return;
+            if (!IsCallId(callId)) return;
+
             if (!_dispatch.Attach(ServerId(player), callId))
             {
                 Notify(player, $"~r~Unable to attach to call #{callId}.~w~ Check the ID and your status.");

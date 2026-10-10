@@ -29,8 +29,12 @@ namespace FivePRS.Server.Database
 
         public PositionStore Positions { get; private set; } = null!;
 
+        public int SchemaVersion { get; private set; }
+
         public async Task InitializeAsync(DatabaseType dbType, string? connectionString)
         {
+            Func<int, Task>? backup = null;
+
             if (dbType == DatabaseType.MySQL)
             {
                 if (connectionString is null || string.IsNullOrWhiteSpace(connectionString))
@@ -42,29 +46,41 @@ namespace FivePRS.Server.Database
                 var resourcePath = API.GetResourcePath(API.GetCurrentResourceName());
                 var nativePath = SqliteNativeLoader.Load(Path.Combine(resourcePath, "server"));
                 Debug.WriteLine($"[FivePRS] Native SQLite loaded from {nativePath}.");
-                _provider = new SQLiteProvider(connectionString ?? Path.Combine(resourcePath, "data", "fiveprs.db"));
+
+                var dbPath = connectionString ?? Path.Combine(resourcePath, "data", "fiveprs.db");
+                var sqlite = new SQLiteProvider(dbPath);
+                _provider = sqlite;
+
+                if (File.Exists(dbPath) && new FileInfo(dbPath).Length > 0)
+                    backup = version => BackupAsync(sqlite, dbPath, version);
             }
 
             await _provider.InitializeAsync();
 
-            Civilians = new CivilianStore(_provider);
-            await Civilians.InitializeAsync();
+            var result = await new Migrator(_provider).MigrateAsync(backup);
+            foreach (var migration in result.Applied)
+                Debug.WriteLine($"[FivePRS] Applied database migration {migration.Version}: {migration.Name}.");
+            if (result.DatabaseIsNewer)
+                Debug.WriteLine($"[FivePRS] WARNING: The database is at schema version {result.FromVersion}, but this FivePRS build only knows up to {result.LatestVersion}. Update FivePRS, or restore the database backup taken before you downgraded.");
+            SchemaVersion = result.ToVersion;
 
-            Roster = new RosterStore(_provider);
-            await Roster.InitializeAsync();
-
+            Civilians   = new CivilianStore(_provider);
+            Roster      = new RosterStore(_provider);
             Appearances = new AppearanceStore(_provider);
-            await Appearances.InitializeAsync();
-
             Preferences = new PreferencesStore(_provider);
-            await Preferences.InitializeAsync();
-
-            Positions = new PositionStore(_provider);
-            await Positions.InitializeAsync();
+            Positions   = new PositionStore(_provider);
 
             IsReady = true;
 
             Debug.WriteLine($"[FivePRS] Database ({dbType}) ready.");
+        }
+
+        private static async Task BackupAsync(SQLiteProvider sqlite, string dbPath, int version)
+        {
+            var directory = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(dbPath)) ?? ".", "backups");
+            var path = Path.Combine(directory, $"{Path.GetFileNameWithoutExtension(dbPath)}-schema{version}-{DateTime.UtcNow:yyyyMMdd-HHmmss}.db");
+            await sqlite.BackupAsync(path);
+            Debug.WriteLine($"[FivePRS] Backed up the database to {path} before updating it.");
         }
 
         public Task<PlayerData?> GetPlayerAsync(string license)

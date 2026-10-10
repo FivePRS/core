@@ -7,26 +7,9 @@ namespace FivePRS.Server.Database
 {
     public sealed class RosterStore : SqlStore
     {
-        private const string SqliteSchema = @"CREATE TABLE IF NOT EXISTS fiveprs_roster (
-                license    TEXT    NOT NULL,
-                department INTEGER NOT NULL,
-                granted_by TEXT    NOT NULL,
-                granted_at TEXT    NOT NULL,
-                PRIMARY KEY (license, department))";
-
-        private const string MySqlSchema = @"CREATE TABLE IF NOT EXISTS `fiveprs_roster` (
-                `license`    VARCHAR(60)  NOT NULL,
-                `department` TINYINT UNSIGNED NOT NULL,
-                `granted_by` VARCHAR(100) NOT NULL,
-                `granted_at` DATETIME(6)  NOT NULL,
-                PRIMARY KEY (`license`, `department`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
-
         public RosterStore(IDatabaseProvider db) : base(db)
         {
         }
-
-        public Task InitializeAsync() => ExecuteAsync(IsMySql ? MySqlSchema : SqliteSchema);
 
         public Task<List<(string License, Department Department)>> GetAllAsync() =>
             QueryAsync("SELECT license, department FROM fiveprs_roster",

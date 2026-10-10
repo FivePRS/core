@@ -6,29 +6,9 @@ namespace FivePRS.Server.Database
 {
     public sealed class PositionStore : SqlStore
     {
-        private const string SqliteSchema = @"CREATE TABLE IF NOT EXISTS fiveprs_positions (
-                license    TEXT PRIMARY KEY,
-                x          REAL NOT NULL,
-                y          REAL NOT NULL,
-                z          REAL NOT NULL,
-                heading    REAL NOT NULL,
-                updated_at TEXT NOT NULL)";
-
-        private const string MySqlSchema = @"CREATE TABLE IF NOT EXISTS `fiveprs_positions` (
-                `license`    VARCHAR(60) NOT NULL,
-                `x`          DOUBLE      NOT NULL,
-                `y`          DOUBLE      NOT NULL,
-                `z`          DOUBLE      NOT NULL,
-                `heading`    DOUBLE      NOT NULL,
-                `updated_at` DATETIME(6) NOT NULL,
-                PRIMARY KEY (`license`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
-
         public PositionStore(IDatabaseProvider db) : base(db)
         {
         }
-
-        public Task InitializeAsync() => ExecuteAsync(IsMySql ? MySqlSchema : SqliteSchema);
 
         public async Task<SavedPosition?> GetAsync(string license)
         {

@@ -23,6 +23,17 @@
         "checkIntervalHours": 6,
         "includePreReleases": false
     },
+    "rateLimits": {
+        "enabled": true,
+        "emergency": { "limit": 4, "perSeconds": 60 },
+        "lookups": { "limit": 20, "perSeconds": 10 },
+        "records": { "limit": 10, "perSeconds": 10 },
+        "civilian": { "limit": 12, "perSeconds": 10 },
+        "dispatch": { "limit": 20, "perSeconds": 10 },
+        "admin": { "limit": 15, "perSeconds": 10 },
+        "positions": { "limit": 6, "perSeconds": 10 },
+        "requests": { "limit": 10, "perSeconds": 10 }
+    },
     "terminal": {
         "defaultWallpaper": "fiveprs",
         "allowCustomWallpapers": true,

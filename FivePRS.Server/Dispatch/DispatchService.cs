@@ -68,6 +68,11 @@ namespace FivePRS.Server.Dispatch
 
         public const string EmergencyCallName = "911 Call";
 
+        private const int MaxCatalogSize = 500;
+        private const int MaxCalloutNameLength = 64;
+        private const int MaxCalloutWeight = 100;
+        private const int MaxCalloutCooldownSeconds = 86_400;
+
         private readonly Func<DateTime>         _clock;
         private readonly Func<ResourceSettings> _settings;
         private readonly Func<TerritoryMap>     _territories;
@@ -151,14 +156,29 @@ namespace FivePRS.Server.Dispatch
             IsDirty = true;
         }
 
-        public void RegisterCallouts(IEnumerable<CalloutDefinition> definitions)
+        public int RegisterCallouts(IEnumerable<CalloutDefinition?> definitions, int maxXp = int.MaxValue)
         {
+            var accepted = 0;
             foreach (var definition in definitions)
             {
-                if (string.IsNullOrWhiteSpace(definition.Name) || definition.Weight < 1) continue;
+                if (!IsValidCallout(definition)) continue;
+                if (!_catalog.ContainsKey(definition!.Name) && _catalog.Count >= MaxCatalogSize) continue;
+
+                definition.XPReward = Math.Min(definition.XPReward, maxXp);
                 _catalog[definition.Name] = definition;
+                accepted++;
             }
+            return accepted;
         }
+
+        private static bool IsValidCallout(CalloutDefinition? definition) =>
+            definition is not null &&
+            !string.IsNullOrWhiteSpace(definition.Name) && definition.Name.Length <= MaxCalloutNameLength &&
+            Enum.IsDefined(typeof(Department), definition.Department) && definition.Department != Department.None &&
+            Enum.IsDefined(typeof(CalloutPriority), definition.Priority) &&
+            definition.Weight >= 1 && definition.Weight <= MaxCalloutWeight &&
+            definition.CooldownSeconds >= 0 && definition.CooldownSeconds <= MaxCalloutCooldownSeconds &&
+            definition.XPReward >= 0;
 
         public IReadOnlyList<DispatchOffer> Tick()
         {

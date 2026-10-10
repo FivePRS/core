@@ -28,6 +28,7 @@ if ($LASTEXITCODE -ne 0) { Write-Error "Build failed."; exit 1 }
 Copy-Item "$Root\fxmanifest.lua" "$DistDir\fxmanifest.lua"
 Copy-Item "$Root\LICENSE" "$DistDir\LICENSE"
 Copy-Item "$Root\README.md" "$DistDir\README.md"
+Copy-Item "$Root\CHANGELOG.md" "$DistDir\CHANGELOG.md"
 
 Info "Copying config files..."
 if (Test-Path "$Root\config") {

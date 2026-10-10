@@ -1,0 +1,58 @@
+name: Release
+
+on:
+  push:
+    tags: [ "v*" ]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Check version
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}".TrimStart("v")
+          $manifest = Select-String -Path fxmanifest.lua -Pattern "^version '(.+)'" | ForEach-Object { $_.Matches[0].Groups[1].Value }
+          if ($manifest -ne $tag) { throw "Tag v$tag does not match fxmanifest.lua version $manifest." }
+          "VERSION=$tag" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Build
+        shell: pwsh
+        run: ./publish.ps1 -Configuration Release
+
+      - name: Test
+        run: dotnet test FivePRS.Tests/FivePRS.Tests.csproj -c Release --no-build
+
+      - name: Release notes
+        shell: pwsh
+        run: |
+          $lines = Get-Content CHANGELOG.md
+          $start = [Array]::FindIndex($lines, [Predicate[string]]{ param($l) $l.StartsWith("## [$env:VERSION]") })
+          if ($start -lt 0) { throw "CHANGELOG.md has no section for $env:VERSION." }
+          $notes = $lines[($start + 1)..($lines.Length - 1)] | ForEach-Object -Begin { $done = $false } -Process {
+            if ($done -or $_.StartsWith("## [") -or $_ -match "^\[.+\]: ") { $done = $true } else { $_ }
+          }
+          ($notes -join "`n").Trim() | Out-File -FilePath release-notes.md -Encoding utf8
+
+      - name: Publish release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $flags = @()
+          if ($env:VERSION.Contains("-")) { $flags += "--prerelease" }
+          gh release view "${{ github.ref_name }}" *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload "${{ github.ref_name }}" dist/fiveprs.zip --clobber
+          } else {
+            gh release create "${{ github.ref_name }}" dist/fiveprs.zip --title "FivePRS $env:VERSION" --notes-file release-notes.md @flags
+          }

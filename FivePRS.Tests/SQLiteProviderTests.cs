@@ -13,7 +13,7 @@ namespace FivePRS.Tests
         private readonly string _path = Path.Combine(Path.GetTempPath(), $"fiveprs-test-{Guid.NewGuid():N}.db");
 
         [Fact]
-        public async Task InitializeAsync_ExistingDatabaseWithoutCallsign_AddsColumnAndKeepsPlayers()
+        public async Task Migrate_ExistingDatabaseWithoutCallsign_AddsColumnAndKeepsPlayers()
         {
             using (var conn = new SqliteConnection($"Data Source={_path}"))
             {
@@ -30,6 +30,7 @@ namespace FivePRS.Tests
 
             var provider = new SQLiteProvider(_path);
             await provider.InitializeAsync();
+            await new Migrator(provider).MigrateAsync();
 
             var player = await provider.GetPlayerAsync("license:old");
             Assert.NotNull(player);
@@ -43,6 +44,7 @@ namespace FivePRS.Tests
         {
             var provider = new SQLiteProvider(_path);
             await provider.InitializeAsync();
+            await new Migrator(provider).MigrateAsync();
 
             await provider.SavePlayerAsync(new PlayerData
             {
