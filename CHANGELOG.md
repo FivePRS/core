@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.9.0-ptb.2] - 2026-10-10
+
+### Added
+- `fiveprs_diag` prints the version, platform, database, OneSync, addons and warnings for bug reports
+- A startup summary with the version, platform and database, and warnings for problems such as OneSync being off
+- The terminal's Settings app shows the FivePRS version
+- Release downloads include the version in their name, like `fiveprs-0.9.0-ptb.2.zip`
+
+### Fixed
+- The server console no longer shows `Could not load assembly Windows` stack traces on start with SQLite
+
 ## [0.9.0-ptb.1] - 2026-10-10
 
 The first public test build.
@@ -41,5 +52,6 @@ The first public test build.
 - Only Mission Row has armory, locker room and garage points
 - Back up your database before updating between test builds
 
-[Unreleased]: https://github.com/FivePRS/core/compare/v0.9.0-ptb.1...HEAD
+[Unreleased]: https://github.com/FivePRS/core/compare/v0.9.0-ptb.2...HEAD
+[0.9.0-ptb.2]: https://github.com/FivePRS/core/compare/v0.9.0-ptb.1...v0.9.0-ptb.2
 [0.9.0-ptb.1]: https://github.com/FivePRS/core/releases/tag/v0.9.0-ptb.1

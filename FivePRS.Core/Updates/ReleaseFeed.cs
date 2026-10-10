@@ -77,13 +77,33 @@ namespace FivePRS.Core.Updates
                         PreRelease = release.PreRelease,
                         Version    = version,
                         AssetUrl   = release.Assets
-                            .FirstOrDefault(asset => string.Equals(asset.Name, assetName, StringComparison.OrdinalIgnoreCase))
+                            .FirstOrDefault(asset => IsAsset(asset.Name, assetName))
                             ?.DownloadUrl,
                     }
                     : null)
                 .Where(release => release is not null)
                 .OrderByDescending(release => release!.Version)
                 .FirstOrDefault();
+        }
+
+        public static bool IsAsset(string fileName, string assetName)
+        {
+            if (string.Equals(fileName, assetName, StringComparison.OrdinalIgnoreCase)) return true;
+
+            var dot = assetName.LastIndexOf('.');
+            if (dot <= 0) return false;
+
+            var prefix    = assetName.Substring(0, dot) + "-";
+            var extension = assetName.Substring(dot);
+            if (fileName.Length <= prefix.Length + extension.Length ||
+                !fileName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ||
+                !fileName.EndsWith(extension, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            var version = fileName.Substring(prefix.Length, fileName.Length - prefix.Length - extension.Length);
+            return ReleaseVersion.TryParse(version, out _);
         }
 
         public static string Summary(string notes, int maxLines = 6)

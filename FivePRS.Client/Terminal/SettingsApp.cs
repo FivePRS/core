@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using CitizenFX.Core.Native;
 using FivePRS.Client.App;
 using FivePRS.Client.Dispatch;
 using FivePRS.Core.Config;
@@ -54,6 +55,13 @@ namespace FivePRS.Client.Terminal
                     Type        = "url",
                 }));
             }
+
+            var version = API.GetResourceMetadata(API.GetCurrentResourceName(), "version", 0);
+            screen.Add(AppBlock.Section("About"))
+                .Add(AppBlock.Paragraph($"FivePRS {version}"))
+                .Add(AppBlock.Paragraph(version.Contains("-")
+                    ? "Public test build. Report problems at github.com/FivePRS/core/issues"
+                    : "fiveprs.org", true));
 
             return screen;
         }

@@ -100,6 +100,8 @@ namespace FivePRS.Server.Dispatch
 
         public int CatalogCount => _catalog.Count;
 
+        public int ActiveCallCount => _calls.Count;
+
         public bool IsOnDuty(int unitId) => _units.ContainsKey(unitId);
 
         public void SetOnDuty(int unitId, string name, Department department, int rank, string? agencyId = null, string? callsign = null)

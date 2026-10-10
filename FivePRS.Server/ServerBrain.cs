@@ -28,6 +28,7 @@ namespace FivePRS.Server
         private readonly PermissionService _permissions;
 
         private long _lastSnapshotAt;
+        private DatabaseType _databaseType;
 
         public ServerBrain()
         {
@@ -71,6 +72,7 @@ namespace FivePRS.Server
             RegisterTerminalEvents();
             RegisterPositionEvents();
             RegisterUpdates();
+            RegisterDiagnostics();
 
             _ = ServerIcon.ApplyDefaultAsync(ConfigManager.Settings.Branding.ServerIcon);
             _ = InitDbAsync();
@@ -84,6 +86,7 @@ namespace FivePRS.Server
                 var connString = API.GetConvar("fiveprs_db_connection", "");
 
                 var dbType = dbTypeRaw == "mysql" ? DatabaseType.MySQL : DatabaseType.SQLite;
+                _databaseType = dbType;
                 await _db.InitializeAsync(dbType, string.IsNullOrEmpty(connString) ? null : connString);
                 _civilians = new CivilianService(_db.Civilians, () => ConfigManager.Settings, () => ConfigManager.Licenses, () => DateTime.UtcNow);
                 _lookup    = new LookupService(_db.Civilians, () => ConfigManager.Settings, () => ConfigManager.Licenses);
@@ -91,6 +94,7 @@ namespace FivePRS.Server
                 _roster    = new RosterService(_db.Roster);
                 await _roster.LoadAsync();
 
+                LogStartup();
                 Debug.WriteLine("[FivePRS] ServerBrain online.");
             }
             catch (Exception ex)

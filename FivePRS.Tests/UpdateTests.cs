@@ -56,6 +56,20 @@ namespace FivePRS.Tests
             Assert.Equal("- One\n- Two", ReleaseFeed.Summary(release.Notes));
         }
 
+        [Theory]
+        [InlineData("fiveprs.zip", true)]
+        [InlineData("FivePRS.zip", true)]
+        [InlineData("fiveprs-0.9.0-ptb.2.zip", true)]
+        [InlineData("fiveprs-1.2.3.zip", true)]
+        [InlineData("fiveprs-latest.zip", false)]
+        [InlineData("fiveprs_addons-0.9.0-ptb.2.zip", false)]
+        [InlineData("fiveprs-0.9.0.tar.gz", false)]
+        [InlineData("fiveprs-.zip", false)]
+        public void IsAsset_MatchesPlainAndVersionedNames(string fileName, bool expected)
+        {
+            Assert.Equal(expected, ReleaseFeed.IsAsset(fileName, "fiveprs.zip"));
+        }
+
         [Fact]
         public void Latest_CanIncludePreReleases()
         {
