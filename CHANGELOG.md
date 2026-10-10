@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.9.0-ptb.3] - 2026-10-10
+
 ### Added
 - Fire & Rescue (LSFD): go on duty at fire stations with turnout gear, an extinguisher and a fire engine
 - Fire callouts: Vehicle Fire and Brush Fire, with real fires that spread until they're put out
@@ -13,13 +15,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - EMS callouts: Medical Emergency and Traffic Collision, where you treat the patient, load them into the ambulance and transport them to the nearest hospital
 - Death and revive: downed players wait for EMS, who get an automatic 911 call and can revive them for XP; after a timer, players can respawn at a hospital. `fprs_revive` for admins; settings under `death`
 - `config/fire_loadouts.json`, `fire_vehicles.json`, `ems_loadouts.json` and `ems_vehicles.json` configure each department's equipment and vehicles
-
-### Changed
-- Police, Fire and EMS share one department module base; police gear and vehicle config types are now `DepartmentLoadoutsConfig` and `DepartmentVehiclesConfig`
-
-## [0.9.0-ptb.3] - 2026-10-10
-
-### Added
 - Traffic stops: pull over any AI-driven vehicle with your lights on, then ask for ID, run the plate, search, warn, cite, serve warrants, arrest or release
 - AI drivers and their vehicles get generated identities that are saved to Records the first time they're checked
 - `config/citations.json` sets the offences and fines offered during a traffic stop
@@ -35,6 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - FivePRS now starts on GTA V Enhanced servers, which reject assemblies that load native code. Enhanced servers need a MySQL or MariaDB database, since SQLite needs a native library
 
 ### Changed
+- Police, Fire and EMS share one department module base; police gear and vehicle config types are now `DepartmentLoadoutsConfig` and `DepartmentVehiclesConfig`
 - Server console errors are one line with the cause; set `fiveprs_debug true` for full details
 - Common database problems (missing database, wrong login, no access, server unreachable) are explained in plain language with the fix
 
