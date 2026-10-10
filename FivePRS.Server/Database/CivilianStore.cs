@@ -34,6 +34,15 @@ namespace FivePRS.Server.Database
             return rows.Count > 0 ? rows[0] : null;
         }
 
+        public async Task<CharacterInfo?> FindCharacterAsync(string ownerLicense, string firstName, string lastName, string dateOfBirth)
+        {
+            var rows = await QueryAsync(
+                $"SELECT {CharacterColumns} FROM fiveprs_characters " +
+                "WHERE owner_license = @owner AND first_name = @first AND last_name = @last AND date_of_birth = @dob",
+                ReadCharacter, ("@owner", ownerLicense), ("@first", firstName), ("@last", lastName), ("@dob", dateOfBirth));
+            return rows.Count > 0 ? rows[0] : null;
+        }
+
         public async Task<int> CreateCharacterAsync(CharacterInfo character)
         {
             var now = DateTime.UtcNow;

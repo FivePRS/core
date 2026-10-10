@@ -73,6 +73,7 @@ namespace FivePRS.Server
             RegisterPositionEvents();
             RegisterUpdates();
             RegisterDiagnostics();
+            RegisterStreetEvents();
 
             _ = ServerIcon.ApplyDefaultAsync(ConfigManager.Settings.Branding.ServerIcon);
             _ = InitDbAsync();
@@ -90,12 +91,21 @@ namespace FivePRS.Server
                 await _db.InitializeAsync(dbType, string.IsNullOrEmpty(connString) ? null : connString);
                 _civilians = new CivilianService(_db.Civilians, () => ConfigManager.Settings, () => ConfigManager.Licenses, () => DateTime.UtcNow);
                 _lookup    = new LookupService(_db.Civilians, () => ConfigManager.Settings, () => ConfigManager.Licenses);
+                _street    = new StreetService(_db.Civilians, _lookup);
                 _appearances = new AppearanceService(_db.Civilians, _db.Appearances, () => ConfigManager.Settings.Creator);
                 _roster    = new RosterService(_db.Roster);
                 await _roster.LoadAsync();
 
                 LogStartup();
                 Debug.WriteLine("[FivePRS] ServerBrain online.");
+            }
+            catch (NotSupportedException ex)
+            {
+                Debug.WriteLine($"[FivePRS] FATAL: {ex.Message}");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                Debug.WriteLine($"[FivePRS] FATAL: {ex.Message} The server's user account needs write access to the fiveprs resource folder.");
             }
             catch (Exception ex)
             {

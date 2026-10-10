@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+- Traffic stops: pull over any AI-driven vehicle with your lights on, then ask for ID, run the plate, search, warn, cite, serve warrants, arrest or release
+- AI drivers and their vehicles get generated identities that are saved to Records the first time they're checked
+- `config/citations.json` sets the offences and fines offered during a traffic stop
+- Pedestrian stops: face anyone on foot and press `E` to stop them, with the same ID, search, citation and arrest actions
+
+### Fixed
+- FivePRS now starts on GTA V Enhanced servers, which reject assemblies that load native code. Enhanced servers need a MySQL or MariaDB database, since SQLite needs a native library
+
 ## [0.9.0-ptb.2] - 2026-10-10
 
 ### Added
@@ -48,7 +57,7 @@ The first public test build.
 - Validation of callout catalogs sent by clients, with XP rewards capped at `fiveprs_max_xp`
 
 ### Known issues
-- Fire and EMS can be joined, but have no callouts or department tools yet; police is the playable department
+- Fire and EMS aren't available yet; police is the only department you can join
 - Only Mission Row has armory, locker room and garage points
 - Back up your database before updating between test builds
 

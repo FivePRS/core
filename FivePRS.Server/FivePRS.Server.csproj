@@ -25,6 +25,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FivePRS.Core\FivePRS.Core.csproj" />
+    <ProjectReference Include="..\FivePRS.Native\FivePRS.Native.csproj" />
   </ItemGroup>
 
   <Target Name="CopySqliteNatives" AfterTargets="Build">

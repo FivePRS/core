@@ -13,7 +13,10 @@ The full documentation lives at **[fiveprs.org/docs](https://fiveprs.org/docs)**
 3. Add the [server configuration](#server-configuration) below to `server.cfg`, ending with `ensure fiveprs`.
 4. Start the server. The console shows `[FivePRS] Database (SQLite) ready.` and `[FivePRS] ServerBrain online.`
 
-FivePRS runs on Windows and Linux servers. It uses SQLite out of the box, so there is nothing else to set up; MySQL is supported too.
+FivePRS runs on Windows and Linux servers. On GTA V Legacy servers it uses SQLite out of the box, so there is nothing else to set up; MySQL 8 and MariaDB 10.6+ are supported too.
+
+> [!IMPORTANT]
+> **GTA V Enhanced servers need a MySQL or MariaDB database.** FiveM for Enhanced doesn't let resources load native libraries, so SQLite can't run there. Set `fiveprs_db_type "mysql"` and `fiveprs_db_connection` (see [Server Configuration](#server-configuration)) before the first start.
 
 Optional official addons (a loading screen, Discord rich presence and a Notes app) are in the [addons repository](https://github.com/FivePRS/addons): download `fiveprs_addons.zip` from its releases.
 
@@ -24,7 +27,7 @@ On Windows, run `publish.ps1` to build everything and package `dist/fiveprs.zip`
 
 ## Server Configuration
 ```cfg
-set fiveprs_db_type              "sqlite"   # or "mysql"
+set fiveprs_db_type              "sqlite"   # or "mysql" (required on GTA V Enhanced; also for MariaDB)
 set fiveprs_db_connection        ""         # MySQL connection string, or a custom SQLite path
 set fiveprs_max_xp               500        # cap on XP awarded per call
 set fiveprs_xp_multiplier        1.0
@@ -136,6 +139,11 @@ On-duty police get a Records app. Search for a person by name or a vehicle by pl
 
 Every change is stamped with the officer's name and callsign and written to the audit log. If the person's owner is online, they get a notification and their Characters app updates. A character with an active warrant cannot be deleted.
 
+### Traffic stops
+On duty as police, with your emergency lights on, get behind an AI-driven vehicle and press `Left Shift` to pull it over. Walk up to the driver and press `E` to ask for ID, run the plate, have them step out, search them, issue a warning or citation, serve a warrant, record an arrest or release them. AI drivers get a generated identity (name, date of birth, license status and sometimes a warrant) that is saved the first time it's checked, so citations and arrests show up in Records. Offences and fines are in `config/citations.json`; fines are capped at `maxFine`.
+
+On foot, face any pedestrian and press `E` to stop them. The same menu opens without the vehicle actions. People and vehicles that belong to an active callout can't be stopped this way.
+
 ### Characters, Licenses and Vehicles
 Every player has three civilian apps for roleplay records, all for their active character:
 
@@ -234,5 +242,7 @@ The original model and clothing are restored when going off duty, but freemode f
 Duty changes, department changes, XP awards, rank-ups, admin actions and denied permission checks are recorded in the `fiveprs_audit` table.
 
 ## Troubleshooting
+
+**`SQLite can't run` / `P/Invoke is not allowed` on a GTA V Enhanced server.** Enhanced servers block resources from loading native libraries, and SQLite is one. Use MySQL: set `fiveprs_db_type "mysql"` and `fiveprs_db_connection` in `server.cfg`.
 
 **`Could not load native SQLite` or `DllNotFoundException: e_sqlite3`.** The resource's `server/` folder must contain `e_sqlite3.dll` (Windows) or `libe_sqlite3.so` (Linux). Re-extract `fiveprs.zip` rather than copying individual DLLs.

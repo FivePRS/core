@@ -19,6 +19,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Windows", "Stubs\Windows\Wi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Windows.SDK.NET", "Stubs\Microsoft.Windows.SDK.NET\Microsoft.Windows.SDK.NET.csproj", "{C341AFE3-CE49-42AE-92A5-4D19E5047AC6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FivePRS.Native", "FivePRS.Native\FivePRS.Native.csproj", "{D24B9A11-445A-41BE-8715-DD67DD497072}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -113,6 +115,18 @@ Global
 		{C341AFE3-CE49-42AE-92A5-4D19E5047AC6}.Release|x64.Build.0 = Release|Any CPU
 		{C341AFE3-CE49-42AE-92A5-4D19E5047AC6}.Release|x86.ActiveCfg = Release|Any CPU
 		{C341AFE3-CE49-42AE-92A5-4D19E5047AC6}.Release|x86.Build.0 = Release|Any CPU
+		{D24B9A11-445A-41BE-8715-DD67DD497072}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D24B9A11-445A-41BE-8715-DD67DD497072}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D24B9A11-445A-41BE-8715-DD67DD497072}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D24B9A11-445A-41BE-8715-DD67DD497072}.Debug|x64.Build.0 = Debug|Any CPU
+		{D24B9A11-445A-41BE-8715-DD67DD497072}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D24B9A11-445A-41BE-8715-DD67DD497072}.Debug|x86.Build.0 = Debug|Any CPU
+		{D24B9A11-445A-41BE-8715-DD67DD497072}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D24B9A11-445A-41BE-8715-DD67DD497072}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D24B9A11-445A-41BE-8715-DD67DD497072}.Release|x64.ActiveCfg = Release|Any CPU
+		{D24B9A11-445A-41BE-8715-DD67DD497072}.Release|x64.Build.0 = Release|Any CPU
+		{D24B9A11-445A-41BE-8715-DD67DD497072}.Release|x86.ActiveCfg = Release|Any CPU
+		{D24B9A11-445A-41BE-8715-DD67DD497072}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

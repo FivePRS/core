@@ -29,6 +29,7 @@ namespace FivePRS.Client
             ConfigManager.LoadPoliceLoadouts( API.LoadResourceFile(res, "config/police_loadouts.json"));
             ConfigManager.LoadJurisdictions(  API.LoadResourceFile(res, "config/jurisdictions.json"));
             ConfigManager.LoadStations(       API.LoadResourceFile(res, "config/stations.json"));
+            ConfigManager.LoadCitations(      API.LoadResourceFile(res, "config/citations.json"));
 
             EventHandlers[EventNames.ClientReceivePlayerData] += new Action<string>(OnReceivePlayerData);
             EventHandlers[EventNames.ClientDutyStatusChanged] += new Action<bool, int>(OnDutyStatusChanged);

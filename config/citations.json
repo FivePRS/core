@@ -1,0 +1,14 @@
+{
+    "offences": [
+        { "label": "Speeding", "fine": 250 },
+        { "label": "Reckless driving", "fine": 750 },
+        { "label": "Running a red light", "fine": 300 },
+        { "label": "Failure to signal", "fine": 100 },
+        { "label": "Illegal lane change", "fine": 150 },
+        { "label": "Driving without a license", "fine": 500 },
+        { "label": "Driving with a suspended license", "fine": 1000 },
+        { "label": "Unregistered vehicle", "fine": 400 },
+        { "label": "Broken tail light", "fine": 75 },
+        { "label": "Open container", "fine": 200 }
+    ]
+}
