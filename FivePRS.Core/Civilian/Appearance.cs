@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 
 namespace FivePRS.Core.Civilian
 {
@@ -64,15 +63,19 @@ namespace FivePRS.Core.Civilian
 
         public static readonly int[] PropSlots = { 0, 1, 2, 6, 7 };
 
-        private static readonly Regex ModelPattern = new("^[a-z0-9_]{1,40}$", RegexOptions.CultureInvariant);
+        private const int MaxModelLength = 40;
 
         public static bool IsFreemode(string? model) =>
             string.Equals(model, MaleFreemode, StringComparison.OrdinalIgnoreCase) ||
             string.Equals(model, FemaleFreemode, StringComparison.OrdinalIgnoreCase);
 
         public static bool IsAllowedModel(string? model, IEnumerable<string> standardPeds) =>
-            model is not null && ModelPattern.IsMatch(model) &&
+            IsModelName(model) &&
             (IsFreemode(model) || standardPeds.Any(p => string.Equals(p, model, StringComparison.OrdinalIgnoreCase)));
+
+        private static bool IsModelName(string? model) =>
+            model is not null && model.Length > 0 && model.Length <= MaxModelLength &&
+            model.All(c => (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_');
 
         public static CharacterAppearance? Sanitize(CharacterAppearance? appearance, IEnumerable<string> standardPeds)
         {

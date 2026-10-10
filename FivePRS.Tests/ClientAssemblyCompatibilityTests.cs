@@ -79,6 +79,11 @@ namespace FivePRS.Tests
             "System.Char.IsSurrogatePair",
         };
 
+        private static readonly string[] BlockedClientTypes =
+        {
+            "System.Text.RegularExpressions.Regex",
+        };
+
         [Theory]
         [MemberData(nameof(ClientAssemblies))]
         public void ClientAssembly_DoesNotCallMembersBlockedByFiveM(string fileName)
@@ -95,7 +100,7 @@ namespace FivePRS.Tests
                     var type = reader.GetTypeReference((TypeReferenceHandle)member.Parent);
                     return $"{reader.GetString(type.Namespace)}.{reader.GetString(type.Name)}.{reader.GetString(member.Name)}";
                 })
-                .Where(BlockedClientMembers.Contains)
+                .Where(name => BlockedClientMembers.Contains(name) || BlockedClientTypes.Any(type => name.StartsWith(type + ".", StringComparison.Ordinal)))
                 .Distinct()
                 .ToList();
 

@@ -23,6 +23,7 @@ namespace FivePRS.Core.Config
 
         private const string IdPrefix = "id:";
         private const string UrlPrefix = "url:";
+        private const string HttpsScheme = "https://";
         private const string UnsafeUrlCharacters = "\"'<>\\()";
 
         [JsonProperty("defaultWallpaper")]
@@ -82,9 +83,9 @@ namespace FivePRS.Core.Config
 
         public static bool IsSafeImageUrl(string url) =>
             url.Length <= MaxWallpaperUrlLength &&
-            Uri.TryCreate(url, UriKind.Absolute, out var uri) &&
-            uri.Scheme == Uri.UriSchemeHttps &&
-            !url.Any(c => char.IsWhiteSpace(c) || UnsafeUrlCharacters.IndexOf(c) >= 0);
+            url.StartsWith(HttpsScheme, StringComparison.OrdinalIgnoreCase) &&
+            url.Length > HttpsScheme.Length && char.IsLetterOrDigit(url[HttpsScheme.Length]) &&
+            !url.Any(c => char.IsWhiteSpace(c) || char.IsControl(c) || UnsafeUrlCharacters.IndexOf(c) >= 0);
 
         private static WallpaperOption Wallpaper(string id, string label) =>
             new() { Id = id, Label = label, Url = $"https://cdn.fiveprs.org/fiveprs/wallpapers/{id}.png" };

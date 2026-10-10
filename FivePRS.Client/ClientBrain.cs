@@ -168,14 +168,28 @@ namespace FivePRS.Client
             }
         }
 
-        private static void CreateNotificationLogo(string resource, string url)
+        private static async void CreateNotificationLogo(string resource, string url)
         {
             if (string.IsNullOrWhiteSpace(url)) return;
 
-            var txd = API.CreateRuntimeTxd(NotificationTxd);
             _logoDui = API.CreateDui($"https://cfx-nui-{resource}/nui/dui-image.html#{url}", NotificationLogoSize, NotificationLogoSize);
-            _logoTexture = $"logo_{API.GetGameTimer()}";
-            API.CreateRuntimeTextureFromDuiHandle(txd, _logoTexture, API.GetDuiHandle(_logoDui));
+
+            var until = API.GetGameTimer() + DuiTimeoutMs;
+            while (!API.IsDuiAvailable(_logoDui))
+            {
+                if (API.GetGameTimer() > until)
+                {
+                    Debug.WriteLine($"[FivePRS] The notification logo page did not load from {url}.");
+                    return;
+                }
+
+                await Delay(100);
+            }
+
+            var txd = API.CreateRuntimeTxd(NotificationTxd);
+            var texture = $"logo_{API.GetGameTimer()}";
+            API.CreateRuntimeTextureFromDuiHandle(txd, texture, API.GetDuiHandle(_logoDui));
+            _logoTexture = texture;
         }
 
         private void OnResourceStop(string resourceName)
@@ -228,6 +242,7 @@ namespace FivePRS.Client
         private const string NotificationTxd = "fiveprs_ui";
         private const string NotificationSender = "~b~FivePRS";
         private const int NotificationLogoSize = 128;
+        private const int DuiTimeoutMs = 15_000;
         private const string SubjectSeparator = " | ";
         private const int MinHelpDurationMs = 100;
 
