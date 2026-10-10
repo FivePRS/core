@@ -33,6 +33,7 @@ namespace FivePRS.Server
         public ServerBrain()
         {
             Resource.Capture();
+            API.SetConvarServerInfo("fiveprs_version", InstalledVersion().ToString());
             MainThread.Enable();
             ConfigManager.Log = message => Debug.WriteLine(message);
             var resource = Resource.Name;

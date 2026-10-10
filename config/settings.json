@@ -23,6 +23,11 @@
         "checkIntervalHours": 6,
         "includePreReleases": false
     },
+    "world": {
+        "disableWantedLevel": true,
+        "disableDispatchServices": true,
+        "disableRandomCops": false
+    },
     "rateLimits": {
         "enabled": true,
         "emergency": { "limit": 4, "perSeconds": 60 },

@@ -6,7 +6,7 @@ author 'Pixel <https://codemeapixel.dev>'
 description 'The Unified Public Response Framework for FiveM.'
 repository 'https://github.com/FivePRS/core'
 license 'AGPL-3.0-or-later'
-version '0.9.0-ptb.2'
+version '0.9.0-ptb.3'
 
 lua54 'yes'
 

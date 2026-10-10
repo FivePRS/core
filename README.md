@@ -177,6 +177,9 @@ Settings are under `updates` in `config/settings.json`: `checkForUpdates`, `repo
 
 To publish a release, move the `Unreleased` entries in `CHANGELOG.md` under a new version heading, set the same `version` in `fxmanifest.lua`, commit, and push a tag named `v<version>`. GitHub Actions checks the versions match, builds and tests, and creates the release with `fiveprs.zip` attached and that changelog section as its notes. Versions with a suffix, like `0.9.0-ptb.1`, are published as pre-releases, and servers running a pre-release are offered newer pre-releases automatically.
 
+## Game world
+FivePRS turns off wanted levels and GTA's own AI police, ambulance and fire response, so they don't interfere with roleplay. Set these under `world` in `config/settings.json`: `disableWantedLevel` and `disableDispatchServices` (both `true` by default) and `disableRandomCops` (`false` by default; `true` also stops ambient AI police from spawning).
+
 ## Rate limits
 Each player can only send so many requests to the server in a short time, so one player can't flood dispatch, records or the database. Requests over the limit are ignored, the player is told to slow down where it matters (911 calls, records, civilian actions), and the console logs the first one in each window. Limits are under `rateLimits` in `config/settings.json`, as a `limit` per `perSeconds` for each kind of request; set `enabled` to `false` to turn them off.
 
