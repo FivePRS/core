@@ -8,7 +8,9 @@ using CitizenFX.Core.Native;
 using FivePRS.Core.Config;
 using FivePRS.Core.Events;
 using FivePRS.Core.Models;
+using FivePRS.Server.Civilian;
 using FivePRS.Server.Database;
+using FivePRS.Server.Http;
 using FivePRS.Server.Dispatch;
 using FivePRS.Server.Permissions;
 using Newtonsoft.Json;
@@ -18,6 +20,7 @@ namespace FivePRS.Server
     public partial class ServerBrain : BaseScript
     {
         private const int SnapshotIntervalMs = 5_000;
+        private const int MaxCalloutCatalogJson = 200_000;
 
         private readonly ConcurrentDictionary<string, PlayerData> _cache = new();
         private readonly DatabaseManager _db = new();
@@ -32,6 +35,7 @@ namespace FivePRS.Server
             var resource = API.GetCurrentResourceName();
             ConfigManager.LoadSettings(API.LoadResourceFile(resource, "config/settings.json"));
             ConfigManager.LoadJurisdictions(API.LoadResourceFile(resource, "config/jurisdictions.json"));
+            ConfigManager.LoadLicenses(API.LoadResourceFile(resource, "config/licenses.json"));
 
             _dispatch    = new DispatchService(
                 () => DateTime.UtcNow,
@@ -40,24 +44,35 @@ namespace FivePRS.Server
                 new Random());
             _permissions = new PermissionService(
                 (playerId, ace) => API.IsPlayerAceAllowed(playerId, ace),
-                () => API.GetConvar("fiveprs_restrict_departments", "false").Equals("true", StringComparison.OrdinalIgnoreCase));
+                () => API.GetConvar("fiveprs_restrict_departments", "false").Equals("true", StringComparison.OrdinalIgnoreCase),
+                IsOnRoster);
 
             EventHandlers["playerConnecting"] += new Action<Player, string, dynamic, dynamic>(OnPlayerConnecting);
             EventHandlers["playerDropped"]    += new Action<Player, string>(OnPlayerDropped);
 
             EventHandlers[EventNames.ServerPlayerConnected]  += new Action<Player>(OnPlayerReady);
             EventHandlers[EventNames.ServerToggleDuty]       += new Action<Player>(OnToggleDuty);
-            EventHandlers[EventNames.ServerSetDepartment]    += new Action<Player, int>(OnSetDepartment);
-            EventHandlers[EventNames.ServerSetAgency]        += new Action<Player, string>(OnSetAgency);
+            EventHandlers[EventNames.ServerEnterService]     += new Action<Player, int, string, string>(OnEnterService);
             EventHandlers[EventNames.ServerRegisterCallouts] += new Action<Player, string>(OnRegisterCallouts);
             EventHandlers[EventNames.ServerCalloutResponse]  += new Action<Player, string, int, float, float, float>(OnCalloutResponse);
             EventHandlers[EventNames.ServerCalloutEnded]     += new Action<Player, string, int>(OnCalloutEnded);
             EventHandlers[EventNames.ServerSetUnitStatus]    += new Action<Player, int>(OnSetUnitStatus);
             EventHandlers[EventNames.ServerAttachToCall]     += new Action<Player, string>(OnAttachToCall);
+            EventHandlers[EventNames.ServerSetAiCallouts]    += new Action<Player, bool>(OnSetAiCallouts);
+            EventHandlers[EventNames.LocalHttpResponse]      += new Action<string, int, string, string>(HttpBridge.OnResponse);
 
             Tick += DispatchTickAsync;
             RegisterAdminCommands();
+            RegisterCivilianEvents();
+            RegisterLookupEvents();
+            RegisterEmergencyEvents();
+            RegisterRosterEvents();
+            RegisterAppearanceEvents();
+            RegisterTerminalEvents();
+            RegisterPositionEvents();
+            RegisterUpdates();
 
+            _ = ServerIcon.ApplyDefaultAsync(ConfigManager.Settings.Branding.ServerIcon);
             _ = InitDbAsync();
         }
 
@@ -70,6 +85,11 @@ namespace FivePRS.Server
 
                 var dbType = dbTypeRaw == "mysql" ? DatabaseType.MySQL : DatabaseType.SQLite;
                 await _db.InitializeAsync(dbType, string.IsNullOrEmpty(connString) ? null : connString);
+                _civilians = new CivilianService(_db.Civilians, () => ConfigManager.Settings, () => ConfigManager.Licenses, () => DateTime.UtcNow);
+                _lookup    = new LookupService(_db.Civilians, () => ConfigManager.Settings, () => ConfigManager.Licenses);
+                _appearances = new AppearanceService(_db.Civilians, _db.Appearances, () => ConfigManager.Settings.Creator);
+                _roster    = new RosterService(_db.Roster);
+                await _roster.LoadAsync();
 
                 Debug.WriteLine("[FivePRS] ServerBrain online.");
             }
@@ -105,7 +125,8 @@ namespace FivePRS.Server
 
             try
             {
-                await LoadProfileAsync(license, playerName);
+                var data = await LoadProfileAsync(license, playerName);
+                HandOverProfile(deferrals, data);
                 deferrals.done();
             }
             catch (Exception ex)
@@ -117,6 +138,7 @@ namespace FivePRS.Server
 
         private void OnPlayerDropped([FromSource] Player player, string reason)
         {
+            _rateLimiter.Forget(player.Handle);
             _dispatch.SetOffDuty(ServerId(player));
 
             var license = GetLicense(player);
@@ -124,10 +146,13 @@ namespace FivePRS.Server
 
             if (_cache.TryRemove(license, out var data) && data.IsOnDuty)
                 _ = _db.UpdateDutyStatusAsync(license, false);
+
+            _ = ForgetPositionAsync(license);
         }
 
         private async void OnPlayerReady([FromSource] Player player)
         {
+            if (!Allow(player, "requests", l => l.Requests)) return;
             var license = GetLicense(player);
             if (license is null) return;
 
@@ -140,6 +165,11 @@ namespace FivePRS.Server
                 }
 
                 SendPlayerData(player, data);
+                SendEntryOptions(player);
+                await SendAppearanceAsync(player, license);
+                await SendPreferencesAsync(player, license);
+
+                if (_permissions.IsAdmin(player.Handle)) NotifyUpdate(player);
             }
             catch (Exception ex)
             {
@@ -147,8 +177,102 @@ namespace FivePRS.Server
             }
         }
 
+        private async void OnEnterService([FromSource] Player player, int departmentId, string agencyId, string callsign)
+        {
+            if (!Allow(player, "dispatch", l => l.Dispatch)) return;
+            if (!TryGetCached(player, out var license, out var data) || data.IsOnDuty) return;
+            if (!Enum.IsDefined(typeof(Department), departmentId) || departmentId == (int)Department.None) return;
+
+            var department = (Department)departmentId;
+            if (!_permissions.CanJoinDepartment(player.Handle, department))
+            {
+                TriggerClientEvent(player, EventNames.ClientEntryRejected, $"You are not authorised to join {department}.");
+                Audit(AuditActions.PermissionDenied, player, license, $"department {department}");
+                return;
+            }
+
+            if (!Callsign.TryNormalize(callsign, out var normalizedCallsign))
+            {
+                TriggerClientEvent(player, EventNames.ClientEntryRejected,
+                    $"Callsigns can be up to {Callsign.MaxLength} letters, numbers or hyphens.");
+                return;
+            }
+
+            if (normalizedCallsign.Length > 0 && _dispatch.IsCallsignTaken(normalizedCallsign, ServerId(player)))
+            {
+                TriggerClientEvent(player, EventNames.ClientEntryRejected, $"Callsign {normalizedCallsign} is already in use.");
+                return;
+            }
+
+            try
+            {
+                var agency = ConfigManager.Territories.ResolveAgency(department, agencyId)?.Id ?? string.Empty;
+                data.Callsign = normalizedCallsign;
+
+                if (data.Department != department)
+                {
+                    data.Department = department;
+                    Audit(AuditActions.DepartmentSet, player, license, department.ToString());
+                }
+
+                if (data.Agency != agency)
+                {
+                    data.Agency = agency;
+                    Audit(AuditActions.AgencySet, player, license, agency);
+                }
+
+                await _db.SavePlayerAsync(data);
+                SendPlayerData(player, data);
+
+                await SetDutyAsync(player, data, true);
+                Audit(AuditActions.DutyOn, player, license, department.ToString());
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[FivePRS] Error entering service for {player.Name}: {ex.Message}");
+                TriggerClientEvent(player, EventNames.ClientEntryRejected, "Something went wrong. Please try again.");
+            }
+        }
+
+        private void SendEntryOptions(Player player)
+        {
+            var allowed = new List<int>();
+            foreach (Department department in Enum.GetValues(typeof(Department)))
+            {
+                if (_permissions.CanJoinDepartment(player.Handle, department))
+                    allowed.Add((int)department);
+            }
+
+            TriggerClientEvent(player, EventNames.ClientEntryOptions, JsonConvert.SerializeObject(allowed));
+        }
+
+        private static void HandOverProfile(dynamic deferrals, PlayerData data)
+        {
+            try
+            {
+                var agency = data.Department == Department.None
+                    ? string.Empty
+                    : ConfigManager.Territories.FindAgency(data.Agency)?.Name ?? data.Department.ToString();
+
+                deferrals.handover(new Dictionary<string, object>
+                {
+                    ["fiveprs"] = new Dictionary<string, object>
+                    {
+                        ["name"]   = data.Name,
+                        ["rank"]   = data.Rank,
+                        ["agency"] = agency,
+                    },
+                });
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[FivePRS] Loading screen handover failed: {ex.Message}");
+            }
+        }
+
         private async void OnToggleDuty([FromSource] Player player)
         {
+            if (!Allow(player, "dispatch", l => l.Dispatch)) return;
             if (!TryGetCached(player, out var license, out var data)) return;
             if (!data.IsOnDuty && data.Department == Department.None) return;
 
@@ -171,69 +295,17 @@ namespace FivePRS.Server
             }
         }
 
-        private async void OnSetDepartment([FromSource] Player player, int departmentId)
-        {
-            if (!Enum.IsDefined(typeof(Department), departmentId) || departmentId == (int)Department.None) return;
-            if (!TryGetCached(player, out var license, out var data)) return;
-
-            var department = (Department)departmentId;
-            if (!_permissions.CanJoinDepartment(player.Handle, department))
-            {
-                Notify(player, $"~r~You are not authorised to join {department}.");
-                Audit(AuditActions.PermissionDenied, player, license, $"department {department}");
-                return;
-            }
-
-            try
-            {
-                await ChangeDepartmentAsync(player, data, department);
-                Audit(AuditActions.DepartmentSet, player, license, department.ToString());
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[FivePRS] Error setting department for {player.Name}: {ex.Message}");
-            }
-        }
-
-        private async void OnSetAgency([FromSource] Player player, string agencyId)
-        {
-            if (!TryGetCached(player, out var license, out var data)) return;
-
-            var agency = ConfigManager.Territories.FindAgency(agencyId);
-            if (agency is null || agency.Department != data.Department)
-            {
-                Notify(player, $"~r~Unknown agency '{agencyId}' for {data.Department}.");
-                return;
-            }
-
-            try
-            {
-                if (data.IsOnDuty)
-                    await SetDutyAsync(player, data, false);
-
-                data.Agency = agency.Id;
-                await _db.SavePlayerAsync(data);
-                SendPlayerData(player, data);
-
-                Notify(player, $"~g~You are now with the {agency.Name}.");
-                Audit(AuditActions.AgencySet, player, license, agency.Id);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[FivePRS] Error setting agency for {player.Name}: {ex.Message}");
-            }
-        }
-
         private void OnRegisterCallouts([FromSource] Player player, string json)
         {
-            if (!_dispatch.IsOnDuty(ServerId(player))) return;
+            if (!Allow(player, "dispatch", l => l.Dispatch)) return;
+            if (!_dispatch.IsOnDuty(ServerId(player)) || json is null || json.Length > MaxCalloutCatalogJson) return;
 
             try
             {
                 var definitions = JsonConvert.DeserializeObject<List<CalloutDefinition>>(json);
                 if (definitions is null) return;
 
-                _dispatch.RegisterCallouts(definitions);
+                if (_dispatch.RegisterCallouts(definitions, ReadMaxXp()) == 0) return;
                 Debug.WriteLine($"[FivePRS] Dispatch catalog has {_dispatch.CatalogCount} callout(s).");
             }
             catch (Exception ex)
@@ -244,20 +316,33 @@ namespace FivePRS.Server
 
         private void OnCalloutResponse([FromSource] Player player, string callId, int response, float x, float y, float z)
         {
+            if (!Allow(player, "dispatch", l => l.Dispatch)) return;
+            if (!IsCallId(callId) || !IsFinite(x) || !IsFinite(y) || !IsFinite(z)) return;
             if (!Enum.IsDefined(typeof(OfferResponse), response)) return;
             _dispatch.Respond(ServerId(player), callId, (OfferResponse)response, x, y, z);
         }
 
         private async void OnCalloutEnded([FromSource] Player player, string callId, int result)
         {
-            if (!Enum.IsDefined(typeof(CalloutResult), result)) return;
+            if (!Allow(player, "dispatch", l => l.Dispatch)) return;
+            if (!IsCallId(callId) || !Enum.IsDefined(typeof(CalloutResult), result)) return;
 
             foreach (var award in _dispatch.End(ServerId(player), callId, (CalloutResult)result))
                 await AwardXpAsync(award.UnitId, award.Amount, callId);
         }
 
+        private void OnSetAiCallouts([FromSource] Player player, bool enabled)
+        {
+            if (!Allow(player, "dispatch", l => l.Dispatch)) return;
+            if (_dispatch.SetAiCallouts(ServerId(player), enabled))
+                Notify(player, enabled
+                    ? "Dispatch | ~g~AI callouts on.~w~ Dispatch will offer you calls again."
+                    : "Dispatch | ~o~AI callouts off.~w~ Player 911 calls still reach you.");
+        }
+
         private void OnSetUnitStatus([FromSource] Player player, int status)
         {
+            if (!Allow(player, "dispatch", l => l.Dispatch)) return;
             if (!Enum.IsDefined(typeof(UnitStatus), status)) return;
 
             if (!_dispatch.SetStatus(ServerId(player), (UnitStatus)status))
@@ -266,9 +351,20 @@ namespace FivePRS.Server
 
         private void OnAttachToCall([FromSource] Player player, string callId)
         {
-            Notify(player, _dispatch.Attach(ServerId(player), callId)
-                ? $"~g~Attached to call ~y~#{callId}~w~. Waypoint set."
-                : $"~r~Unable to attach to call #{callId}.~w~ Check the ID and your status.");
+            if (!Allow(player, "dispatch", l => l.Dispatch)) return;
+            if (!IsCallId(callId)) return;
+
+            if (!_dispatch.Attach(ServerId(player), callId))
+            {
+                Notify(player, $"~r~Unable to attach to call #{callId}.~w~ Check the ID and your status.");
+                return;
+            }
+
+            Notify(player, $"~g~Attached to call ~y~#{callId}~w~. Waypoint set.");
+
+            var caller = _dispatch.GetEmergencyCaller(callId);
+            if (caller is not null)
+                SendEmergencyStatus(caller.Value, "~b~911~w~ | Units are responding to your call.");
         }
 
         private async Task DispatchTickAsync()
@@ -320,7 +416,7 @@ namespace FivePRS.Server
             data.IsOnDuty = onDuty;
 
             if (onDuty)
-                _dispatch.SetOnDuty(ServerId(player), data.Name, data.Department, data.Rank, data.Agency);
+                _dispatch.SetOnDuty(ServerId(player), data.Name, data.Department, data.Rank, data.Agency, data.Callsign);
             else
                 _dispatch.SetOffDuty(ServerId(player));
 

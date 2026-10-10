@@ -202,9 +202,9 @@ namespace FivePRS.Police.Callouts
             API.TaskCombatPed(_aggressor.Handle, Game.PlayerPed.Handle, 0, 16);
 
             ClientBrain.ShowNotification(
-                "~r~Aggressor resisting~w~ | Subdue and ~b~/er_cuff~w~.");
+                "~r~Aggressor resisting~w~ | Subdue the suspect.");
 
-            await WaitForArrestAsync(_aggressor, ct, "Subdue the suspect, then type ~b~/er_cuff~w~ to arrest");
+            await WaitForArrestAsync(_aggressor, ct, $"Subdue the suspect, then press {Binds.Cuff} to arrest");
         }
 
         private async Task ArmedOutcomeAsync(CancellationToken ct)
@@ -229,9 +229,9 @@ namespace FivePRS.Police.Callouts
             API.TaskCombatPed(_aggressor.Handle, Game.PlayerPed.Handle, 0, 16);
 
             ClientBrain.ShowNotification(
-                "~r~WEAPON RAISED~w~ | Tase or shoot to disarm — then ~b~/er_cuff~w~.");
+                "~r~WEAPON RAISED~w~ | Tase or shoot to disarm.");
 
-            await WaitForArrestAsync(_aggressor, ct, "Subdue the suspect, then type ~b~/er_cuff~w~ to arrest");
+            await WaitForArrestAsync(_aggressor, ct, $"Subdue the suspect, then press {Binds.Cuff} to arrest");
         }
 
         public override void OnUpdate()
@@ -245,9 +245,9 @@ namespace FivePRS.Police.Callouts
         }
 
         public override void OnCalloutDeclined()
-            => ClientBrain.ShowNotification("~r~[ DISPATCH ]~w~ Domestic disturbance call declined.");
+            => ClientBrain.ShowNotification("Domestic disturbance call declined.", "~r~Dispatch");
 
         public override void OnCalloutFailed()
-            => ClientBrain.ShowNotification("~r~[ DISPATCH ]~w~ Domestic disturbance call cancelled.");
+            => ClientBrain.ShowNotification("Domestic disturbance call cancelled.", "~r~Dispatch");
     }
 }

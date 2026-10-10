@@ -105,10 +105,10 @@ namespace FivePRS.Client.Arrest
             StartFollowTask(suspect);
 
             ClientBrain.ShowNotification(
-                "~g~Suspect cuffed~w~ | ~b~/er_uncuff~w~ to release  " +
-                "| ~b~/er_escort~w~ to place in vehicle");
+                "~g~Suspect cuffed.");
+            ClientBrain.ShowHelp($"{Binds.Uncuff} Release  {Binds.Escort} Place in vehicle", 6_000);
 
-            BaseScript.TriggerEvent(EventNames.LocalSuspectCuffed, suspect.Handle);
+            ClientEvents.TriggerLocal(EventNames.LocalSuspectCuffed, suspect.Handle);
 
             Debug.WriteLine($"[ArrestManager] Suspect (handle {suspect.Handle}) cuffed.");
         }
@@ -132,7 +132,7 @@ namespace FivePRS.Client.Arrest
             API.SetEntityAsNoLongerNeeded(ref handle);
 
             ClientBrain.ShowNotification("~o~Suspect released.");
-            BaseScript.TriggerEvent(EventNames.LocalSuspectUncuffed, suspect.Handle);
+            ClientEvents.TriggerLocal(EventNames.LocalSuspectUncuffed, suspect.Handle);
 
             Debug.WriteLine($"[ArrestManager] Suspect (handle {suspect.Handle}) released.");
         }
@@ -171,7 +171,7 @@ namespace FivePRS.Client.Arrest
             State = ArrestState.Escorted;
 
             ClientBrain.ShowNotification("~g~Suspect secured in vehicle.");
-            BaseScript.TriggerEvent(EventNames.LocalSuspectEscorted, suspect.Handle, vehicle.Handle);
+            ClientEvents.TriggerLocal(EventNames.LocalSuspectEscorted, suspect.Handle, vehicle.Handle);
 
             Debug.WriteLine($"[ArrestManager] Suspect escorted to vehicle {vehicle.Handle}.");
             return true;

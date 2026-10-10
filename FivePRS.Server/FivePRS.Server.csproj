@@ -19,6 +19,7 @@
     <PackageReference Include="Microsoft.Data.Sqlite" Version="6.0.36" />
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" ExcludeAssets="runtime" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.13" />
+    <PackageReference Include="SQLitePCLRaw.provider.dynamic_cdecl" Version="2.1.13" />
     <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="2.1.13" GeneratePathProperty="true" />
   </ItemGroup>
 
@@ -27,7 +28,7 @@
   </ItemGroup>
 
   <Target Name="CopySqliteNatives" AfterTargets="Build">
-    <Copy SourceFiles="$(PkgSQLitePCLRaw_lib_e_sqlite3)\runtimes\win-x64\native\e_sqlite3.dll;$(PkgSQLitePCLRaw_lib_e_sqlite3)\runtimes\linux-x64\native\libe_sqlite3.so"
+    <Copy SourceFiles="$(PkgSQLitePCLRaw_lib_e_sqlite3)\runtimes\win-x64\native\e_sqlite3.dll;$(PkgSQLitePCLRaw_lib_e_sqlite3)\runtimes\linux-musl-x64\native\libe_sqlite3.so"
           DestinationFolder="$(OutputPath)"
           SkipUnchangedFiles="true" />
   </Target>

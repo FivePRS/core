@@ -1,7 +1,15 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace FivePRS.Core.Config
 {
+    public enum DutyEquipmentMode
+    {
+        ByStart,
+        Always,
+        Station
+    }
+
     public sealed class ResourceSettings
     {
         [JsonProperty("dispatchIntervalMinutes")]
@@ -24,5 +32,42 @@ namespace FivePRS.Core.Config
 
         [JsonProperty("noCalloutRetrySeconds")]
         public int NoCalloutRetrySeconds { get; set; } = 30;
+
+        [JsonProperty("maxCharacters")]
+        public int MaxCharacters { get; set; } = 3;
+
+        [JsonProperty("maxVehiclesPerCharacter")]
+        public int MaxVehiclesPerCharacter { get; set; } = 5;
+
+        [JsonProperty("maxFine")]
+        public int MaxFine { get; set; } = 10000;
+
+        [JsonProperty("emergencyCallCooldownSeconds")]
+        public int EmergencyCallCooldownSeconds { get; set; } = 60;
+
+        [JsonProperty("emergencyCallTimeoutMinutes")]
+        public int EmergencyCallTimeoutMinutes { get; set; } = 15;
+
+        [JsonProperty("dutyEquipment")]
+        [JsonConverter(typeof(StringEnumConverter), true)]
+        public DutyEquipmentMode DutyEquipment { get; set; } = DutyEquipmentMode.ByStart;
+
+        [JsonProperty("spawn")]
+        public SpawnSettings Spawn { get; set; } = new();
+
+        [JsonProperty("updates")]
+        public UpdateSettings Updates { get; set; } = new();
+
+        [JsonProperty("rateLimits")]
+        public RateLimitSettings RateLimits { get; set; } = new();
+
+        [JsonProperty("terminal")]
+        public TerminalSettings Terminal { get; set; } = new();
+
+        [JsonProperty("creator")]
+        public CreatorSettings Creator { get; set; } = new();
+
+        [JsonProperty("branding")]
+        public BrandingSettings Branding { get; set; } = new();
     }
 }

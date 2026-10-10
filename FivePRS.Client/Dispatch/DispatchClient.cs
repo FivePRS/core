@@ -6,6 +6,7 @@ using CitizenFX.Core.Native;
 using FivePRS.Core.Config;
 using FivePRS.Core.Events;
 using FivePRS.Core.Models;
+using FivePRS.Core.Text;
 using Newtonsoft.Json;
 
 namespace FivePRS.Client.Dispatch
@@ -24,11 +25,14 @@ namespace FivePRS.Client.Dispatch
         public DispatchClient()
         {
             EventHandlers[EventNames.ClientDispatchSnapshot] += new Action<string>(OnSnapshot);
-            EventHandlers[EventNames.ClientNotify]           += new Action<string>(ClientBrain.ShowNotification);
+            EventHandlers[EventNames.ClientNotify]           += new Action<string>(message => ClientBrain.ShowNotification(message));
+            EventHandlers[EventNames.LocalDutyChanged]       += new Action<bool, int>(OnDutyChanged);
 
             API.RegisterCommand("er_calls",  new Action<int, List<object>, string>(OnCallsCommand),  false);
             API.RegisterCommand("er_attach", new Action<int, List<object>, string>(OnAttachCommand), false);
             API.RegisterCommand("er_status", new Action<int, List<object>, string>(OnStatusCommand), false);
+            API.RegisterCommand(KeyCommands.AiCallouts, new Action<int, List<object>, string>((_, __, ___) => AiCallouts.Toggle()), false);
+            API.RegisterKeyMapping(KeyCommands.AiCallouts, "FivePRS: Toggle AI callouts", "keyboard", "");
         }
 
         private void OnSnapshot(string json)
@@ -55,6 +59,19 @@ namespace FivePRS.Client.Dispatch
             SnapshotUpdated?.Invoke();
         }
 
+        private void OnDutyChanged(bool isOnDuty, int departmentId)
+        {
+            if (isOnDuty)
+            {
+                AiCallouts.Restore();
+                return;
+            }
+
+            Snapshot    = new DispatchSnapshot();
+            _lastCallId = null;
+            SnapshotUpdated?.Invoke();
+        }
+
         private static void OnCallsCommand(int source, List<object> args, string raw)
         {
             if (LocalUnit is null)
@@ -65,7 +82,7 @@ namespace FivePRS.Client.Dispatch
 
             if (Snapshot.Calls.Count == 0)
             {
-                ClientBrain.ShowNotification("~y~[ DISPATCH ]~w~ No active calls.");
+                ClientBrain.ShowNotification("No active calls.", "~y~Dispatch");
                 return;
             }
 
@@ -79,19 +96,19 @@ namespace FivePRS.Client.Dispatch
                 return $"~y~#{call.Id}~w~ {call.Name} (Code {(int)call.Priority}){area} ~b~{string.Join(", ", callsigns)}";
             });
 
-            ClientBrain.ShowNotification("~y~[ DISPATCH ]~w~ Active calls~n~" + string.Join("~n~", lines));
+            ClientBrain.ShowNotification(string.Join("~n~", lines), "~y~Active calls");
         }
 
         private static void OnAttachCommand(int source, List<object> args, string raw)
         {
             var callId = args.Count > 0 ? args[0]?.ToString()?.TrimStart('#') : null;
-            if (string.IsNullOrEmpty(callId))
+            if (callId is null || callId.Length == 0)
             {
                 ClientBrain.ShowNotification("~r~Usage: ~w~/er_attach [call id]");
                 return;
             }
 
-            TriggerServerEvent(EventNames.ServerAttachToCall, callId);
+            ClientEvents.TriggerServer(EventNames.ServerAttachToCall, callId);
         }
 
         private static void OnStatusCommand(int source, List<object> args, string raw)
@@ -104,7 +121,7 @@ namespace FivePRS.Client.Dispatch
                 return;
             }
 
-            TriggerServerEvent(EventNames.ServerSetUnitStatus, (int)status);
+            ClientEvents.TriggerServer(EventNames.ServerSetUnitStatus, (int)status);
         }
     }
 }

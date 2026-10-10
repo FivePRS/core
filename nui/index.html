@@ -2,77 +2,495 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>FivePRS MDT</title>
+  <title>FivePRS</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="mdt" class="mdt" hidden>
-    <header class="mdt-header">
-      <div class="lightbar" aria-hidden="true"></div>
-      <div class="brand">
-        <span class="wordmark">five<span class="red">p</span><span class="blue">rs</span></span>
-        <span class="brand-label">Mobile Data Terminal</span>
-      </div>
-      <div class="header-meta">
-        <span id="clock" class="clock"></span>
-        <button id="close" class="icon-button" type="button" aria-label="Close MDT">&times;</button>
-      </div>
-    </header>
+  <div id="app" class="terminal" hidden>
+    <div class="lightbar" aria-hidden="true"></div>
+    <div class="terminal-screen">
+      <img id="wallpaper" class="wallpaper" alt="">
 
-    <main class="mdt-body">
-      <aside class="panel self">
-        <p class="panel-title">My unit</p>
-        <p id="self-callsign" class="callsign"></p>
-        <p id="self-name" class="muted"></p>
-        <p id="self-agency" class="muted"></p>
-
-        <dl class="facts">
-          <div><dt>Status</dt><dd id="self-status"></dd></div>
-          <div><dt>Area</dt><dd id="self-territory"></dd></div>
-          <div><dt>Assigned call</dt><dd id="self-call"></dd></div>
-        </dl>
-
-        <p class="panel-title">Set status</p>
-        <div class="status-buttons">
-          <button type="button" class="button" data-status="Available">Available</button>
-          <button type="button" class="button" data-status="Busy">Busy</button>
+      <header class="statusbar">
+        <div class="statusbar-side">
+          <span id="sb-identity" class="sb-identity"></span>
+          <span id="sb-status" class="sb-status" hidden></span>
         </div>
-        <p id="status-hint" class="hint"></p>
-      </aside>
+        <img id="brand-logo" class="brand-logo" alt="FivePRS">
+        <div class="statusbar-side statusbar-end">
+          <span id="clock" class="clock"></span>
+          <span class="signal" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+          <button id="close" class="icon-button" type="button" aria-label="Close">&times;</button>
+        </div>
+      </header>
 
-      <section class="panel calls">
-        <div class="panel-head">
-          <p class="panel-title">Active calls</p>
-          <span id="call-count" class="count"></span>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr><th>Call</th><th>Type</th><th>Area</th><th>Units</th><th></th></tr>
-            </thead>
-            <tbody id="calls"></tbody>
-          </table>
-          <p id="calls-empty" class="empty" hidden>No active calls.</p>
-        </div>
+      <section id="home" class="home">
+        <div id="app-grid" class="app-grid"></div>
       </section>
 
-      <section class="panel units">
-        <div class="panel-head">
-          <p class="panel-title">Units</p>
-          <span id="unit-count" class="count"></span>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr><th>Callsign</th><th>Officer</th><th>Area</th><th>Status</th></tr>
-            </thead>
-            <tbody id="units"></tbody>
-          </table>
-        </div>
-      </section>
-    </main>
+      <div id="app-window" class="app-window" hidden>
+        <header class="app-bar">
+          <button id="home-button" class="button small" type="button">&#8249; Home</button>
+          <span id="app-icon" class="app-bar-icon"></span>
+          <p id="app-title" class="app-title"></p>
+        </header>
+
+        <main class="app-body">
+          <section id="tab-duty" class="tab duty" role="tabpanel" hidden>
+            <div class="duty-column">
+              <h1 id="duty-title" class="duty-title"></h1>
+
+              <div class="duty-profile">
+                <div>
+                  <p class="duty-label">Rank</p>
+                  <p id="duty-rank" class="duty-rank"></p>
+                </div>
+                <div class="duty-xp">
+                  <div class="duty-xp-head">
+                    <p class="duty-label">Experience</p>
+                    <p id="duty-xp" class="duty-label"></p>
+                  </div>
+                  <div class="xp-track" aria-hidden="true"><div id="duty-xp-bar" class="xp-bar"></div></div>
+                </div>
+              </div>
+
+              <div id="duty-off-form">
+                <p class="panel-title duty-section">Department</p>
+                <div id="duty-departments" class="option-row"></div>
+
+                <p id="duty-agency-title" class="panel-title duty-section">Agency</p>
+                <div id="duty-agencies" class="option-grid"></div>
+
+                <label for="duty-callsign" class="panel-title duty-section duty-field-label">Callsign</label>
+                <input id="duty-callsign" class="duty-input" type="text" autocomplete="off" spellcheck="false">
+                <p class="duty-label duty-hint">Letters, numbers and hyphens. Leave blank to use your agency's default.</p>
+
+                <div id="duty-start-section">
+                  <p class="panel-title duty-section">Start at</p>
+                  <div id="duty-start" class="option-row"></div>
+                  <div id="duty-stations" class="option-grid duty-stations"></div>
+                </div>
+
+                <p id="duty-empty" class="duty-message" hidden>No departments are available to you on this server.</p>
+                <p id="duty-error" class="duty-message duty-error" hidden></p>
+
+                <div class="duty-actions">
+                  <button id="duty-enter" type="button" class="button primary">Go on duty</button>
+                </div>
+              </div>
+
+              <div id="duty-on-panel" hidden>
+                <p class="panel-title duty-section">On duty</p>
+                <div class="duty-unit unit-head">
+                  <span id="duty-unit-icon" class="dept-slot"></span>
+                  <div>
+                    <p id="duty-unit-callsign" class="callsign"></p>
+                    <p id="duty-unit-agency" class="muted"></p>
+                  </div>
+                </div>
+                <div class="duty-actions">
+                  <button id="duty-off" type="button" class="button danger">Go off duty</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="tab-dispatch" class="tab dispatch" role="tabpanel" hidden>
+            <aside class="panel self">
+              <p class="panel-title">My unit</p>
+              <div class="unit-head">
+                <span id="self-icon" class="dept-slot"></span>
+                <div>
+                  <p id="self-callsign" class="callsign"></p>
+                  <p id="self-name" class="muted"></p>
+                  <p id="self-agency" class="muted"></p>
+                </div>
+              </div>
+
+              <dl class="facts">
+                <div><dt>Status</dt><dd id="self-status"></dd></div>
+                <div><dt>Area</dt><dd id="self-territory"></dd></div>
+                <div><dt>Assigned call</dt><dd id="self-call"></dd></div>
+              </dl>
+
+              <div id="offer" class="call-card offer" hidden>
+                <div class="call-card-head">
+                  <p class="panel-title">Incoming call</p>
+                  <span id="offer-countdown" class="count"></span>
+                </div>
+                <p id="offer-title" class="call-card-title"></p>
+                <p id="offer-description" class="muted call-card-detail"></p>
+                <div class="offer-track" aria-hidden="true"><div id="offer-bar" class="offer-bar"></div></div>
+                <div class="call-card-actions">
+                  <button id="offer-accept" type="button" class="button primary" data-action="offer-accept">Accept</button>
+                  <button type="button" class="button" data-action="offer-decline">Decline</button>
+                </div>
+              </div>
+
+              <div id="active-call" class="call-card" hidden>
+                <p class="panel-title">Active call</p>
+                <p id="active-title" class="call-card-title"></p>
+                <div class="call-card-actions">
+                  <button type="button" class="button danger" data-action="end-call">End call</button>
+                </div>
+              </div>
+
+              <p class="panel-title">Set status</p>
+              <div class="status-buttons">
+                <button type="button" class="button" data-status="Available">Available</button>
+                <button type="button" class="button" data-status="Busy">Busy</button>
+              </div>
+              <p id="status-hint" class="hint"></p>
+            </aside>
+
+            <section class="panel calls">
+              <div class="panel-head">
+                <p class="panel-title">Active calls</p>
+                <span id="call-count" class="count"></span>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr><th>Call</th><th>Type</th><th>Area</th><th>Units</th><th></th></tr>
+                  </thead>
+                  <tbody id="calls"></tbody>
+                </table>
+                <p id="calls-empty" class="empty" hidden>No active calls.</p>
+              </div>
+            </section>
+
+            <section class="panel units">
+              <div class="panel-head">
+                <p class="panel-title">Units</p>
+                <span id="unit-count" class="count"></span>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr><th>Callsign</th><th>Officer</th><th>Area</th><th>Status</th></tr>
+                  </thead>
+                  <tbody id="units"></tbody>
+                </table>
+              </div>
+            </section>
+          </section>
+          <section id="tab-records" class="tab records" role="tabpanel" hidden>
+            <aside class="panel rec-sidebar">
+              <div class="panel-head">
+                <p class="panel-title">Search</p>
+              </div>
+              <form id="rec-search" class="rec-search">
+                <div class="rec-modes">
+                  <button type="button" class="button small active" data-mode="name">Name</button>
+                  <button type="button" class="button small" data-mode="plate">Plate</button>
+                </div>
+                <input id="rec-term" class="duty-input" autocomplete="off" spellcheck="false" placeholder="First or last name">
+                <button type="submit" class="button primary">Search</button>
+              </form>
+              <p id="rec-results-title" class="panel-title rec-results-title" hidden></p>
+              <div id="rec-results" class="civ-characters"></div>
+              <p id="rec-results-empty" class="empty" hidden>No matches.</p>
+            </aside>
+
+            <div class="civ-main">
+              <p id="rec-error" class="civ-error" hidden></p>
+              <p id="rec-placeholder" class="panel empty">Search for a person by name or a vehicle by plate.</p>
+
+              <div id="rec-detail" class="civ-profile" hidden>
+                <section class="panel civ-identity">
+                  <div>
+                    <p class="panel-title">Person</p>
+                    <p id="rec-name" class="civ-name"></p>
+                    <p id="rec-details" class="muted"></p>
+                    <p id="rec-plate" class="muted rec-plate"></p>
+                  </div>
+                  <div class="rec-flags">
+                    <span id="rec-warrant" class="status status-revoked" hidden>Active warrant</span>
+                    <button type="button" class="button small" data-action="back">Back to results</button>
+                  </div>
+                </section>
+
+                <section class="panel">
+                  <div class="panel-head"><p class="panel-title">Licenses</p></div>
+                  <div id="rec-licenses" class="civ-licenses"></div>
+                </section>
+
+                <section class="panel">
+                  <div class="panel-head"><p class="panel-title">Vehicles</p></div>
+                  <table>
+                    <thead>
+                      <tr><th>Plate</th><th>Model</th><th>Status</th><th></th></tr>
+                    </thead>
+                    <tbody id="rec-vehicles"></tbody>
+                  </table>
+                  <p id="rec-vehicles-empty" class="empty" hidden>No registered vehicles.</p>
+                </section>
+
+                <section class="panel">
+                  <div class="panel-head"><p class="panel-title">New record</p></div>
+                  <form id="rec-form" class="rec-form">
+                    <div class="rec-form-row">
+                      <label class="civ-field">
+                        <span class="duty-label">Type</span>
+                        <select name="type" class="duty-input">
+                          <option value="0">Citation</option>
+                          <option value="1">Arrest</option>
+                          <option value="2">Warning</option>
+                          <option value="3">Warrant</option>
+                        </select>
+                      </label>
+                      <label id="rec-fine-field" class="civ-field">
+                        <span class="duty-label">Fine</span>
+                        <input name="fine" class="duty-input" type="number" min="0" step="1" value="0">
+                      </label>
+                    </div>
+                    <label class="civ-field">
+                      <span class="duty-label">Charges and notes</span>
+                      <textarea name="description" class="duty-input rec-description" rows="3" required></textarea>
+                    </label>
+                    <div class="civ-form-actions rec-form-actions">
+                      <button type="submit" class="button primary">Add to record</button>
+                    </div>
+                  </form>
+                </section>
+
+                <section class="panel">
+                  <div class="panel-head"><p class="panel-title">History</p></div>
+                  <div id="rec-history" class="rec-history"></div>
+                  <p id="rec-history-empty" class="empty" hidden>No records.</p>
+                </section>
+              </div>
+            </div>
+          </section>
+
+          <section id="tab-civilian" class="tab civilian" role="tabpanel" hidden>
+            <aside class="panel civ-sidebar" data-part="characters">
+              <div class="panel-head">
+                <span id="civ-icon" class="dept-slot small"></span>
+                <p class="panel-title">Characters</p>
+                <span id="civ-character-count" class="count"></span>
+              </div>
+              <div id="civ-characters" class="civ-characters"></div>
+
+              <div class="civ-sidebar-foot">
+                <button id="civ-new" type="button" class="button">New character</button>
+
+                <form id="civ-form" class="civ-form" hidden>
+                  <label class="civ-field">
+                    <span class="duty-label">First name</span>
+                    <input name="firstName" class="duty-input" autocomplete="off" spellcheck="false" required>
+                  </label>
+                  <label class="civ-field">
+                    <span class="duty-label">Last name</span>
+                    <input name="lastName" class="duty-input" autocomplete="off" spellcheck="false" required>
+                  </label>
+                  <label class="civ-field">
+                    <span class="duty-label">Date of birth</span>
+                    <input name="dateOfBirth" class="duty-input" type="date" required>
+                  </label>
+                  <label class="civ-field">
+                    <span class="duty-label">Gender</span>
+                    <select name="gender" class="duty-input" required></select>
+                  </label>
+                  <div class="civ-form-actions">
+                    <button type="button" class="button" data-action="cancel-character">Cancel</button>
+                    <button type="submit" class="button primary">Create</button>
+                  </div>
+                </form>
+              </div>
+            </aside>
+
+            <div class="civ-main">
+              <p id="civ-error" class="civ-error" hidden></p>
+              <p id="civ-loading" class="panel empty">Loading records…</p>
+              <p id="civ-context" class="civ-context muted" data-part="licenses vehicles"></p>
+              <p id="civ-empty" class="panel empty" hidden>Create a character to apply for licenses and register vehicles.</p>
+
+              <div id="civ-profile" class="civ-profile" hidden>
+                <section class="panel civ-identity" data-part="characters">
+                  <div>
+                    <p class="panel-title">Identity</p>
+                    <p id="civ-name" class="civ-name"></p>
+                    <p id="civ-details" class="muted"></p>
+                  </div>
+                  <div class="actions">
+                    <button id="civ-appearance" type="button" class="button small">Edit appearance</button>
+                    <button id="civ-delete" type="button" class="button small danger">Delete character</button>
+                  </div>
+                </section>
+
+                <section class="panel" data-part="licenses">
+                  <div class="panel-head">
+                    <p class="panel-title">Licenses</p>
+                  </div>
+                  <div id="civ-licenses" class="civ-licenses"></div>
+                </section>
+
+                <section class="panel" data-part="vehicles">
+                  <div class="panel-head">
+                    <p class="panel-title">Vehicles</p>
+                    <span id="civ-vehicle-count" class="count"></span>
+                  </div>
+                  <div class="civ-register">
+                    <p id="civ-current-vehicle" class="muted"></p>
+                    <button id="civ-register" type="button" class="button small primary">Register this vehicle</button>
+                  </div>
+                  <table>
+                    <thead>
+                      <tr><th>Plate</th><th>Model</th><th>Status</th><th></th></tr>
+                    </thead>
+                    <tbody id="civ-vehicles"></tbody>
+                  </table>
+                  <p id="civ-vehicles-empty" class="empty" hidden>No registered vehicles.</p>
+                </section>
+
+                <section class="panel" data-part="characters">
+                  <div class="panel-head"><p class="panel-title">My record</p></div>
+                  <div id="civ-records" class="rec-history"></div>
+                  <p id="civ-records-empty" class="empty" hidden>Clean record.</p>
+                </section>
+              </div>
+            </div>
+          </section>
+          <section id="tab-emergency" class="tab emergency" role="tabpanel" hidden>
+            <div class="duty-column">
+              <h1 class="duty-title">Call 911</h1>
+              <p class="muted em-intro">Your location is sent with the call. Misuse of 911 can be reported to staff.</p>
+
+              <div id="em-active" class="call-card offer em-active" hidden>
+                <div class="call-card-head">
+                  <p class="panel-title">Your call</p>
+                  <span id="em-call-id" class="count"></span>
+                </div>
+                <p id="em-call-title" class="call-card-title"></p>
+                <p id="em-call-description" class="muted call-card-detail"></p>
+                <p id="em-call-units" class="call-card-detail"></p>
+                <div class="call-card-actions">
+                  <button type="button" class="button danger" data-action="em-cancel">Cancel call</button>
+                </div>
+              </div>
+
+              <form id="em-form" class="em-form">
+                <p class="panel-title duty-section">Service</p>
+                <div id="em-services" class="option-row"></div>
+
+                <label class="civ-field duty-section">
+                  <span class="duty-label">What is happening?</span>
+                  <textarea name="description" class="duty-input rec-description" rows="4" required></textarea>
+                </label>
+
+                <label class="em-anonymous">
+                  <input type="checkbox" name="anonymous">
+                  <span>Report anonymously</span>
+                </label>
+
+                <p id="em-error" class="duty-message duty-error" hidden></p>
+
+                <div class="duty-actions">
+                  <button id="em-submit" type="submit" class="button danger">Call 911</button>
+                </div>
+              </form>
+            </div>
+          </section>
+          <section id="tab-admin" class="tab admin" role="tabpanel" hidden>
+            <div class="admin-column">
+              <p id="admin-unrestricted" class="civ-error admin-banner" hidden>
+                Department restriction is off, so every player can join every department. Set
+                <span class="mono">fiveprs_restrict_departments true</span> in server.cfg to enforce the roster.
+              </p>
+
+              <section class="panel">
+                <div class="panel-head">
+                  <p class="panel-title">Online players</p>
+                  <span id="admin-online-count" class="count"></span>
+                </div>
+                <table>
+                  <thead>
+                    <tr><th>Player</th><th>Rank</th><th>Department</th><th>Roster</th></tr>
+                  </thead>
+                  <tbody id="admin-online"></tbody>
+                </table>
+              </section>
+
+              <section class="panel">
+                <div class="panel-head">
+                  <p class="panel-title">Find offline players</p>
+                </div>
+                <form id="admin-search" class="admin-search">
+                  <input id="admin-query" class="duty-input" autocomplete="off" spellcheck="false" placeholder="Player name">
+                  <button type="submit" class="button primary">Search</button>
+                </form>
+                <table>
+                  <thead>
+                    <tr><th>Player</th><th>Rank</th><th>Department</th><th>Roster</th></tr>
+                  </thead>
+                  <tbody id="admin-results"></tbody>
+                </table>
+                <p id="admin-results-empty" class="empty" hidden>No players found.</p>
+              </section>
+            </div>
+          </section>
+
+          <section id="tab-ext" class="tab ext" hidden>
+            <div id="ext-view" class="ext-view"></div>
+            <iframe id="ext-frame" class="ext-frame" title="App" hidden></iframe>
+          </section>
+        </main>
+      </div>
+    </div>
+    <button id="home-key" class="home-key" type="button" aria-label="Home"></button>
   </div>
 
+  <aside id="creator" class="creator" hidden>
+    <div class="lightbar" aria-hidden="true"></div>
+    <header class="creator-head">
+      <p class="panel-title">Character appearance</p>
+      <h1 id="creator-name" class="creator-name"></h1>
+      <nav id="creator-tabs" class="creator-tabs"></nav>
+    </header>
+    <div id="creator-body" class="creator-body"></div>
+    <footer class="creator-foot">
+      <div class="creator-view">
+        <button type="button" class="button small" data-focus="face">Face</button>
+        <button type="button" class="button small" data-focus="body">Body</button>
+        <button type="button" class="button small" data-focus="legs">Legs</button>
+        <button type="button" class="button small" data-rotate="-30" aria-label="Rotate left">&#10226;</button>
+        <button type="button" class="button small" data-rotate="30" aria-label="Rotate right">&#10227;</button>
+      </div>
+      <div class="creator-actions">
+        <button id="creator-cancel" type="button" class="button">Cancel</button>
+        <button id="creator-save" type="button" class="button primary">Save</button>
+      </div>
+    </footer>
+  </aside>
+
+  <aside id="menu" class="cmenu" hidden>
+    <div class="lightbar" aria-hidden="true"></div>
+    <header class="cmenu-head">
+      <span id="menu-icon" class="dept-slot small"></span>
+      <div>
+        <p id="menu-title" class="cmenu-title"></p>
+        <p id="menu-subtitle" class="cmenu-subtitle"></p>
+      </div>
+    </header>
+    <ol id="menu-items" class="cmenu-items"></ol>
+    <footer class="cmenu-foot">
+      <span>&uarr;&darr; Select</span>
+      <span>Enter Use</span>
+      <span>Backspace <span id="menu-back"></span></span>
+    </footer>
+  </aside>
+
+  <script src="common.js"></script>
+  <script src="duty.js"></script>
+  <script src="dispatch.js"></script>
+  <script src="civilian.js"></script>
+  <script src="records.js"></script>
+  <script src="emergency.js"></script>
+  <script src="admin.js"></script>
+  <script src="appview.js"></script>
+  <script src="menu.js"></script>
+  <script src="creator.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -10,7 +10,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" ExcludeAssets="compile;runtime" GeneratePathProperty="true" Condition="'$(TargetFramework)' == 'net452'" />
+    <Reference Include="Newtonsoft.Json" Condition="'$(TargetFramework)' == 'net452'">
+      <HintPath>$(PkgNewtonsoft_Json)\lib\portable-net40+sl5+win8+wp8+wpa81\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" Condition="'$(TargetFramework)' == 'netstandard2.0'" />
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-5crp-9r3c-p9vr" />
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
   </ItemGroup>
 

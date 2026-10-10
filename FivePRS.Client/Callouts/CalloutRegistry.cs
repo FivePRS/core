@@ -63,12 +63,16 @@ namespace FivePRS.Client.Callouts
             }
         }
 
-        public void Register<T>() where T : CalloutBase
+        public void Register(Type type)
         {
-            var attr = typeof(T).GetCustomAttribute<CalloutInfoAttribute>()
+            if (type is null) throw new ArgumentNullException(nameof(type));
+            if (type.IsAbstract || !type.IsSubclassOf(typeof(CalloutBase)))
+                throw new ArgumentException($"{type.Name} must be a concrete CalloutBase subclass.", nameof(type));
+
+            var attr = type.GetCustomAttribute<CalloutInfoAttribute>()
                 ?? throw new InvalidOperationException(
-                    $"{typeof(T).Name} is missing [CalloutInfo(...)]. Cannot register.");
-            Register(typeof(T), attr);
+                    $"{type.Name} is missing [CalloutInfo(...)]. Cannot register.");
+            Register(type, attr);
         }
 
         private void Register(Type type, CalloutInfoAttribute attr)

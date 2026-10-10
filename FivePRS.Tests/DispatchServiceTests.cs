@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using FivePRS.Core.Config;
 using FivePRS.Core.Jurisdiction;
@@ -66,6 +67,24 @@ namespace FivePRS.Tests
             OfferTo(Officer);
 
             Assert.Empty(_dispatch.Tick());
+        }
+
+        [Fact]
+        public void Tick_AiCalloutsOff_ReceivesNoOffersUntilTurnedBackOn()
+        {
+            _dispatch.SetOnDuty(Officer, "Officer", Department.Police, 1);
+            Assert.True(_dispatch.SetAiCallouts(Officer, false));
+            Advance(_settings.InitialGraceSeconds);
+
+            Assert.Empty(_dispatch.Tick());
+            Assert.Contains(Officer, _dispatch.UnitsInDepartment(Department.Police));
+            Assert.False(_dispatch.CreateSnapshot().Units.Single().AiCallouts);
+
+            Assert.True(_dispatch.SetAiCallouts(Officer, true));
+            Assert.Empty(_dispatch.Tick());
+            Advance(_settings.NoCalloutRetrySeconds);
+
+            Assert.Equal(Officer, Assert.Single(_dispatch.Tick()).UnitId);
         }
 
         [Fact]
@@ -272,6 +291,24 @@ namespace FivePRS.Tests
         }
 
         [Fact]
+        public void SetOnDuty_WithCallsign_UsesIt()
+        {
+            _dispatch.SetOnDuty(Officer, "Officer", Department.Police, 1, "lspd", "1-ADAM-12");
+
+            Assert.Equal("1-ADAM-12", _dispatch.GetUnit(Officer)!.Callsign);
+        }
+
+        [Fact]
+        public void IsCallsignTaken_OtherUnitHasIt_ReturnsTrue()
+        {
+            _dispatch.SetOnDuty(Officer, "Officer", Department.Police, 1, "lspd", "1-ADAM-12");
+
+            Assert.True(_dispatch.IsCallsignTaken("1-adam-12", Backup));
+            Assert.False(_dispatch.IsCallsignTaken("1-ADAM-12", Officer));
+            Assert.False(_dispatch.IsCallsignTaken("2-ADAM-12", Backup));
+        }
+
+        [Fact]
         public void SetOnDuty_AgencyFromOtherDepartment_FallsBackToDefault()
         {
             _dispatch.SetOnDuty(Officer, "Officer", Department.Police, 1, "unknown");
@@ -321,6 +358,120 @@ namespace FivePRS.Tests
             var callId = OfferTo(unitId);
             _dispatch.Respond(unitId, callId, OfferResponse.Accepted, x, y, 0f);
             return callId;
+        }
+
+        private const int Caller = 50;
+
+        private string CreateEmergency(int caller = Caller)
+        {
+            var (callId, error) = _dispatch.CreateEmergencyCall(caller, "Jane Doe", Department.Police, "Shots fired", 100f, -900f, 30f);
+            Assert.Null(error);
+            return callId!;
+        }
+
+        [Fact]
+        public void EmergencyCall_AppearsInSnapshotWithCallerAndNoUnits()
+        {
+            var callId = CreateEmergency();
+
+            var call = Assert.Single(_dispatch.CreateSnapshot().Calls);
+            Assert.Equal(callId, call.Id);
+            Assert.True(call.IsEmergency);
+            Assert.Equal("Shots fired", call.Description);
+            Assert.Equal("Jane Doe", call.Caller);
+            Assert.Empty(call.Units);
+        }
+
+        [Fact]
+        public void EmergencyCall_OnePerCaller_AndCooldownAfterClose()
+        {
+            var callId = CreateEmergency();
+            Assert.NotNull(_dispatch.CreateEmergencyCall(Caller, "Jane Doe", Department.Police, "Again", 0f, 0f, 0f).Error);
+
+            Assert.True(_dispatch.CancelEmergencyCall(Caller, callId));
+            Assert.NotNull(_dispatch.CreateEmergencyCall(Caller, "Jane Doe", Department.Police, "Again", 0f, 0f, 0f).Error);
+
+            Advance(_settings.EmergencyCallCooldownSeconds + 1);
+            Assert.Null(_dispatch.CreateEmergencyCall(Caller, "Jane Doe", Department.Police, "Again", 0f, 0f, 0f).Error);
+        }
+
+        [Fact]
+        public void EmergencyCall_OnlyCallerCanCancel()
+        {
+            var callId = CreateEmergency();
+
+            Assert.False(_dispatch.CancelEmergencyCall(Caller + 1, callId));
+            Assert.True(_dispatch.CancelEmergencyCall(Caller, callId));
+            Assert.Empty(_dispatch.CreateSnapshot().Calls);
+        }
+
+        [Fact]
+        public void EmergencyCall_AttachedUnitClears_AndAwardsNoXp()
+        {
+            _dispatch.SetOnDuty(Officer, "Officer", Department.Police, 1);
+            var callId = CreateEmergency();
+
+            Assert.Null(_dispatch.ClearEmergencyCall(Officer, callId));
+            Assert.True(_dispatch.Attach(Officer, callId));
+            Assert.Equal(1, _dispatch.GetEmergencyStatus(Caller)!.Responding);
+            Assert.Empty(_dispatch.End(Officer, callId, CalloutResult.Completed));
+
+            Assert.Equal(Caller, _dispatch.ClearEmergencyCall(Officer, callId));
+            Assert.Null(_dispatch.GetEmergencyStatus(Caller));
+            Assert.Equal(UnitStatus.Available, _dispatch.GetUnit(Officer)!.Status);
+            Assert.Null(_dispatch.GetUnit(Officer)!.CallId);
+        }
+
+        [Fact]
+        public void EmergencyCall_ExpiresOnlyWhenUnanswered()
+        {
+            _dispatch.SetOnDuty(Officer, "Officer", Department.Police, 1);
+            var answered = CreateEmergency();
+            var unanswered = CreateEmergency(Caller + 1);
+            _dispatch.Attach(Officer, answered);
+
+            Advance(_settings.EmergencyCallTimeoutMinutes * 60 + 1);
+            _dispatch.Tick();
+
+            Assert.Equal(new[] { answered }, _dispatch.CreateSnapshot().Calls.Select(c => c.Id));
+        }
+
+        [Fact]
+        public void RegisterCallouts_InvalidDefinitions_AreRejected()
+        {
+            var tooLong = Definition(new string('x', 65), Department.Police, xp: 10);
+            var noDepartment = Definition("Ghost", Department.None, xp: 10);
+            var heavy = Definition("Heavy", Department.Police, xp: 10);
+            heavy.Weight = 1000;
+            var badPriority = Definition("Odd", Department.Police, xp: 10);
+            badPriority.Priority = (CalloutPriority)99;
+            var negativeXp = Definition("Debt", Department.Police, xp: -5);
+
+            var accepted = _dispatch.RegisterCallouts(new[] { tooLong, noDepartment, heavy, badPriority, negativeXp, null });
+
+            Assert.Equal(0, accepted);
+            Assert.Equal(2, _dispatch.CatalogCount);
+        }
+
+        [Fact]
+        public void RegisterCallouts_XpAboveMax_IsCapped()
+        {
+            var greedy = Definition("Greedy", Department.Police, xp: 100_000);
+
+            Assert.Equal(1, _dispatch.RegisterCallouts(new[] { greedy }, maxXp: 500));
+            Assert.Equal(500, greedy.XPReward);
+        }
+
+        [Fact]
+        public void RegisterCallouts_CatalogFull_RejectsNewNamesButUpdatesExisting()
+        {
+            var many = new List<CalloutDefinition>();
+            for (var i = 0; i < 600; i++) many.Add(Definition($"Callout {i}", Department.Police, xp: 10));
+
+            _dispatch.RegisterCallouts(many);
+
+            Assert.Equal(500, _dispatch.CatalogCount);
+            Assert.Equal(1, _dispatch.RegisterCallouts(new[] { Definition("Traffic Stop", Department.Police, xp: 20) }));
         }
 
         private void Advance(int seconds) => _now = _now.AddSeconds(seconds);

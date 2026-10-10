@@ -24,11 +24,28 @@ namespace FivePRS.Client.Callouts
         private readonly List<Entity> _trackedEntities = new();
         private readonly List<Blip>   _trackedBlips    = new();
 
-        protected T? TrackEntity<T>(T? entity) where T : Entity
+        protected Ped? TrackEntity(Ped? ped)
+        {
+            Track(ped);
+            return ped;
+        }
+
+        protected Vehicle? TrackEntity(Vehicle? vehicle)
+        {
+            Track(vehicle);
+            return vehicle;
+        }
+
+        protected Prop? TrackEntity(Prop? prop)
+        {
+            Track(prop);
+            return prop;
+        }
+
+        private void Track(Entity? entity)
         {
             if (entity is not null)
                 _trackedEntities.Add(entity);
-            return entity;
         }
 
         protected Blip TrackBlip(Blip blip)
@@ -79,9 +96,10 @@ namespace FivePRS.Client.Callouts
             return pool[rng.Next(pool.Count)];
         }
 
-        protected async Task WaitForArrestAsync(Ped suspect, CancellationToken ct, string prompt = "Type ~b~/er_cuff~w~ to arrest the suspect")
+        protected async Task WaitForArrestAsync(Ped suspect, CancellationToken ct, string? prompt = null)
         {
             const int PollMs = 250;
+            var help = prompt ?? $"Press {Binds.Cuff} to arrest the suspect";
 
             ArrestManager.RegisterSuspect(suspect);
 
@@ -101,7 +119,7 @@ namespace FivePRS.Client.Callouts
                     return;
                 }
 
-                ClientBrain.ShowHelp(prompt, PollMs + 50);
+                ClientBrain.ShowHelp(help, PollMs + 50);
                 await Timing.WaitAsync(PollMs, ct);
             }
         }
@@ -133,7 +151,7 @@ namespace FivePRS.Client.Callouts
                 if (dist <= catchDistM)
                 {
                     await TaskManager.AssignTaskAsync(suspect, PedTaskType.PutHandsUp);
-                    ClientBrain.ShowNotification("~g~Suspect cornered~w~ | Type ~b~/er_cuff~w~ to arrest.");
+                    ClientBrain.ShowNotification("~g~Suspect cornered~w~ | Move in and arrest them.");
                     await WaitForArrestAsync(suspect, ct);
                     return;
                 }

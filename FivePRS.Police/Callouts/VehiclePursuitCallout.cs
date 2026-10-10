@@ -222,7 +222,7 @@ namespace FivePRS.Police.Callouts
             await Timing.WaitAsync(1_500, ct);
 
             await TaskManager.AssignTaskAsync(driver, PedTaskType.PutHandsUp);
-            ClientBrain.ShowNotification("~g~Suspect surrendering~w~ | Approach and ~b~/er_cuff~w~ to arrest.");
+            ClientBrain.ShowNotification("~g~Suspect surrendering~w~ | Approach and arrest them.");
 
             await WaitForArrestAsync(driver, ct);
         }
@@ -249,9 +249,9 @@ namespace FivePRS.Police.Callouts
         }
 
         public override void OnCalloutDeclined()
-            => ClientBrain.ShowNotification("~r~[ DISPATCH ]~w~ Vehicle pursuit declined.");
+            => ClientBrain.ShowNotification("Vehicle pursuit declined.", "~r~Dispatch");
 
         public override void OnCalloutFailed()
-            => ClientBrain.ShowNotification("~r~[ DISPATCH ]~w~ Vehicle pursuit cancelled.");
+            => ClientBrain.ShowNotification("Vehicle pursuit cancelled.", "~r~Dispatch");
     }
 }

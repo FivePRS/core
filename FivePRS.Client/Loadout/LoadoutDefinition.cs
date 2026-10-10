@@ -15,6 +15,10 @@ namespace FivePRS.Client.Loadout
         public string? MalePedModel { get; set; }
 
         public string? FemalePedModel { get; set; }
+
+        public string? FallbackMalePedModel { get; set; }
+
+        public string? FallbackFemalePedModel { get; set; }
     }
 
     public sealed class WeaponEntry

@@ -5,5 +5,71 @@
     "postCompleteCooldownSeconds": 60,
     "postDeclineCooldownSeconds": 45,
     "postFailCooldownSeconds": 30,
-    "noCalloutRetrySeconds": 30
+    "noCalloutRetrySeconds": 30,
+    "maxCharacters": 3,
+    "maxVehiclesPerCharacter": 5,
+    "maxFine": 10000,
+    "emergencyCallCooldownSeconds": 60,
+    "emergencyCallTimeoutMinutes": 15,
+    "dutyEquipment": "byStart",
+    "spawn": {
+        "restoreLastLocation": true,
+        "saveIntervalSeconds": 30
+    },
+    "updates": {
+        "checkForUpdates": true,
+        "repository": "FivePRS/core",
+        "assetName": "fiveprs.zip",
+        "checkIntervalHours": 6,
+        "includePreReleases": false
+    },
+    "rateLimits": {
+        "enabled": true,
+        "emergency": { "limit": 4, "perSeconds": 60 },
+        "lookups": { "limit": 20, "perSeconds": 10 },
+        "records": { "limit": 10, "perSeconds": 10 },
+        "civilian": { "limit": 12, "perSeconds": 10 },
+        "dispatch": { "limit": 20, "perSeconds": 10 },
+        "admin": { "limit": 15, "perSeconds": 10 },
+        "positions": { "limit": 6, "perSeconds": 10 },
+        "requests": { "limit": 10, "perSeconds": 10 }
+    },
+    "terminal": {
+        "defaultWallpaper": "fiveprs",
+        "allowCustomWallpapers": true,
+        "wallpapers": [
+            { "id": "fiveprs", "label": "FivePRS", "url": "https://cdn.fiveprs.org/fiveprs/wallpapers/fiveprs.png" },
+            { "id": "lightbar", "label": "Lightbar", "url": "https://cdn.fiveprs.org/fiveprs/wallpapers/lightbar.png" },
+            { "id": "hexgrid", "label": "Hex grid", "url": "https://cdn.fiveprs.org/fiveprs/wallpapers/hexgrid.png" },
+            { "id": "dusk", "label": "Los Santos dusk", "url": "https://cdn.fiveprs.org/fiveprs/wallpapers/dusk.png" }
+        ]
+    },
+    "creator": {
+        "allowStandardPeds": true,
+        "standardPeds": [
+            { "model": "a_m_y_skater_01", "label": "Skater" },
+            { "model": "a_m_y_hipster_01", "label": "Hipster (male)" },
+            { "model": "a_f_y_hipster_01", "label": "Hipster (female)" },
+            { "model": "a_m_y_business_01", "label": "Business (male)" },
+            { "model": "a_f_y_business_01", "label": "Business (female)" },
+            { "model": "a_m_y_beach_01", "label": "Beach (male)" },
+            { "model": "a_f_y_beach_01", "label": "Beach (female)" },
+            { "model": "a_m_y_hiker_01", "label": "Hiker (male)" },
+            { "model": "a_f_y_hiker_01", "label": "Hiker (female)" },
+            { "model": "a_m_m_tourist_01", "label": "Tourist (male)" },
+            { "model": "a_f_m_tourist_01", "label": "Tourist (female)" },
+            { "model": "a_m_m_farmer_01", "label": "Farmer" }
+        ]
+    },
+    "branding": {
+        "serverIcon": "https://cdn.fiveprs.org/fiveprs/server_icon.png",
+        "notificationLogo": "https://cdn.fiveprs.org/fiveprs/fiveprs_logo.png",
+        "nameplate": "https://cdn.fiveprs.org/fiveprs/nameplate.png",
+        "departments": {
+            "police": "https://cdn.fiveprs.org/fiveprs/departments/police.png",
+            "ems": "https://cdn.fiveprs.org/fiveprs/departments/ems.png",
+            "fire": "https://cdn.fiveprs.org/fiveprs/departments/fire.png",
+            "civilian": "https://cdn.fiveprs.org/fiveprs/departments/civilian.png"
+        }
+    }
 }

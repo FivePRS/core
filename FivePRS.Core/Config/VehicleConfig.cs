@@ -11,13 +11,13 @@ namespace FivePRS.Core.Config
         public string[] Models { get; set; } = new[] { "police" };
 
         [JsonProperty("primaryColor")]
-        public int PrimaryColor { get; set; } = 0;
+        public int PrimaryColor { get; set; } = -1;
 
         [JsonProperty("secondaryColor")]
-        public int SecondaryColor { get; set; } = 0;
+        public int SecondaryColor { get; set; } = -1;
 
         [JsonProperty("dirtLevel")]
-        public int DirtLevel { get; set; } = 2;
+        public int DirtLevel { get; set; } = -1;
 
         [JsonProperty("livery")]
         public int Livery { get; set; } = -1;
@@ -47,69 +47,22 @@ namespace FivePRS.Core.Config
     public sealed class PoliceVehiclesConfig
     {
         [JsonProperty("patrol")]
-        public VehicleTierDef Patrol { get; set; } = new()
-        {
-            Models         = new[] { "police", "police2" },
-            PrimaryColor   = 0,
-            SecondaryColor = 0,
-            DirtLevel      = 2,
-            Livery         = 0,
-            ForcedExtras   = new[] { 1, 2 },
-            DisabledExtras = new[] { 5 },
-        };
+        public VehicleTierDef Patrol { get; set; } = new() { Models = new[] { "police", "police2" } };
 
         [JsonProperty("senior")]
-        public VehicleTierDef Senior { get; set; } = new()
-        {
-            Models         = new[] { "police2", "police4" },
-            PrimaryColor   = 0,
-            SecondaryColor = 0,
-            DirtLevel      = 1,
-            Livery         = 0,
-            ForcedExtras   = new[] { 1, 2 },
-        };
+        public VehicleTierDef Senior { get; set; } = new() { Models = new[] { "police2", "police4" } };
 
         [JsonProperty("command")]
-        public VehicleTierDef Command { get; set; } = new()
-        {
-            Models         = new[] { "police3" },
-            PrimaryColor   = 111,
-            SecondaryColor = 111,
-            DirtLevel      = 0,
-            Livery         = -1,
-            PlateText      = "CMND",
-        };
+        public VehicleTierDef Command { get; set; } = new() { Models = new[] { "police3" } };
 
         [JsonProperty("agencies", ObjectCreationHandling = ObjectCreationHandling.Replace)]
         public Dictionary<string, AgencyVehicleDef> Agencies { get; set; } = new()
         {
             ["bcso"] = new AgencyVehicleDef
             {
-                Patrol = new VehicleTierDef
-                {
-                    Models         = new[] { "sheriff", "sheriff2" },
-                    PrimaryColor   = -1,
-                    SecondaryColor = -1,
-                    DirtLevel      = 3,
-                    Livery         = -1,
-                },
-                Senior = new VehicleTierDef
-                {
-                    Models         = new[] { "sheriff2" },
-                    PrimaryColor   = -1,
-                    SecondaryColor = -1,
-                    DirtLevel      = 1,
-                    Livery         = -1,
-                },
-                Command = new VehicleTierDef
-                {
-                    Models         = new[] { "sheriff2" },
-                    PrimaryColor   = -1,
-                    SecondaryColor = -1,
-                    DirtLevel      = 0,
-                    Livery         = -1,
-                    PlateText      = "BCSO",
-                },
+                Patrol  = new VehicleTierDef { Models = new[] { "sheriff", "sheriff2" } },
+                Senior  = new VehicleTierDef { Models = new[] { "sheriff2" } },
+                Command = new VehicleTierDef { Models = new[] { "sheriff2" } },
             },
         };
 

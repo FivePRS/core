@@ -28,6 +28,17 @@ namespace FivePRS.Core.Models
         public float           X           { get; set; }
         public float           Y           { get; set; }
         public float           Z           { get; set; }
+        public bool            IsEmergency { get; set; }
+        public string?         Description { get; set; }
+        public string?         Caller      { get; set; }
+    }
+
+    public sealed class EmergencyCallStatus
+    {
+        public string     CallId      { get; set; } = string.Empty;
+        public Department Department  { get; set; }
+        public string     Description { get; set; } = string.Empty;
+        public int        Responding  { get; set; }
     }
 
     public class DispatchSnapshot

@@ -11,30 +11,35 @@ namespace FivePRS.Police.Config
         {
             var cfg     = ConfigManager.PoliceLoadouts;
             var tier    = PoliceLoadoutsConfig.TierForRank(rank);
-            var weapons = cfg.WeaponsFor(agencyId, tier);
-            var uniform = cfg.UniformFor(agencyId, tier);
+            var outfit  = ToOutfit(cfg.UniformFor(agencyId, tier));
 
-            return new LoadoutDefinition
-            {
-                Name    = TierName(tier),
-                Weapons = weapons.Weapons.Select(w => new WeaponEntry
-                {
-                    Hash         = (uint)API.GetHashKey(w.Name),
-                    Ammo         = w.Ammo,
-                    SetAsCurrent = w.SetCurrent,
-                }).ToArray(),
-                Components = uniform.Components
-                    .Select(c => new ComponentEntry { ComponentId = c.Slot, DrawableId = c.Drawable, TextureId = c.Texture })
-                    .ToArray(),
-                Props = uniform.Props
-                    .Select(p => new PropEntry { PropId = p.Slot, DrawableId = p.Drawable, TextureId = p.Texture })
-                    .ToArray(),
-                MalePedModel   = NullIfEmpty(uniform.PedModels?.Male),
-                FemalePedModel = NullIfEmpty(uniform.PedModels?.Female),
-            };
+            outfit.Name    = TierName(tier);
+            outfit.Weapons = cfg.WeaponsFor(agencyId, tier).Weapons.Select(ToEntry).ToArray();
+            return outfit;
         }
 
-        private static string TierName(LoadoutTier tier) => tier switch
+        public static WeaponEntry ToEntry(WeaponDef weapon) => new()
+        {
+            Hash         = (uint)API.GetHashKey(weapon.Name),
+            Ammo         = weapon.Ammo,
+            SetAsCurrent = weapon.SetCurrent,
+        };
+
+        public static LoadoutDefinition ToOutfit(UniformDef uniform) => new()
+        {
+            Components = uniform.Components
+                .Select(c => new ComponentEntry { ComponentId = c.Slot, DrawableId = c.Drawable, TextureId = c.Texture })
+                .ToArray(),
+            Props = uniform.Props
+                .Select(p => new PropEntry { PropId = p.Slot, DrawableId = p.Drawable, TextureId = p.Texture })
+                .ToArray(),
+            MalePedModel           = NullIfEmpty(uniform.PedModels?.Male),
+            FemalePedModel         = NullIfEmpty(uniform.PedModels?.Female),
+            FallbackMalePedModel   = NullIfEmpty(ConfigManager.PoliceLoadouts.FallbackPedModels.Male),
+            FallbackFemalePedModel = NullIfEmpty(ConfigManager.PoliceLoadouts.FallbackPedModels.Female),
+        };
+
+        public static string TierName(LoadoutTier tier) => tier switch
         {
             LoadoutTier.Command => "Command",
             LoadoutTier.Senior  => "Senior Officer",

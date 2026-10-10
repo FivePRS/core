@@ -60,7 +60,18 @@ namespace FivePRS.Server.Dispatch
             public float             X           { get; set; }
             public float             Y           { get; set; }
             public float             Z           { get; set; }
+            public bool              IsEmergency { get; set; }
+            public string            Description { get; set; } = string.Empty;
+            public string            CallerName  { get; set; } = string.Empty;
+            public int               CallerId    { get; set; }
         }
+
+        public const string EmergencyCallName = "911 Call";
+
+        private const int MaxCatalogSize = 500;
+        private const int MaxCalloutNameLength = 64;
+        private const int MaxCalloutWeight = 100;
+        private const int MaxCalloutCooldownSeconds = 86_400;
 
         private readonly Func<DateTime>         _clock;
         private readonly Func<ResourceSettings> _settings;
@@ -71,6 +82,7 @@ namespace FivePRS.Server.Dispatch
         private readonly Dictionary<string, Call>             _calls          = new();
         private readonly Dictionary<string, CalloutDefinition> _catalog       = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, DateTime>         _lastDispatched = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<int, DateTime>            _lastEmergency  = new();
 
         private int _nextCallNumber = 1000;
 
@@ -90,7 +102,7 @@ namespace FivePRS.Server.Dispatch
 
         public bool IsOnDuty(int unitId) => _units.ContainsKey(unitId);
 
-        public void SetOnDuty(int unitId, string name, Department department, int rank, string? agencyId = null)
+        public void SetOnDuty(int unitId, string name, Department department, int rank, string? agencyId = null, string? callsign = null)
         {
             SetOffDuty(unitId);
 
@@ -107,12 +119,16 @@ namespace FivePRS.Server.Dispatch
             unit.Info.Department = department;
             unit.Info.Agency     = agency?.Id ?? string.Empty;
             unit.Info.Rank       = rank;
-            unit.Info.Callsign   = $"{prefix}-{unitId}";
+            unit.Info.Callsign   = callsign is null || callsign.Length == 0 ? $"{prefix}-{unitId}" : callsign;
             unit.Info.Status     = UnitStatus.Available;
 
             _units[unitId] = unit;
             IsDirty = true;
         }
+
+        public bool IsCallsignTaken(string callsign, int exceptUnitId) =>
+            _units.Values.Any(u => u.Info.ServerId != exceptUnitId &&
+                                   string.Equals(u.Info.Callsign, callsign, StringComparison.OrdinalIgnoreCase));
 
         public void SetOffDuty(int unitId)
         {
@@ -140,25 +156,41 @@ namespace FivePRS.Server.Dispatch
             IsDirty = true;
         }
 
-        public void RegisterCallouts(IEnumerable<CalloutDefinition> definitions)
+        public int RegisterCallouts(IEnumerable<CalloutDefinition?> definitions, int maxXp = int.MaxValue)
         {
+            var accepted = 0;
             foreach (var definition in definitions)
             {
-                if (string.IsNullOrWhiteSpace(definition.Name) || definition.Weight < 1) continue;
+                if (!IsValidCallout(definition)) continue;
+                if (!_catalog.ContainsKey(definition!.Name) && _catalog.Count >= MaxCatalogSize) continue;
+
+                definition.XPReward = Math.Min(definition.XPReward, maxXp);
                 _catalog[definition.Name] = definition;
+                accepted++;
             }
+            return accepted;
         }
+
+        private static bool IsValidCallout(CalloutDefinition? definition) =>
+            definition is not null &&
+            !string.IsNullOrWhiteSpace(definition.Name) && definition.Name.Length <= MaxCalloutNameLength &&
+            Enum.IsDefined(typeof(Department), definition.Department) && definition.Department != Department.None &&
+            Enum.IsDefined(typeof(CalloutPriority), definition.Priority) &&
+            definition.Weight >= 1 && definition.Weight <= MaxCalloutWeight &&
+            definition.CooldownSeconds >= 0 && definition.CooldownSeconds <= MaxCalloutCooldownSeconds &&
+            definition.XPReward >= 0;
 
         public IReadOnlyList<DispatchOffer> Tick()
         {
             var now = _clock();
             ExpireStaleOffers(now);
+            ExpireUnansweredEmergencies(now);
 
             var offers = new List<DispatchOffer>();
 
             foreach (var unit in _units.Values)
             {
-                if (unit.Info.Status != UnitStatus.Available) continue;
+                if (unit.Info.Status != UnitStatus.Available || !unit.Info.AiCallouts) continue;
                 if (unit.Info.CallId is not null || unit.PendingCall is not null) continue;
                 if (now < unit.NextOfferUtc) continue;
                 if (unit.HasPosition && !TerritoryMap.IsInJurisdiction(unit.Agency, unit.Info.Territory)) continue;
@@ -289,6 +321,19 @@ namespace FivePRS.Server.Dispatch
             return true;
         }
 
+        public bool SetAiCallouts(int unitId, bool enabled)
+        {
+            if (!_units.TryGetValue(unitId, out var unit)) return false;
+            if (unit.Info.AiCallouts == enabled) return true;
+
+            unit.Info.AiCallouts = enabled;
+            if (enabled)
+                unit.NextOfferUtc = Max(unit.NextOfferUtc, _clock().AddSeconds(Settings.NoCalloutRetrySeconds));
+
+            IsDirty = true;
+            return true;
+        }
+
         public void UpdatePosition(int unitId, float x, float y, float z)
         {
             if (!_units.TryGetValue(unitId, out var unit)) return;
@@ -316,6 +361,78 @@ namespace FivePRS.Server.Dispatch
             IsDirty = true;
         }
 
+        public (string? CallId, string? Error) CreateEmergencyCall(int callerId, string callerName, Department department,
+            string description, float x, float y, float z)
+        {
+            var now = _clock();
+
+            var open = FindOpenEmergency(callerId);
+            if (open is not null) return (null, $"You already have an open 911 call (#{open.Id}).");
+
+            if (_lastEmergency.TryGetValue(callerId, out var last) &&
+                (now - last).TotalSeconds < Settings.EmergencyCallCooldownSeconds)
+            {
+                var wait = Settings.EmergencyCallCooldownSeconds - (int)(now - last).TotalSeconds;
+                return (null, $"Please wait {wait}s before calling 911 again.");
+            }
+
+            var call = new Call
+            {
+                Id          = (_nextCallNumber++).ToString(),
+                Definition  = new CalloutDefinition { Name = EmergencyCallName, Department = department, Priority = CalloutPriority.High },
+                Status      = CallStatus.Active,
+                OfferedUtc  = now,
+                HasLocation = true,
+                Territory   = _territories().Resolve(x, y)?.Id,
+                X           = x,
+                Y           = y,
+                Z           = z,
+                IsEmergency = true,
+                Description = description,
+                CallerName  = callerName,
+                CallerId    = callerId,
+            };
+
+            _calls[call.Id]         = call;
+            _lastEmergency[callerId] = now;
+            IsDirty = true;
+            return (call.Id, null);
+        }
+
+        public bool CancelEmergencyCall(int callerId, string callId)
+        {
+            if (!_calls.TryGetValue(callId, out var call) || !call.IsEmergency || call.CallerId != callerId) return false;
+
+            CloseCall(call, Settings.PostCompleteCooldownSeconds);
+            return true;
+        }
+
+        public int? ClearEmergencyCall(int unitId, string callId)
+        {
+            if (!_calls.TryGetValue(callId, out var call) || !call.IsEmergency || !call.Attached.Contains(unitId)) return null;
+
+            CloseCall(call, Settings.PostCompleteCooldownSeconds);
+            return call.CallerId;
+        }
+
+        public int? GetEmergencyCaller(string callId) =>
+            _calls.TryGetValue(callId, out var call) && call.IsEmergency ? call.CallerId : null;
+
+        public EmergencyCallStatus? GetEmergencyStatus(int callerId)
+        {
+            var call = FindOpenEmergency(callerId);
+            return call is null ? null : new EmergencyCallStatus
+            {
+                CallId      = call.Id,
+                Department  = call.Definition.Department,
+                Description = call.Description,
+                Responding  = call.Attached.Count(_units.ContainsKey),
+            };
+        }
+
+        public IEnumerable<int> UnitsInDepartment(Department department) =>
+            _units.Values.Where(u => u.Info.Department == department).Select(u => u.Info.ServerId).ToList();
+
         public UnitInfo? GetUnit(int unitId) =>
             _units.TryGetValue(unitId, out var unit) ? unit.Info : null;
 
@@ -336,10 +453,13 @@ namespace FivePRS.Server.Dispatch
                         Priority    = c.Definition.Priority,
                         Territory   = c.Territory,
                         PrimaryUnit = c.PrimaryUnit,
-                        Units       = new[] { c.PrimaryUnit }.Concat(c.Attached).ToList(),
+                        Units       = (c.IsEmergency ? c.Attached : new[] { c.PrimaryUnit }.Concat(c.Attached)).ToList(),
                         X           = c.X,
                         Y           = c.Y,
                         Z           = c.Z,
+                        IsEmergency = c.IsEmergency,
+                        Description = c.IsEmergency ? c.Description : null,
+                        Caller      = c.IsEmergency ? c.CallerName : null,
                     })
                     .ToList(),
             };
@@ -357,6 +477,23 @@ namespace FivePRS.Server.Dispatch
 
             foreach (var call in stale)
                 Respond(call.PrimaryUnit, call.Id, OfferResponse.Declined, 0f, 0f, 0f);
+        }
+
+        private Call? FindOpenEmergency(int callerId) =>
+            _calls.Values.FirstOrDefault(c => c.IsEmergency && c.CallerId == callerId);
+
+        private void ExpireUnansweredEmergencies(DateTime now)
+        {
+            var timeout = TimeSpan.FromMinutes(Settings.EmergencyCallTimeoutMinutes);
+            var stale = _calls.Values
+                .Where(c => c.IsEmergency && now - c.OfferedUtc > timeout && !c.Attached.Any(_units.ContainsKey))
+                .ToList();
+
+            foreach (var call in stale)
+            {
+                _calls.Remove(call.Id);
+                IsDirty = true;
+            }
         }
 
         private CalloutDefinition? PickCallout(Department department, DateTime now)
@@ -420,6 +557,7 @@ namespace FivePRS.Server.Dispatch
             Rank       = info.Rank,
             Status     = info.Status,
             CallId     = info.CallId,
+            AiCallouts = info.AiCallouts,
             X          = info.X,
             Y          = info.Y,
             Z          = info.Z,

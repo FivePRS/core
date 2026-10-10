@@ -15,6 +15,9 @@ namespace FivePRS.Core.Config
 
         [JsonProperty("setCurrent", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public bool SetCurrent { get; set; }
+
+        [JsonProperty("label", NullValueHandling = NullValueHandling.Ignore)]
+        public string? Label { get; set; }
     }
 
     public sealed class WeaponTierDef
@@ -142,6 +145,9 @@ namespace FivePRS.Core.Config
             Props = new[] { Clothing(0, -1, -1), Clothing(1, -1, -1) },
         };
 
+        [JsonProperty("fallbackPedModels")]
+        public PedModelsDef FallbackPedModels { get; set; } = new() { Male = "s_m_y_cop_01", Female = "s_f_y_cop_01" };
+
         [JsonProperty("agencies", ObjectCreationHandling = ObjectCreationHandling.Replace)]
         public Dictionary<string, AgencyLoadoutDef> Agencies { get; set; } = new();
 
@@ -149,6 +155,14 @@ namespace FivePRS.Core.Config
             rank >= 8 ? LoadoutTier.Command :
             rank >= 5 ? LoadoutTier.Senior  :
             rank >= 3 ? LoadoutTier.Officer : LoadoutTier.Recruit;
+
+        public static int MinRankFor(LoadoutTier tier) => tier switch
+        {
+            LoadoutTier.Command => 8,
+            LoadoutTier.Senior  => 5,
+            LoadoutTier.Officer => 3,
+            _                   => 1,
+        };
 
         public WeaponTierDef WeaponsFor(string? agencyId, LoadoutTier tier)
         {

@@ -1,4 +1,5 @@
 using System;
+using System.Data.Common;
 using System.Threading.Tasks;
 using MySqlConnector;
 using FivePRS.Core.Models;
@@ -9,6 +10,10 @@ namespace FivePRS.Server.Database
     {
         private readonly string _connectionString;
 
+        public SqlDialect Dialect => SqlDialect.MySql;
+
+        public DbConnection CreateConnection() => new MySqlConnection(_connectionString);
+
         public MySqlProvider(string connectionString)
         {
             _connectionString = connectionString;
@@ -18,37 +23,6 @@ namespace FivePRS.Server.Database
         {
             using var conn = new MySqlConnection(_connectionString);
             await conn.OpenAsync();
-
-            using var cmd = conn.CreateCommand();
-            cmd.CommandText = @"
-                CREATE TABLE IF NOT EXISTS `ers_players` (
-                    `license`     VARCHAR(60)  NOT NULL,
-                    `name`        VARCHAR(100) NOT NULL,
-                    `department`  TINYINT UNSIGNED DEFAULT 0,
-                    `is_on_duty`  TINYINT(1)   DEFAULT 0,
-                    `xp`          INT UNSIGNED  DEFAULT 0,
-                    `rank_level`  TINYINT UNSIGNED DEFAULT 1,
-                    `agency`      VARCHAR(40)  NOT NULL DEFAULT '',
-                    `last_seen`   DATETIME     DEFAULT CURRENT_TIMESTAMP
-                                               ON UPDATE CURRENT_TIMESTAMP,
-                    PRIMARY KEY (`license`)
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-                CREATE TABLE IF NOT EXISTS `fiveprs_audit` (
-                    `id`             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                    `created_at`     DATETIME     NOT NULL,
-                    `action`         VARCHAR(40)  NOT NULL,
-                    `actor_license`  VARCHAR(60)  NULL,
-                    `actor_name`     VARCHAR(100) NOT NULL,
-                    `target_license` VARCHAR(60)  NULL,
-                    `details`        VARCHAR(255) NOT NULL,
-                    PRIMARY KEY (`id`),
-                    KEY `idx_fiveprs_audit_target` (`target_license`)
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
-
-            await cmd.ExecuteNonQueryAsync();
-
-            await EnsureColumnAsync(conn, "ers_players", "agency", "VARCHAR(40) NOT NULL DEFAULT ''");
         }
 
         public async Task<PlayerData?> GetPlayerAsync(string license)
@@ -58,7 +32,7 @@ namespace FivePRS.Server.Database
 
             using var cmd = conn.CreateCommand();
             cmd.CommandText = @"
-                SELECT `license`, `name`, `department`, `is_on_duty`, `xp`, `rank_level`, `last_seen`, `agency`
+                SELECT `license`, `name`, `department`, `is_on_duty`, `xp`, `rank_level`, `last_seen`, `agency`, `callsign`
                 FROM `ers_players` WHERE `license` = @license LIMIT 1;";
             cmd.Parameters.AddWithValue("@license", license);
 
@@ -75,6 +49,7 @@ namespace FivePRS.Server.Database
                 Rank       = reader.GetByte("rank_level"),
                 LastSeen   = reader.GetDateTime("last_seen"),
                 Agency     = reader.GetString("agency"),
+                Callsign   = reader.GetString("callsign"),
             };
         }
 
@@ -86,13 +61,14 @@ namespace FivePRS.Server.Database
             using var cmd = conn.CreateCommand();
             cmd.CommandText = @"
                 INSERT INTO `ers_players`
-                    (`license`, `name`, `department`, `agency`, `is_on_duty`, `xp`, `rank_level`, `last_seen`)
+                    (`license`, `name`, `department`, `agency`, `callsign`, `is_on_duty`, `xp`, `rank_level`, `last_seen`)
                 VALUES
-                    (@license, @name, @department, @agency, @onDuty, @xp, @rank, UTC_TIMESTAMP())
+                    (@license, @name, @department, @agency, @callsign, @onDuty, @xp, @rank, UTC_TIMESTAMP())
                 ON DUPLICATE KEY UPDATE
                     `name`       = VALUES(`name`),
                     `department` = VALUES(`department`),
                     `agency`     = VALUES(`agency`),
+                    `callsign`   = VALUES(`callsign`),
                     `is_on_duty` = VALUES(`is_on_duty`),
                     `xp`         = VALUES(`xp`),
                     `rank_level` = VALUES(`rank_level`),
@@ -102,6 +78,7 @@ namespace FivePRS.Server.Database
             cmd.Parameters.AddWithValue("@name",       player.Name);
             cmd.Parameters.AddWithValue("@department", (byte)player.Department);
             cmd.Parameters.AddWithValue("@agency",     player.Agency);
+            cmd.Parameters.AddWithValue("@callsign",   player.Callsign);
             cmd.Parameters.AddWithValue("@onDuty",     player.IsOnDuty);
             cmd.Parameters.AddWithValue("@xp",         player.XP);
             cmd.Parameters.AddWithValue("@rank",       player.Rank);
@@ -141,23 +118,6 @@ namespace FivePRS.Server.Database
             cmd.Parameters.AddWithValue("@license", license);
 
             await cmd.ExecuteNonQueryAsync();
-        }
-
-        private static async Task EnsureColumnAsync(MySqlConnection conn, string table, string column, string definition)
-        {
-            using (var check = conn.CreateCommand())
-            {
-                check.CommandText = @"
-                    SELECT COUNT(*) FROM information_schema.COLUMNS
-                    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = @table AND COLUMN_NAME = @column;";
-                check.Parameters.AddWithValue("@table",  table);
-                check.Parameters.AddWithValue("@column", column);
-                if (Convert.ToInt64(await check.ExecuteScalarAsync()) > 0) return;
-            }
-
-            using var alter = conn.CreateCommand();
-            alter.CommandText = $"ALTER TABLE `{table}` ADD COLUMN `{column}` {definition};";
-            await alter.ExecuteNonQueryAsync();
         }
 
         private static string Truncate(string value, int maxLength) =>

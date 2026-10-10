@@ -1,0 +1,11 @@
+{
+    "types": [
+        { "id": "driver",     "name": "Driver's License",            "selfService": true  },
+        { "id": "motorcycle", "name": "Motorcycle License",          "selfService": true  },
+        { "id": "commercial", "name": "Commercial Driver's License", "selfService": false },
+        { "id": "weapon",     "name": "Weapon Permit",               "selfService": false },
+        { "id": "pilot",      "name": "Pilot License",               "selfService": false },
+        { "id": "boat",       "name": "Boating License",             "selfService": true  },
+        { "id": "hunting",    "name": "Hunting License",             "selfService": true  }
+    ]
+}

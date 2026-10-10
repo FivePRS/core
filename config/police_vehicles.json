@@ -1,66 +1,12 @@
 {
-    "patrol": {
-        "models": ["police", "police2"],
-        "primaryColor": 0,
-        "secondaryColor": 0,
-        "dirtLevel": 2,
-        "livery": 0,
-        "plateText": "",
-        "forcedExtras": [1, 2],
-        "disabledExtras": [5]
-    },
-    "senior": {
-        "models": ["police2", "police4"],
-        "primaryColor": 0,
-        "secondaryColor": 0,
-        "dirtLevel": 1,
-        "livery": 0,
-        "plateText": "",
-        "forcedExtras": [1, 2],
-        "disabledExtras": []
-    },
-    "command": {
-        "models": ["police3"],
-        "primaryColor": 111,
-        "secondaryColor": 111,
-        "dirtLevel": 0,
-        "livery": -1,
-        "plateText": "CMND",
-        "forcedExtras": [],
-        "disabledExtras": []
-    },
+    "patrol":  { "models": ["police", "police2"] },
+    "senior":  { "models": ["police2", "police4"] },
+    "command": { "models": ["police3"] },
     "agencies": {
         "bcso": {
-            "patrol": {
-                "models": ["sheriff", "sheriff2"],
-                "primaryColor": -1,
-                "secondaryColor": -1,
-                "dirtLevel": 3,
-                "livery": -1,
-                "plateText": "",
-                "forcedExtras": [],
-                "disabledExtras": []
-            },
-            "senior": {
-                "models": ["sheriff2"],
-                "primaryColor": -1,
-                "secondaryColor": -1,
-                "dirtLevel": 1,
-                "livery": -1,
-                "plateText": "",
-                "forcedExtras": [],
-                "disabledExtras": []
-            },
-            "command": {
-                "models": ["sheriff2"],
-                "primaryColor": -1,
-                "secondaryColor": -1,
-                "dirtLevel": 0,
-                "livery": -1,
-                "plateText": "BCSO",
-                "forcedExtras": [],
-                "disabledExtras": []
-            }
+            "patrol":  { "models": ["sheriff", "sheriff2"] },
+            "senior":  { "models": ["sheriff2"] },
+            "command": { "models": ["sheriff2"] }
         }
     }
 }

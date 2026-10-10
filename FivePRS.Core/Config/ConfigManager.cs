@@ -10,6 +10,8 @@ namespace FivePRS.Core.Config
         public static PoliceVehiclesConfig PoliceVehicles { get; private set; } = new();
         public static PoliceLoadoutsConfig PoliceLoadouts { get; private set; } = new();
         public static JurisdictionConfig   Jurisdictions  { get; private set; } = new();
+        public static LicensesConfig       Licenses       { get; private set; } = new();
+        public static StationsConfig       Stations       { get; private set; } = new();
         public static TerritoryMap         Territories    { get; private set; } = new(new JurisdictionConfig());
 
         public static Action<string>? Log { get; set; }
@@ -17,6 +19,8 @@ namespace FivePRS.Core.Config
         public static void LoadSettings(string? json)       => Settings       = Load(json, "settings.json",        Settings);
         public static void LoadPoliceVehicles(string? json) => PoliceVehicles = Load(json, "police_vehicles.json", PoliceVehicles);
         public static void LoadPoliceLoadouts(string? json) => PoliceLoadouts = Load(json, "police_loadouts.json", PoliceLoadouts);
+        public static void LoadLicenses(string? json)       => Licenses       = Load(json, "licenses.json",        Licenses);
+        public static void LoadStations(string? json)       => Stations       = Load(json, "stations.json",        Stations);
 
         public static void LoadJurisdictions(string? json)
         {
