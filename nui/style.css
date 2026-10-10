@@ -34,15 +34,12 @@ body {
   display: none !important;
 }
 
-
-
 .lightbar {
   position: absolute;
   inset: 0 0 auto 0;
   height: 3px;
   background: linear-gradient(90deg, var(--red) 0 50%, var(--blue) 50% 100%);
 }
-
 
 .brand-logo {
   display: block;
@@ -60,7 +57,6 @@ th {
   text-transform: uppercase;
   color: var(--subtle);
 }
-
 
 .tab-button {
   height: 32px;
@@ -84,7 +80,6 @@ th {
   border-color: rgba(59, 130, 246, 0.6);
   background: rgba(59, 130, 246, 0.15);
 }
-
 
 .icon-button {
   width: 32px;
@@ -1363,95 +1358,161 @@ tr.mine td {
   padding: 2px 4px;
 }
 
-.settings {
+
+.ext {
+  position: relative;
   overflow-y: auto;
 }
 
-.settings-column {
-  max-width: 860px;
+.ext-view {
+  max-width: 900px;
   margin: 0 auto;
   padding: 16px;
 }
 
-.wallpaper-grid {
+.ext-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: var(--bg);
+}
+
+.av-section {
+  margin: 18px 0 8px;
+}
+
+.av-section:first-child {
+  margin-top: 0;
+}
+
+.av-text {
+  margin: 6px 0;
+  line-height: 1.5;
+}
+
+.av-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.av-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.av-list.grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 12px;
-  padding: 0 16px 16px;
 }
 
-.wallpaper-tile {
-  padding: 0;
-  border: 2px solid transparent;
-  border-radius: 12px;
-  background: transparent;
+.av-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
   color: var(--text);
   font: inherit;
   text-align: left;
   cursor: pointer;
 }
 
-.wallpaper-tile.selected {
+.av-item:hover {
+  background: var(--surface-raised);
+}
+
+.av-item.active {
   border-color: var(--blue);
+  background: rgba(59, 130, 246, 0.12);
 }
 
-.wallpaper-preview {
-  display: block;
-  aspect-ratio: 16 / 9;
+.av-item:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.grid .av-item {
+  flex-direction: column;
+  align-items: stretch;
+  padding: 0 0 8px;
   overflow: hidden;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #1b2a5c, #4a0f14);
 }
 
-.wallpaper-thumb {
-  display: block;
-  width: 100%;
-  height: 100%;
+.av-image {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
   object-fit: cover;
 }
 
-.wallpaper-label {
-  display: block;
-  padding: 6px 4px 2px;
-  font-size: 13px;
+.grid .av-image {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  border-radius: 0;
 }
 
-.wallpaper-form {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 8px;
-  padding: 0 16px;
-}
-
-.wallpaper-form .duty-input {
-  height: 36px;
-  font-family: inherit;
-  font-size: 13px;
-  letter-spacing: normal;
-  text-transform: none;
-}
-
-#wallpaper-hint {
-  padding: 8px 16px 16px;
-}
-
-.settings-column > .panel + .panel {
-  margin-top: 12px;
-}
-
-.settings-row {
+.av-body {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 0 16px 16px;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
-.settings-name {
+.grid .av-body {
+  padding: 0 10px;
+}
+
+.av-title {
   font-weight: 600;
 }
 
-.settings-detail {
-  margin-top: 2px;
+.av-detail {
   font-size: 12px;
+  color: var(--muted);
+}
+
+.av-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 8px 0;
+}
+
+.av-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.av-field input {
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+
+.av-form .button {
+  align-self: flex-end;
+}
+
+.app-icon .app-image,
+.app-bar-icon .app-image {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
 }

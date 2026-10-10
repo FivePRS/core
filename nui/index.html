@@ -431,36 +431,9 @@
             </div>
           </section>
 
-          <section id="tab-settings" class="tab settings" hidden>
-            <div class="settings-column">
-              <section id="settings-duty" class="panel" hidden>
-                <div class="panel-head">
-                  <p class="panel-title">Duty</p>
-                </div>
-                <div class="settings-row">
-                  <div>
-                    <p class="settings-name">AI callouts</p>
-                    <p class="muted settings-detail">Off pauses AI callouts for you. Player 911 calls still reach you.</p>
-                  </div>
-                  <div class="status-buttons">
-                    <button type="button" class="button" data-ai="true">On</button>
-                    <button type="button" class="button" data-ai="false">Off</button>
-                  </div>
-                </div>
-              </section>
-
-              <section class="panel">
-                <div class="panel-head">
-                  <p class="panel-title">Wallpaper</p>
-                </div>
-                <div id="wallpaper-grid" class="wallpaper-grid"></div>
-                <form id="wallpaper-form" class="wallpaper-form">
-                  <input id="wallpaper-url" class="duty-input" type="url" autocomplete="off" spellcheck="false" placeholder="https://example.com/wallpaper.png">
-                  <button type="submit" class="button">Use image</button>
-                </form>
-                <p id="wallpaper-hint" class="hint">Paste a direct https link to an image.</p>
-              </section>
-            </div>
+          <section id="tab-ext" class="tab ext" hidden>
+            <div id="ext-view" class="ext-view"></div>
+            <iframe id="ext-frame" class="ext-frame" title="App" hidden></iframe>
           </section>
         </main>
       </div>
@@ -515,7 +488,7 @@
   <script src="records.js"></script>
   <script src="emergency.js"></script>
   <script src="admin.js"></script>
-  <script src="settings.js"></script>
+  <script src="appview.js"></script>
   <script src="menu.js"></script>
   <script src="creator.js"></script>
   <script src="app.js"></script>

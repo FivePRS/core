@@ -23,6 +23,7 @@ client_scripts {
     'client/FivePRS.Police.net.dll',
     'plugins/*.net.dll',
     'callouts/*.net.dll',
+    'apps/*.net.dll',
 }
 
 files {
@@ -36,7 +37,8 @@ files {
     'nui/records.js',
     'nui/emergency.js',
     'nui/admin.js',
-    'nui/settings.js',
+    'nui/appview.js',
+    'nui/app-sdk.js',
     'nui/menu.js',
     'nui/creator.js',
     'nui/app.js',
@@ -44,6 +46,7 @@ files {
     'client/Newtonsoft.Json.dll',
     'plugins/*.dll',
     'callouts/*.dll',
+    'apps/**/*',
     'config/*.json',
 }
 

@@ -172,7 +172,7 @@ namespace FivePRS.Client
         {
             if (string.IsNullOrWhiteSpace(url)) return;
 
-            _logoDui = API.CreateDui($"https://cfx-nui-{resource}/nui/dui-image.html#{url}", NotificationLogoSize, NotificationLogoSize);
+            _logoDui = API.CreateDui($"nui://{resource}/nui/dui-image.html#{url}", NotificationLogoSize, NotificationLogoSize);
 
             var until = API.GetGameTimer() + DuiTimeoutMs;
             while (!API.IsDuiAvailable(_logoDui))
@@ -186,10 +186,11 @@ namespace FivePRS.Client
                 await Delay(100);
             }
 
-            var txd = API.CreateRuntimeTxd(NotificationTxd);
-            var texture = $"logo_{API.GetGameTimer()}";
-            API.CreateRuntimeTextureFromDuiHandle(txd, texture, API.GetDuiHandle(_logoDui));
-            _logoTexture = texture;
+            var name = $"fiveprs_logo_{API.GetGameTimer()}";
+            var txd = API.CreateRuntimeTxd(name);
+            API.CreateRuntimeTextureFromDuiHandle(txd, name, API.GetDuiHandle(_logoDui));
+            _logoTxd = name;
+            Debug.WriteLine("[FivePRS] Notification logo ready.");
         }
 
         private void OnResourceStop(string resourceName)
@@ -212,7 +213,7 @@ namespace FivePRS.Client
 
             API.SetNotificationTextEntry(LongTextEntry);
             AddLongText(body);
-            API.SetNotificationMessage(NotificationTxd, _logoTexture, false, 0, NotificationSender, subject);
+            API.SetNotificationMessage(_logoTxd, _logoTxd, false, 0, NotificationSender, subject);
             API.DrawNotification(false, true);
         }
 
@@ -239,7 +240,6 @@ namespace FivePRS.Client
         }
 
         private const string LongTextEntry = "CELL_EMAIL_BCON";
-        private const string NotificationTxd = "fiveprs_ui";
         private const string NotificationSender = "~b~FivePRS";
         private const int NotificationLogoSize = 128;
         private const int DuiTimeoutMs = 15_000;
@@ -247,7 +247,7 @@ namespace FivePRS.Client
         private const int MinHelpDurationMs = 100;
 
         private static long _logoDui;
-        private static string _logoTexture = string.Empty;
+        private static string _logoTxd = string.Empty;
         private static string? _helpText;
         private static int _helpUntil;
 

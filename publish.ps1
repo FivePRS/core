@@ -17,6 +17,7 @@ $null = New-Item -ItemType Directory -Path "$DistDir\client"
 $null = New-Item -ItemType Directory -Path "$DistDir\server"
 $null = New-Item -ItemType Directory -Path "$DistDir\plugins"
 $null = New-Item -ItemType Directory -Path "$DistDir\callouts"
+$null = New-Item -ItemType Directory -Path "$DistDir\apps"
 
 # 2. Build
 Info "Building ($Configuration)..."
@@ -55,7 +56,7 @@ Get-ChildItem "$Root\bin\server" -File | Where-Object {
     $_.Name -notlike "CitizenFX.*"
 } | Copy-Item -Destination "$DistDir\server"
 
-# 6. Drop READMEs into plugins/ and callouts/
+# 6. Drop READMEs into plugins/, callouts/ and apps/
 @(
 "FivePRS Plugins Folder",
 "========================",
@@ -93,6 +94,25 @@ Get-ChildItem "$Root\bin\server" -File | Where-Object {
 "  - Build as a net452 Class Library named <Name>.net.dll",
 "  - Drop the output DLL here and restart fiveprs - no core recompile needed"
 ) | Set-Content "$DistDir\callouts\README.txt" -Encoding ASCII
+
+@(
+"FivePRS Apps Folder",
+"=====================",
+"",
+"Drop terminal app DLLs here. Each TerminalApp subclass becomes an",
+"app on the FivePRS terminal home screen.",
+"",
+"Building an app:",
+"  - Reference client\FivePRS.Core.dll and client\FivePRS.Client.net.dll",
+"  - Subclass FivePRS.Client.Terminal.TerminalApp (Id, Label, Icon, Color)",
+"  - Return an AppScreen from BuildScreen, or set Page to your own HTML",
+"    page such as apps/myapp/index.html and put the page in apps\myapp\",
+"  - Build as a net452 Class Library named <Name>.net.dll",
+"  - Drop the DLL (and its folder) here and restart fiveprs",
+"",
+"Apps can also come from any resource with exports.fiveprs:registerApp.",
+"See the FivePRS README for both."
+) | Set-Content "$DistDir\apps\README.txt" -Encoding ASCII
 
 # 7. Verify fxmanifest references (skip comments and wildcard globs)
 Info "Verifying manifest references..."
@@ -151,5 +171,6 @@ Write-Host "       ensure fiveprs" -ForegroundColor Gray
 Write-Host ""
 Write-Host "  plugins\   <- drop functionality extensions here" -ForegroundColor Yellow
 Write-Host "  callouts\  <- drop scenario packs here" -ForegroundColor Yellow
+Write-Host "  apps\      <- drop terminal apps here" -ForegroundColor Yellow
 Write-Host "  (restart the resource after adding any DLL - no recompile needed)" -ForegroundColor Yellow
 Write-Host ""

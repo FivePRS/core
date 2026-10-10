@@ -6,6 +6,7 @@ using CitizenFX.Core.Native;
 using FivePRS.Client.Appearance;
 using FivePRS.Client.Callouts;
 using FivePRS.Client.Dispatch;
+using FivePRS.Client.Terminal;
 using FivePRS.Core.Config;
 using FivePRS.Core.Events;
 using FivePRS.Core.Models;
@@ -42,6 +43,7 @@ namespace FivePRS.Client.App
             EventHandlers["onClientResourceStop"]             += new Action<string>(OnResourceStop);
 
             DispatchClient.SnapshotUpdated += Refresh;
+            TerminalApps.Changed           += Refresh;
             CalloutDispatcher.StateChanged += Refresh;
 
             API.RegisterCommand(KeyCommands.Menu, new Action<int, List<object>, string>((_, __, ___) => Toggle()), false);
@@ -52,7 +54,6 @@ namespace FivePRS.Client.App
             RegisterCallback("dutyOff",      _    => DutyPanel.GoOffDuty());
             RegisterCallback("setStatus",    data => DispatchPanel.SetStatus(data));
             RegisterCallback("attach",       data => DispatchPanel.Attach(data));
-            RegisterCallback("aiCallouts",   data => DispatchPanel.SetAiCallouts(data));
             RegisterCallback("waypoint",     data => DispatchPanel.Waypoint(data));
             RegisterCallback("offerAccept",  _    => CalloutDispatcher.AcceptOffer());
             RegisterCallback("offerDecline", _    => CalloutDispatcher.DeclineOffer());
@@ -64,7 +65,8 @@ namespace FivePRS.Client.App
             RegisterCallback("civRegisterVehicle", _    => OnRegisterVehicle());
             RegisterCallback("civRemoveVehicle",   data => CivilianPanel.RemoveVehicle(data));
             RegisterCallback("civAppearance",      _    => OpenCreator());
-            RegisterCallback("setWallpaper",       data => TerminalPanel.ChooseWallpaper(data));
+            RegisterCallback("appOpen",            data => OnAppOpen(data));
+            RegisterCallback("appAction",          data => OnAppAction(data));
             RegisterCallback("civSetVehicleStolen", data => CivilianPanel.SetVehicleStolen(data));
             RegisterCallback("recSearchName",   data => RecordsPanel.SearchName(data));
             RegisterCallback("recSearchPlate",  data => RecordsPanel.SearchPlate(data));
@@ -212,6 +214,22 @@ namespace FivePRS.Client.App
             Refresh();
         }
 
+        private void OnAppOpen(IDictionary<string, object> data)
+        {
+            TerminalApps.SetOpen(NuiData.GetString(data, "id"));
+            Refresh();
+        }
+
+        private void OnAppAction(IDictionary<string, object> data)
+        {
+            var payload = data.TryGetValue("data", out var raw) && raw is IDictionary<string, object> values
+                ? values
+                : new Dictionary<string, object>();
+
+            TerminalApps.Act(NuiData.GetString(data, "app"), NuiData.GetString(data, "action"), payload);
+            Refresh();
+        }
+
         private void OnPreferences(string wallpaper)
         {
             TerminalPanel.SetWallpaper(wallpaper);
@@ -338,6 +356,9 @@ namespace FivePRS.Client.App
                 Nameplate  = ConfigManager.Settings.Branding.Nameplate,
                 Icons      = ConfigManager.Settings.Branding.Departments,
                 Terminal   = TerminalPanel.BuildView(),
+                Apps       = TerminalApps.BuildList(),
+                AppView    = TerminalApps.BuildOpenView(),
+                Context    = PublicState.Build(),
                 DefaultTab = defaultTab,
                 Duty       = DutyPanel.BuildView(),
                 Dispatch   = dispatch,

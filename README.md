@@ -64,6 +64,59 @@ The Settings app holds per-player options. While on duty it has the **AI callout
 
 Wallpapers are configured under `terminal` in `config/settings.json`: `wallpapers` lists the built-in choices (`id`, `label`, `url`), `defaultWallpaper` is the id used until a player picks one, and `allowCustomWallpapers` set to `false` limits players to that list.
 
+### Making terminal apps
+Anyone can add apps to the terminal, either as a C# DLL dropped into `apps/` or from any resource through exports. Both kinds get a home screen icon, a badge and the Home button, and can either describe a screen that FivePRS draws in the terminal's style, or show their own HTML page.
+
+**C# app (`apps/*.net.dll`).** Reference `client/FivePRS.Core.dll` and `client/FivePRS.Client.net.dll`, build a net452 class library named `<Name>.net.dll`, and subclass `TerminalApp`:
+
+```csharp
+using System.Collections.Generic;
+using FivePRS.Client.Terminal;
+using FivePRS.Core.Models;
+
+public class TowApp : TerminalApp
+{
+    public override string Id    => "tow";
+    public override string Label => "Tow";
+    public override string Color => "#ca8a04";
+    public override string Icon  => "M3 17h13l3-5h2v5 M7.5 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4z";
+
+    public override bool IsAvailable(PlayerData player) => player.IsOnDuty;
+
+    public override AppScreen BuildScreen() => new AppScreen()
+        .Add(AppBlock.Section("Request a tow"))
+        .Add(AppBlock.Buttons(new AppItem { Title = "Call tow truck", Action = "call", Style = "primary" }));
+
+    public override void OnAction(string action, IDictionary<string, object> data)
+    {
+        if (action == "call") Refresh();
+    }
+}
+```
+
+Screens are built from blocks: `Section`, `Paragraph`, `Buttons`, `List` (rows or a grid, with optional images) and `Form`. Every button, list item and form sends its `Action` and `Data` to `OnAction`. `Icon` is SVG path data on a 24×24 grid or an image URL; `Order` places the app on the home screen (built-in apps use 0 to 80, Settings is 1000); `Badge` shows a badge. For a fully custom screen, set `Page` to an HTML file such as `apps/tow/index.html` and put the page in `apps/tow/`.
+
+**Resource app (any language).** Register from a client script:
+
+```lua
+exports.fiveprs:registerApp({
+    id = 'notes', label = 'Notes', color = '#0891b2', order = 600,
+    icon = 'M5 3h10l4 4v14H5z M9 9h6 M9 13h6',
+    page = ('https://cfx-nui-%s/html/index.html'):format(GetCurrentResourceName()),
+})
+
+AddEventHandler('fiveprs:appAction', function(app, action, data)
+    if app ~= 'notes' then return end
+    exports.fiveprs:sendAppMessage('notes', 'saved', { ok = true })
+end)
+```
+
+Leave out `page` and call `exports.fiveprs:setAppView(id, screen)` to have FivePRS draw a screen instead, using the same blocks as tables (`{ blocks = { { type = 'section', title = 'Notes' }, ... } }`). `setAppBadge(id, text)`, `setAppAvailable(id, bool)` and `unregisterApp(id)` update the app, and apps are removed when their resource stops.
+
+**App pages.** An app page includes `https://cfx-nui-fiveprs/nui/app-sdk.js`, which provides `FivePRS.on(type, handler)` for messages, `FivePRS.action(name, data)` to send an action to the app, `FivePRS.home()` to return to the home screen, and `FivePRS.context`, the player's FivePRS state (the same as `exports.fiveprs:getState()`), which is also delivered as a `context` message whenever it changes. Messages from a C# app's `Send(type, payload)` or a resource's `sendAppMessage` arrive through `FivePRS.on`. `Escape` inside an app page returns to the home screen.
+
+The `fiveprs_notes` addon in the [addons repository](https://github.com/FivePRS/addons) is a complete resource app to copy from.
+
 ### Duty
 The Duty app shows the player's rank and XP and lets them pick a department, agency and callsign before going on duty. Only departments the player is permitted to join are offered. Callsigns are up to 12 letters, numbers or hyphens, are saved to the player's profile, and must be unique among units on duty; leaving it blank uses the agency's default (for example `LSPD-12`). While on duty, the tab shows the player's unit and a Go off duty button.
 

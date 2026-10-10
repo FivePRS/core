@@ -58,6 +58,8 @@ namespace FivePRS.Core.Events
         public const string LocalOpenMenu           = "FivePRS:Local:OpenMenu";
         public const string LocalServerIconDownload = "FivePRS:Local:ServerIconDownload";
         public const string LocalServerIconResult   = "FivePRS:Local:ServerIconResult";
+
+        public const string PublicAppAction         = "fiveprs:appAction";
         public const string LocalCalloutReceived    = "FivePRS:Local:CalloutReceived";
         public const string LocalSuspectCuffed      = "FivePRS:Local:SuspectCuffed";
         public const string LocalSuspectUncuffed    = "FivePRS:Local:SuspectUncuffed";
