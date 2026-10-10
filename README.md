@@ -50,6 +50,7 @@ Admin commands work from the server console or in game with `fiveprs.admin`:
 | Command | Description |
 |---|---|
 | `fprs_units` | List on-duty units and their status |
+| `fiveprs_diag` | Print the version, platform, database, OneSync, addons and any warnings; paste it into bug reports |
 | `fprs_setrank <id> <rank>` | Set a player's rank |
 | `fprs_addxp <id> <amount>` | Grant XP |
 | `fprs_setdept <id> <department>` | Move a player to a department |
@@ -233,6 +234,5 @@ The original model and clothing are restored when going off duty, but freemode f
 Duty changes, department changes, XP awards, rank-ups, admin actions and denied permission checks are recorded in the `fiveprs_audit` table.
 
 ## Troubleshooting
-**`Could not load assembly Windows` / `Microsoft.Windows.SDK.NET` stack traces on start.** These appear once each time the resource starts with SQLite and are harmless. `Microsoft.Data.Sqlite` checks whether it is running as a Windows Store app by looking for those assemblies; FiveM logs each failed lookup with a full stack trace, then SQLite carries on normally. Startup succeeded if `[FivePRS] Database (SQLite) ready.` follows them. MySQL does not produce these messages.
 
 **`Could not load native SQLite` or `DllNotFoundException: e_sqlite3`.** The resource's `server/` folder must contain `e_sqlite3.dll` (Windows) or `libe_sqlite3.so` (Linux). Re-extract `fiveprs.zip` rather than copying individual DLLs.
