@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Pedestrian stops: face anyone on foot and press `E` to stop them, with the same ID, search, citation and arrest actions
 
 ### Fixed
+- With MySQL or MariaDB, FivePRS no longer fails after the database starts (`Argument at index 0 was null`): database calls now hand control back to the server's main thread before FiveM functions are used
 - MySQL and MariaDB connections no longer fail with `NotImplementedException` when the database offers TLS; FivePRS connects without TLS, which FiveM's runtime can't do
 - A resource folder the server can't write to now logs a clear message instead of an unhandled exception
 
