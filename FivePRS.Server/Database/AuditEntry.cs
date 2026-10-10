@@ -27,6 +27,7 @@ namespace FivePRS.Server.Database
         public const string EmergencyCleared = "911.clear";
         public const string RosterGranted    = "roster.grant";
         public const string RosterRevoked    = "roster.revoke";
+        public const string PlayerRevived    = "player.revive";
     }
 
     public sealed class AuditEntry

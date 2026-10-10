@@ -21,6 +21,8 @@ client_scripts {
     'scripts/relay.lua',
     'client/FivePRS.Client.net.dll',
     'client/FivePRS.Police.net.dll',
+    'client/FivePRS.Fire.net.dll',
+    'client/FivePRS.EMS.net.dll',
     'plugins/*.net.dll',
     'callouts/*.net.dll',
     'apps/*.net.dll',

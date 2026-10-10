@@ -64,6 +64,9 @@ namespace FivePRS.Core.Config
         [JsonProperty("world")]
         public WorldSettings World { get; set; } = new();
 
+        [JsonProperty("death")]
+        public DeathSettings Death { get; set; } = new();
+
         [JsonProperty("terminal")]
         public TerminalSettings Terminal { get; set; } = new();
 

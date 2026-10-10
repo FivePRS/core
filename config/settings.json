@@ -23,6 +23,12 @@
         "checkIntervalHours": 6,
         "includePreReleases": false
     },
+    "death": {
+        "enabled": true,
+        "respawnSeconds": 180,
+        "notifyEms": true,
+        "reviveXp": 25
+    },
     "world": {
         "disableWantedLevel": true,
         "disableDispatchServices": true,

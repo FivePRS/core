@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+- Fire & Rescue (LSFD): go on duty at fire stations with turnout gear, an extinguisher and a fire engine
+- Fire callouts: Vehicle Fire and Brush Fire, with real fires that spread until they're put out
+- EMS (SAMS): go on duty at hospitals with a medic uniform and an ambulance
+- EMS callouts: Medical Emergency and Traffic Collision, where you treat the patient, load them into the ambulance and transport them to the nearest hospital
+- Death and revive: downed players wait for EMS, who get an automatic 911 call and can revive them for XP; after a timer, players can respawn at a hospital. `fprs_revive` for admins; settings under `death`
+- `config/fire_loadouts.json`, `fire_vehicles.json`, `ems_loadouts.json` and `ems_vehicles.json` configure each department's equipment and vehicles
+
+### Changed
+- Police, Fire and EMS share one department module base; police gear and vehicle config types are now `DepartmentLoadoutsConfig` and `DepartmentVehiclesConfig`
+
 ## [0.9.0-ptb.3] - 2026-10-10
 
 ### Added

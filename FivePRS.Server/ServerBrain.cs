@@ -78,6 +78,7 @@ namespace FivePRS.Server
             RegisterUpdates();
             RegisterDiagnostics();
             RegisterStreetEvents();
+            RegisterDeathEvents();
 
             _ = ServerIcon.ApplyDefaultAsync(ConfigManager.Settings.Branding.ServerIcon);
             _ = InitDbAsync();
@@ -167,6 +168,7 @@ namespace FivePRS.Server
         private void OnPlayerDropped([FromSource] Player player, string reason)
         {
             _rateLimiter.Forget(player.Handle);
+            ClearDowned(ServerId(player));
             _dispatch.SetOffDuty(ServerId(player));
 
             var license = GetLicense(player);
@@ -194,6 +196,7 @@ namespace FivePRS.Server
 
                 SendPlayerData(player, data);
                 SendEntryOptions(player);
+                SendDownedPlayers(player);
                 await SendAppearanceAsync(player, license);
                 await SendPreferencesAsync(player, license);
 

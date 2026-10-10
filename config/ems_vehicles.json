@@ -1,0 +1,6 @@
+{
+    "patrol":  { "models": ["ambulance"] },
+    "senior":  { "models": ["ambulance"] },
+    "command": { "models": ["ambulance"] },
+    "agencies": {}
+}

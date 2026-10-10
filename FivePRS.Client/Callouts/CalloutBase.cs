@@ -63,6 +63,8 @@ namespace FivePRS.Client.Callouts
 
         public virtual void OnCalloutFailed() { }
 
+        protected virtual void OnCleanup() { }
+
         public virtual Vector3 GetDispatchLocation() =>
             new(Data.LocationX, Data.LocationY, Data.LocationZ);
 
@@ -174,6 +176,15 @@ namespace FivePRS.Client.Callouts
 
         internal void Cleanup(bool releaseToWorld = false)
         {
+            try
+            {
+                OnCleanup();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[CalloutBase] Scene cleanup failed: {ex.Message}");
+            }
+
             foreach (var entity in _trackedEntities)
             {
                 try

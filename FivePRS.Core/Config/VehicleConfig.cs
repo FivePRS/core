@@ -44,7 +44,7 @@ namespace FivePRS.Core.Config
         public VehicleTierDef? Command { get; set; }
     }
 
-    public sealed class PoliceVehiclesConfig
+    public sealed class DepartmentVehiclesConfig
     {
         [JsonProperty("patrol")]
         public VehicleTierDef Patrol { get; set; } = new() { Models = new[] { "police", "police2" } };
@@ -64,6 +64,18 @@ namespace FivePRS.Core.Config
                 Senior  = new VehicleTierDef { Models = new[] { "sheriff2" } },
                 Command = new VehicleTierDef { Models = new[] { "sheriff2" } },
             },
+        };
+
+        public static DepartmentVehiclesConfig Fire() => Single("firetruk");
+
+        public static DepartmentVehiclesConfig Ems() => Single("ambulance");
+
+        private static DepartmentVehiclesConfig Single(string model) => new()
+        {
+            Patrol   = new VehicleTierDef { Models = new[] { model } },
+            Senior   = new VehicleTierDef { Models = new[] { model } },
+            Command  = new VehicleTierDef { Models = new[] { model } },
+            Agencies = new Dictionary<string, AgencyVehicleDef>(),
         };
 
         public VehicleTierDef TierFor(string? agencyId, LoadoutTier tier)

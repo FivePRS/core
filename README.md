@@ -177,6 +177,16 @@ Settings are under `updates` in `config/settings.json`: `checkForUpdates`, `repo
 
 To publish a release, move the `Unreleased` entries in `CHANGELOG.md` under a new version heading, set the same `version` in `fxmanifest.lua`, commit, and push a tag named `v<version>`. GitHub Actions checks the versions match, builds and tests, and creates the release with `fiveprs.zip` attached and that changelog section as its notes. Versions with a suffix, like `0.9.0-ptb.1`, are published as pre-releases, and servers running a pre-release are offered newer pre-releases automatically.
 
+## Fire and EMS
+Fire (LSFD) and EMS (SAMS) are playable departments. Go on duty at a fire station or hospital like police do.
+
+- **Fire** callouts (Vehicle Fire, Brush Fire) start real fires that spread until they're put out with the extinguisher or the fire engine's water cannon.
+- **EMS** callouts (Medical Emergency, Traffic Collision) have a patient to treat with `E`, load into the ambulance with `E`, and drive to the nearest hospital.
+- Equipment and vehicles are in `config/fire_loadouts.json`, `fire_vehicles.json`, `ems_loadouts.json` and `ems_vehicles.json`, in the same format as the police files. Uniforms default to GTA's firefighter and paramedic peds; swap in freemode outfits if your server uses custom characters.
+
+## Death and revive
+When a player dies they stay down where they fell instead of respawning, and EMS gets an automatic 911 call. On-duty EMS revive them with `E`; after `respawnSeconds` the player can press `E` to respawn at the nearest hospital. Admins can use `fprs_revive <player id>`. Settings are under `death` in `config/settings.json`: `enabled`, `respawnSeconds`, `notifyEms` and `reviveXp`. Turn it off if you use another death script.
+
 ## Game world
 FivePRS turns off wanted levels and GTA's own AI police, ambulance and fire response, so they don't interfere with roleplay. Set these under `world` in `config/settings.json`: `disableWantedLevel` and `disableDispatchServices` (both `true` by default) and `disableRandomCops` (`false` by default; `true` also stops ambient AI police from spawning).
 

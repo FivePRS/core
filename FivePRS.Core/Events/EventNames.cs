@@ -16,6 +16,9 @@ namespace FivePRS.Core.Events
         public const string ClientLookupResult      = "FivePRS:Client:LookupResult";
         public const string ClientLookupError       = "FivePRS:Client:LookupError";
         public const string ClientStopResult        = "FivePRS:Client:StopResult";
+        public const string ClientPlayerDowned      = "FivePRS:Client:PlayerDowned";
+        public const string ClientDownedPlayers     = "FivePRS:Client:DownedPlayers";
+        public const string ClientRevived           = "FivePRS:Client:Revived";
         public const string ClientEmergencyStatus   = "FivePRS:Client:EmergencyStatus";
         public const string ClientEmergencyError    = "FivePRS:Client:EmergencyError";
         public const string ClientAdminState        = "FivePRS:Client:AdminState";
@@ -59,6 +62,9 @@ namespace FivePRS.Core.Events
         public const string ServerLastPositionRequest = "FivePRS:Server:LastPositionRequest";
         public const string ServerStopIdentify      = "FivePRS:Server:StopIdentify";
         public const string ServerStopPlate         = "FivePRS:Server:StopPlate";
+        public const string ServerPlayerDowned      = "FivePRS:Server:PlayerDowned";
+        public const string ServerPlayerRespawned   = "FivePRS:Server:PlayerRespawned";
+        public const string ServerRevivePlayer      = "FivePRS:Server:RevivePlayer";
 
         public const string LocalDutyChanged        = "FivePRS:Local:DutyChanged";
         public const string LocalOpenMenu           = "FivePRS:Local:OpenMenu";

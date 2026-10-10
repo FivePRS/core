@@ -46,7 +46,7 @@ namespace FivePRS.Tests
         {
             Assert.Equal("bcso", _map.ResolveAgency(Department.Police, "BCSO")?.Id);
             Assert.Equal("lspd", _map.ResolveAgency(Department.Police, null)?.Id);
-            Assert.Null(_map.ResolveAgency(Department.Fire, "bcso"));
+            Assert.Equal("lsfd", _map.ResolveAgency(Department.Fire, "bcso")?.Id);
         }
 
         [Fact]

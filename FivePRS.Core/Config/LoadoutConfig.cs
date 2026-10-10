@@ -88,7 +88,7 @@ namespace FivePRS.Core.Config
         Command
     }
 
-    public sealed class PoliceLoadoutsConfig
+    public sealed class DepartmentLoadoutsConfig
     {
         [JsonProperty("recruit")]
         public WeaponTierDef Recruit { get; set; } = Tier(
@@ -150,6 +150,30 @@ namespace FivePRS.Core.Config
 
         [JsonProperty("agencies", ObjectCreationHandling = ObjectCreationHandling.Replace)]
         public Dictionary<string, AgencyLoadoutDef> Agencies { get; set; } = new();
+
+        public static DepartmentLoadoutsConfig Fire() => Uniformed("s_m_y_fireman_01",
+            Tier(Weapon("WEAPON_FIREEXTINGUISHER", 2000, setCurrent: true), Weapon("WEAPON_FLASHLIGHT", 1)),
+            Tier(Weapon("WEAPON_FIREEXTINGUISHER", 2000, setCurrent: true), Weapon("WEAPON_FLASHLIGHT", 1), Weapon("WEAPON_HATCHET", 1)));
+
+        public static DepartmentLoadoutsConfig Ems() => Uniformed("s_m_m_paramedic_01",
+            Tier(Weapon("WEAPON_FLASHLIGHT", 1, setCurrent: true)),
+            Tier(Weapon("WEAPON_FLASHLIGHT", 1, setCurrent: true), Weapon("WEAPON_FIREEXTINGUISHER", 1000)));
+
+        private static DepartmentLoadoutsConfig Uniformed(string pedModel, WeaponTierDef junior, WeaponTierDef senior)
+        {
+            UniformDef Outfit() => new() { PedModels = new PedModelsDef { Male = pedModel, Female = pedModel } };
+
+            return new DepartmentLoadoutsConfig
+            {
+                Recruit           = junior,
+                Officer           = junior,
+                Senior            = senior,
+                Command           = senior,
+                Uniform           = Outfit(),
+                CommandUniform    = Outfit(),
+                FallbackPedModels = new PedModelsDef { Male = pedModel, Female = pedModel },
+            };
+        }
 
         public static LoadoutTier TierForRank(int rank) =>
             rank >= 8 ? LoadoutTier.Command :
