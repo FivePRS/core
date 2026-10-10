@@ -36,6 +36,7 @@ files {
     'nui/records.js',
     'nui/emergency.js',
     'nui/admin.js',
+    'nui/settings.js',
     'nui/menu.js',
     'nui/creator.js',
     'nui/app.js',

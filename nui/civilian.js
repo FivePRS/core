@@ -169,6 +169,9 @@ function renderCivilian(view, reset) {
   const active = state.characters.find((character) => character.id === state.activeCharacterId);
   document.getElementById("civ-empty").hidden = Boolean(active);
   document.getElementById("civ-profile").hidden = !active;
+  const context = document.getElementById("civ-context");
+  context.textContent = active ? `Active character: ${active.firstName} ${active.lastName}` : "";
+  context.hidden = !active;
   if (!active) return;
 
   setText("civ-name", `${active.firstName} ${active.lastName}`);

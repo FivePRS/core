@@ -66,6 +66,7 @@ namespace FivePRS.Server
             RegisterEmergencyEvents();
             RegisterRosterEvents();
             RegisterAppearanceEvents();
+            RegisterTerminalEvents();
 
             _ = ServerIcon.ApplyDefaultAsync(ConfigManager.Settings.Branding.ServerIcon);
             _ = InitDbAsync();
@@ -158,6 +159,7 @@ namespace FivePRS.Server
                 SendPlayerData(player, data);
                 SendEntryOptions(player);
                 await SendAppearanceAsync(player, license);
+                await SendPreferencesAsync(player, license);
             }
             catch (Exception ex)
             {

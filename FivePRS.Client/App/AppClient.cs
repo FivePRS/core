@@ -38,6 +38,7 @@ namespace FivePRS.Client.App
             EventHandlers[EventNames.ClientAdminState]        += new Action<string>(OnAdminState);
             EventHandlers[EventNames.LocalDutyChanged]        += new Action<bool, int>(OnDutyChanged);
             EventHandlers[EventNames.LocalOpenMenu]           += new Action<string>(OnOpenRequested);
+            EventHandlers[EventNames.ClientPreferences]       += new Action<string>(OnPreferences);
             EventHandlers["onClientResourceStop"]             += new Action<string>(OnResourceStop);
 
             DispatchClient.SnapshotUpdated += Refresh;
@@ -63,6 +64,7 @@ namespace FivePRS.Client.App
             RegisterCallback("civRegisterVehicle", _    => OnRegisterVehicle());
             RegisterCallback("civRemoveVehicle",   data => CivilianPanel.RemoveVehicle(data));
             RegisterCallback("civAppearance",      _    => OpenCreator());
+            RegisterCallback("setWallpaper",       data => TerminalPanel.ChooseWallpaper(data));
             RegisterCallback("civSetVehicleStolen", data => CivilianPanel.SetVehicleStolen(data));
             RegisterCallback("recSearchName",   data => RecordsPanel.SearchName(data));
             RegisterCallback("recSearchPlate",  data => RecordsPanel.SearchPlate(data));
@@ -210,6 +212,12 @@ namespace FivePRS.Client.App
             Refresh();
         }
 
+        private void OnPreferences(string wallpaper)
+        {
+            TerminalPanel.SetWallpaper(wallpaper);
+            Refresh();
+        }
+
         private void OpenCreator()
         {
             var active = CivilianPanel.ActiveCharacter;
@@ -322,15 +330,14 @@ namespace FivePRS.Client.App
             var admin = AdminPanel.BuildView();
             if (admin is not null) tabs.Add("admin");
 
-            var defaultTab = requestedTab is not null && tabs.Contains(requestedTab)
-                ? requestedTab
-                : dispatch is not null ? "dispatch" : DutyPanel.HasDepartment ? "duty" : "civilian";
+            var defaultTab = requestedTab is not null && tabs.Contains(requestedTab) ? requestedTab : null;
 
             return new
             {
                 Tabs       = tabs,
                 Nameplate  = ConfigManager.Settings.Branding.Nameplate,
                 Icons      = ConfigManager.Settings.Branding.Departments,
+                Terminal   = TerminalPanel.BuildView(),
                 DefaultTab = defaultTab,
                 Duty       = DutyPanel.BuildView(),
                 Dispatch   = dispatch,

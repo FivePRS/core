@@ -12,6 +12,16 @@
     "emergencyCallCooldownSeconds": 60,
     "emergencyCallTimeoutMinutes": 15,
     "dutyEquipment": "byStart",
+    "terminal": {
+        "defaultWallpaper": "fiveprs",
+        "allowCustomWallpapers": true,
+        "wallpapers": [
+            { "id": "fiveprs", "label": "FivePRS", "url": "https://cdn.fiveprs.org/fiveprs/wallpapers/fiveprs.png" },
+            { "id": "lightbar", "label": "Lightbar", "url": "https://cdn.fiveprs.org/fiveprs/wallpapers/lightbar.png" },
+            { "id": "hexgrid", "label": "Hex grid", "url": "https://cdn.fiveprs.org/fiveprs/wallpapers/hexgrid.png" },
+            { "id": "dusk", "label": "Los Santos dusk", "url": "https://cdn.fiveprs.org/fiveprs/wallpapers/dusk.png" }
+        ]
+    },
     "creator": {
         "allowStandardPeds": true,
         "standardPeds": [
