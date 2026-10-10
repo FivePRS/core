@@ -20,6 +20,7 @@ namespace FivePRS.Core.Events
         public const string ClientAdminState        = "FivePRS:Client:AdminState";
         public const string ClientAppearance        = "FivePRS:Client:Appearance";
         public const string ClientPreferences       = "FivePRS:Client:Preferences";
+        public const string ClientLastPosition      = "FivePRS:Client:LastPosition";
 
         public const string ServerPlayerConnected   = "FivePRS:Server:PlayerConnected";
         public const string ServerToggleDuty        = "FivePRS:Server:ToggleDuty";
@@ -53,11 +54,13 @@ namespace FivePRS.Core.Events
         public const string ServerAdminRosterSet    = "FivePRS:Server:AdminRosterSet";
         public const string ServerAppearanceSave    = "FivePRS:Server:AppearanceSave";
         public const string ServerSetWallpaper      = "FivePRS:Server:SetWallpaper";
+        public const string ServerReportPosition    = "FivePRS:Server:ReportPosition";
+        public const string ServerLastPositionRequest = "FivePRS:Server:LastPositionRequest";
 
         public const string LocalDutyChanged        = "FivePRS:Local:DutyChanged";
         public const string LocalOpenMenu           = "FivePRS:Local:OpenMenu";
-        public const string LocalServerIconDownload = "FivePRS:Local:ServerIconDownload";
-        public const string LocalServerIconResult   = "FivePRS:Local:ServerIconResult";
+        public const string LocalHttpRequest        = "FivePRS:Local:HttpRequest";
+        public const string LocalHttpResponse       = "FivePRS:Local:HttpResponse";
 
         public const string PublicAppAction         = "fiveprs:appAction";
         public const string LocalCalloutReceived    = "FivePRS:Local:CalloutReceived";

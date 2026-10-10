@@ -11,7 +11,7 @@ version '1.0.0'
 lua54 'yes'
 
 server_scripts {
-    'scripts/server_icon.lua',
+    'scripts/http.lua',
     'server/FivePRS.Server.net.dll',
 }
 

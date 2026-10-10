@@ -10,6 +10,8 @@ namespace FivePRS.Core.Updates
         public int Patch { get; }
         public string PreRelease { get; }
 
+        public static ReleaseVersion Zero { get; } = new(0, 0, 0, string.Empty);
+
         private ReleaseVersion(int major, int minor, int patch, string preRelease)
         {
             Major      = major;

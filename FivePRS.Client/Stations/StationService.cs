@@ -21,8 +21,6 @@ namespace FivePRS.Client.Stations
         public const float NearbyRadius = 75f;
         public const float ArrivalRadius = 150f;
 
-        private const int FadeMs = 400;
-        private const int CollisionTimeoutMs = 5000;
         private const float ParkingClearance = 3f;
 
         private const float DeriveRadius = 200f;
@@ -104,24 +102,7 @@ namespace FivePRS.Client.Stations
             API.SetNewWaypoint(position.X, position.Y);
         }
 
-        public static async Task TeleportAsync(StationDef station)
-        {
-            var ped      = Game.PlayerPed.Handle;
-            var position = PositionOf(station);
-
-            API.DoScreenFadeOut(FadeMs);
-            await BaseScript.Delay(FadeMs);
-
-            API.RequestCollisionAtCoord(position.X, position.Y, position.Z);
-            API.SetEntityCoords(ped, position.X, position.Y, position.Z, false, false, false, false);
-            API.SetEntityHeading(ped, station.Heading);
-
-            var until = API.GetGameTimer() + CollisionTimeoutMs;
-            while (!API.HasCollisionLoadedAroundEntity(ped) && API.GetGameTimer() < until)
-                await BaseScript.Delay(0);
-
-            API.DoScreenFadeIn(FadeMs);
-        }
+        public static Task TeleportAsync(StationDef station) => Teleporter.ToAsync(PositionOf(station), station.Heading);
 
         public static SpawnPoint ParkingSpot(StationDef station)
         {

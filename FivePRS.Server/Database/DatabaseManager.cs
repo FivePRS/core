@@ -27,6 +27,8 @@ namespace FivePRS.Server.Database
 
         public PreferencesStore Preferences { get; private set; } = null!;
 
+        public PositionStore Positions { get; private set; } = null!;
+
         public async Task InitializeAsync(DatabaseType dbType, string? connectionString)
         {
             if (dbType == DatabaseType.MySQL)
@@ -56,6 +58,9 @@ namespace FivePRS.Server.Database
 
             Preferences = new PreferencesStore(_provider);
             await Preferences.InitializeAsync();
+
+            Positions = new PositionStore(_provider);
+            await Positions.InitializeAsync();
 
             IsReady = true;
 

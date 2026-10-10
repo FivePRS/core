@@ -12,6 +12,17 @@
     "emergencyCallCooldownSeconds": 60,
     "emergencyCallTimeoutMinutes": 15,
     "dutyEquipment": "byStart",
+    "spawn": {
+        "restoreLastLocation": true,
+        "saveIntervalSeconds": 30
+    },
+    "updates": {
+        "checkForUpdates": true,
+        "repository": "FivePRS/core",
+        "assetName": "fiveprs.zip",
+        "checkIntervalHours": 6,
+        "includePreReleases": false
+    },
     "terminal": {
         "defaultWallpaper": "fiveprs",
         "allowCustomWallpapers": true,

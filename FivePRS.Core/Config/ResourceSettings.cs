@@ -52,6 +52,12 @@ namespace FivePRS.Core.Config
         [JsonConverter(typeof(StringEnumConverter), true)]
         public DutyEquipmentMode DutyEquipment { get; set; } = DutyEquipmentMode.ByStart;
 
+        [JsonProperty("spawn")]
+        public SpawnSettings Spawn { get; set; } = new();
+
+        [JsonProperty("updates")]
+        public UpdateSettings Updates { get; set; } = new();
+
         [JsonProperty("terminal")]
         public TerminalSettings Terminal { get; set; } = new();
 

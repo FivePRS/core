@@ -160,6 +160,16 @@ The roster only takes effect when `fiveprs_restrict_departments` is `true`; the 
 ## Addon API
 Other client resources can read the local player's FivePRS state with `exports.fiveprs:getState()`. It returns `name`, `onDuty`, `department` and `rank`. While on duty, it also returns `agency`, `callsign`, `status` and `territory`, plus `callId` and `call` while assigned to a call. The official `fiveprs_presence` addon uses it for Discord rich presence.
 
+## Updates
+FivePRS checks the [core repository's releases](https://github.com/FivePRS/core/releases) on start and every `checkIntervalHours`. When a newer version is out, the console shows it with a summary of the release notes, and admins are told when they join. Run `fiveprs_update` in the server console (or in game with `fiveprs.admin`) to download the release and unpack it into `data/updates/<version>/`, without its `config/` and `data/` folders. Stop the server, copy that folder's contents over `resources/fiveprs`, and start it again; your settings and database are kept.
+
+Settings are under `updates` in `config/settings.json`: `checkForUpdates`, `repository`, `assetName` (the release file to download, `fiveprs.zip`), `checkIntervalHours` and `includePreReleases`.
+
+To publish a release, set `version` in `fxmanifest.lua`, run `publish.ps1`, and create a GitHub release tagged `v<version>` with `dist/fiveprs.zip` attached.
+
+## Spawning
+Players are returned to where they last were when they join, with their last character active. Positions are saved every `saveIntervalSeconds` while playing and when they leave. Turn it off with `spawn.restoreLastLocation` in `config/settings.json`.
+
 ## Branding
 The terminal nameplate, the notification logo, the server icon and the department icons are loaded from the FivePRS CDN. The URLs live under `branding` in `config/settings.json` and can point to your own images. The department icons under `branding.departments` (`police`, `ems`, `fire` and `civilian`) are shown in the Duty, Dispatch, Characters and 911 apps and in the station menu; a missing image is simply left out. The default terminal wallpapers are served from `https://cdn.fiveprs.org/fiveprs/wallpapers/`.
 

@@ -10,6 +10,7 @@ using FivePRS.Core.Events;
 using FivePRS.Core.Models;
 using FivePRS.Server.Civilian;
 using FivePRS.Server.Database;
+using FivePRS.Server.Http;
 using FivePRS.Server.Dispatch;
 using FivePRS.Server.Permissions;
 using Newtonsoft.Json;
@@ -57,7 +58,7 @@ namespace FivePRS.Server
             EventHandlers[EventNames.ServerSetUnitStatus]    += new Action<Player, int>(OnSetUnitStatus);
             EventHandlers[EventNames.ServerAttachToCall]     += new Action<Player, string>(OnAttachToCall);
             EventHandlers[EventNames.ServerSetAiCallouts]    += new Action<Player, bool>(OnSetAiCallouts);
-            EventHandlers[EventNames.LocalServerIconResult]  += new Action<bool, string>(ServerIcon.OnDownloaded);
+            EventHandlers[EventNames.LocalHttpResponse]      += new Action<int, int, string, string>(HttpBridge.OnResponse);
 
             Tick += DispatchTickAsync;
             RegisterAdminCommands();
@@ -67,6 +68,8 @@ namespace FivePRS.Server
             RegisterRosterEvents();
             RegisterAppearanceEvents();
             RegisterTerminalEvents();
+            RegisterPositionEvents();
+            RegisterUpdates();
 
             _ = ServerIcon.ApplyDefaultAsync(ConfigManager.Settings.Branding.ServerIcon);
             _ = InitDbAsync();
@@ -141,6 +144,8 @@ namespace FivePRS.Server
 
             if (_cache.TryRemove(license, out var data) && data.IsOnDuty)
                 _ = _db.UpdateDutyStatusAsync(license, false);
+
+            _ = ForgetPositionAsync(license);
         }
 
         private async void OnPlayerReady([FromSource] Player player)
@@ -160,6 +165,8 @@ namespace FivePRS.Server
                 SendEntryOptions(player);
                 await SendAppearanceAsync(player, license);
                 await SendPreferencesAsync(player, license);
+
+                if (_permissions.IsAdmin(player.Handle)) NotifyUpdate(player);
             }
             catch (Exception ex)
             {
