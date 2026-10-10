@@ -1,0 +1,28 @@
+{
+    "recruit": {
+        "weapons": [
+            { "name": "WEAPON_FLASHLIGHT", "ammo": 1, "setCurrent": true }
+        ]
+    },
+    "officer": {
+        "weapons": [
+            { "name": "WEAPON_FLASHLIGHT", "ammo": 1, "setCurrent": true }
+        ]
+    },
+    "senior": {
+        "weapons": [
+            { "name": "WEAPON_FLASHLIGHT",       "ammo": 1, "setCurrent": true },
+            { "name": "WEAPON_FIREEXTINGUISHER", "ammo": 1000 }
+        ]
+    },
+    "command": {
+        "weapons": [
+            { "name": "WEAPON_FLASHLIGHT",       "ammo": 1, "setCurrent": true },
+            { "name": "WEAPON_FIREEXTINGUISHER", "ammo": 1000 }
+        ]
+    },
+    "uniform":        { "pedModels": { "male": "s_m_m_paramedic_01", "female": "s_m_m_paramedic_01" } },
+    "commandUniform": { "pedModels": { "male": "s_m_m_paramedic_01", "female": "s_m_m_paramedic_01" } },
+    "fallbackPedModels": { "male": "s_m_m_paramedic_01", "female": "s_m_m_paramedic_01" },
+    "agencies": {}
+}

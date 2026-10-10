@@ -6,6 +6,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.9.0-ptb.3] - 2026-10-10
+
+### Added
+- Fire & Rescue (LSFD): go on duty at fire stations with turnout gear, an extinguisher and a fire engine
+- Fire callouts: Vehicle Fire and Brush Fire, with real fires that spread until they're put out
+- EMS (SAMS): go on duty at hospitals with a medic uniform and an ambulance
+- EMS callouts: Medical Emergency and Traffic Collision, where you treat the patient, load them into the ambulance and transport them to the nearest hospital
+- Death and revive: downed players wait for EMS, who get an automatic 911 call and can revive them for XP; after a timer, players can respawn at a hospital. `fprs_revive` for admins; settings under `death`
+- `config/fire_loadouts.json`, `fire_vehicles.json`, `ems_loadouts.json` and `ems_vehicles.json` configure each department's equipment and vehicles
+- Traffic stops: pull over any AI-driven vehicle with your lights on, then ask for ID, run the plate, search, warn, cite, serve warrants, arrest or release
+- AI drivers and their vehicles get generated identities that are saved to Records the first time they're checked
+- `config/citations.json` sets the offences and fines offered during a traffic stop
+- The server publishes its FivePRS version as the `fiveprs_version` server variable, visible in the server list and `info.json`
+- Wanted levels and GTA's own AI police, ambulance and fire response are turned off by default, configurable under `world` in `config/settings.json`, with an option to stop ambient AI police spawning
+- Pedestrian stops: face anyone on foot and press `E` to stop them, with the same ID, search, citation and arrest actions
+
+### Fixed
+- FivePRS no longer fails after the database starts (`Argument at index 0 was null`): it reads its resource name once at startup, and database calls hand control back to the server's main thread
+- Setting `fiveprs_db_connection` to a MySQL connection string while `fiveprs_db_type` is `sqlite` (or the reverse, an empty connection with `mysql`) now explains the mismatch
+- MySQL and MariaDB connections no longer fail with `NotImplementedException` when the database offers TLS; FivePRS connects without TLS, which FiveM's runtime can't do
+- A resource folder the server can't write to now logs a clear message instead of an unhandled exception
+- FivePRS now starts on GTA V Enhanced servers, which reject assemblies that load native code. Enhanced servers need a MySQL or MariaDB database, since SQLite needs a native library
+
+### Changed
+- Police, Fire and EMS share one department module base; police gear and vehicle config types are now `DepartmentLoadoutsConfig` and `DepartmentVehiclesConfig`
+- Server console errors are one line with the cause; set `fiveprs_debug true` for full details
+- Common database problems (missing database, wrong login, no access, server unreachable) are explained in plain language with the fix
+
 ## [0.9.0-ptb.2] - 2026-10-10
 
 ### Added
@@ -48,10 +76,11 @@ The first public test build.
 - Validation of callout catalogs sent by clients, with XP rewards capped at `fiveprs_max_xp`
 
 ### Known issues
-- Fire and EMS can be joined, but have no callouts or department tools yet; police is the playable department
+- Fire and EMS aren't available yet; police is the only department you can join
 - Only Mission Row has armory, locker room and garage points
 - Back up your database before updating between test builds
 
-[Unreleased]: https://github.com/FivePRS/core/compare/v0.9.0-ptb.2...HEAD
+[Unreleased]: https://github.com/FivePRS/core/compare/v0.9.0-ptb.3...HEAD
+[0.9.0-ptb.3]: https://github.com/FivePRS/core/compare/v0.9.0-ptb.2...v0.9.0-ptb.3
 [0.9.0-ptb.2]: https://github.com/FivePRS/core/compare/v0.9.0-ptb.1...v0.9.0-ptb.2
 [0.9.0-ptb.1]: https://github.com/FivePRS/core/releases/tag/v0.9.0-ptb.1

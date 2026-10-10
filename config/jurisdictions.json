@@ -25,6 +25,20 @@
             "department": "Police",
             "callsignPrefix": "BCSO",
             "territories": ["blaine_county"]
+        },
+        {
+            "id": "lsfd",
+            "name": "Los Santos Fire Department",
+            "department": "Fire",
+            "callsignPrefix": "LSFD",
+            "territories": ["los_santos", "blaine_county"]
+        },
+        {
+            "id": "sams",
+            "name": "San Andreas Medical Services",
+            "department": "EMS",
+            "callsignPrefix": "SAMS",
+            "territories": ["los_santos", "blaine_county"]
         }
     ]
 }

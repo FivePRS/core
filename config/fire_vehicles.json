@@ -1,0 +1,6 @@
+{
+    "patrol":  { "models": ["firetruk"] },
+    "senior":  { "models": ["firetruk"] },
+    "command": { "models": ["firetruk"] },
+    "agencies": {}
+}

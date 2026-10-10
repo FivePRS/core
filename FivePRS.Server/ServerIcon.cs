@@ -14,9 +14,25 @@ namespace FivePRS.Server
 
         public static async Task ApplyDefaultAsync(string url)
         {
+            try
+            {
+                await ApplyAsync(url);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                Debug.WriteLine($"[FivePRS] Could not set the server icon: {ex.Message} The server's user account needs write access to the fiveprs resource folder.");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[FivePRS] Could not set the server icon: {ex.Message}");
+            }
+        }
+
+        private static async Task ApplyAsync(string url)
+        {
             if (!IsEnabled() || HasIcon() || string.IsNullOrWhiteSpace(url)) return;
 
-            var resourcePath = API.GetResourcePath(API.GetCurrentResourceName());
+            var resourcePath = Resource.Path;
             var path         = Path.Combine(resourcePath, RelativePath);
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
 
@@ -32,7 +48,7 @@ namespace FivePRS.Server
 
             if (HasIcon()) return;
 
-            var resource = API.GetCurrentResourceName();
+            var resource = Resource.Name;
             if (!API.IsPrincipalAceAllowed($"resource.{resource}", LoadCommandAce))
             {
                 Debug.WriteLine(

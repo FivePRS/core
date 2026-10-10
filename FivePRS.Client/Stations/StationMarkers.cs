@@ -110,7 +110,7 @@ namespace FivePRS.Client.Stations
 
         private void Interact()
         {
-            if (_nearest is null || CompactMenu.IsOpen) return;
+            if (CompactMenu.IsOpen || Interactions.TryHandle() || _nearest is null) return;
 
             Scan();
             if (_nearest is not null && _nearestDistance <= InteractDistance)

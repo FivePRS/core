@@ -25,10 +25,16 @@ namespace FivePRS.Client
 
             var res = API.GetCurrentResourceName();
             ConfigManager.LoadSettings(      API.LoadResourceFile(res, "config/settings.json"));
-            ConfigManager.LoadPoliceVehicles( API.LoadResourceFile(res, "config/police_vehicles.json"));
-            ConfigManager.LoadPoliceLoadouts( API.LoadResourceFile(res, "config/police_loadouts.json"));
+            foreach (var department in ConfigManager.Departments)
+            {
+                var name = ConfigManager.ConfigName(department);
+                ConfigManager.LoadDepartment(department,
+                    API.LoadResourceFile(res, $"config/{name}_loadouts.json"),
+                    API.LoadResourceFile(res, $"config/{name}_vehicles.json"));
+            }
             ConfigManager.LoadJurisdictions(  API.LoadResourceFile(res, "config/jurisdictions.json"));
             ConfigManager.LoadStations(       API.LoadResourceFile(res, "config/stations.json"));
+            ConfigManager.LoadCitations(      API.LoadResourceFile(res, "config/citations.json"));
 
             EventHandlers[EventNames.ClientReceivePlayerData] += new Action<string>(OnReceivePlayerData);
             EventHandlers[EventNames.ClientDutyStatusChanged] += new Action<bool, int>(OnDutyStatusChanged);

@@ -103,7 +103,7 @@ namespace FivePRS.Server
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[FivePRS] Civilian action failed for {player.Name}: {ex}");
+                ServerLog.Error($"Civilian action failed for {player.Name}", ex);
                 TriggerClientEvent(player, EventNames.ClientCivilianError, "Something went wrong. Please try again.");
             }
         }

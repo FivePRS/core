@@ -32,8 +32,11 @@ namespace FivePRS.Server
 
         public ServerBrain()
         {
+            Resource.Capture();
+            API.SetConvarServerInfo("fiveprs_version", InstalledVersion().ToString());
+            MainThread.Enable();
             ConfigManager.Log = message => Debug.WriteLine(message);
-            var resource = API.GetCurrentResourceName();
+            var resource = Resource.Name;
             ConfigManager.LoadSettings(API.LoadResourceFile(resource, "config/settings.json"));
             ConfigManager.LoadJurisdictions(API.LoadResourceFile(resource, "config/jurisdictions.json"));
             ConfigManager.LoadLicenses(API.LoadResourceFile(resource, "config/licenses.json"));
@@ -62,6 +65,7 @@ namespace FivePRS.Server
             EventHandlers[EventNames.ServerSetAiCallouts]    += new Action<Player, bool>(OnSetAiCallouts);
             EventHandlers[EventNames.LocalHttpResponse]      += new Action<string, int, string, string>(HttpBridge.OnResponse);
 
+            Tick += DrainMainThreadAsync;
             Tick += DispatchTickAsync;
             RegisterAdminCommands();
             RegisterCivilianEvents();
@@ -73,23 +77,32 @@ namespace FivePRS.Server
             RegisterPositionEvents();
             RegisterUpdates();
             RegisterDiagnostics();
+            RegisterStreetEvents();
+            RegisterDeathEvents();
 
             _ = ServerIcon.ApplyDefaultAsync(ConfigManager.Settings.Branding.ServerIcon);
             _ = InitDbAsync();
         }
 
+        private static Task DrainMainThreadAsync()
+        {
+            MainThread.Tick();
+            return Task.FromResult(0);
+        }
+
         private async Task InitDbAsync()
         {
+            var connString = API.GetConvar("fiveprs_db_connection", "");
             try
             {
                 var dbTypeRaw  = API.GetConvar("fiveprs_db_type", "sqlite").ToLowerInvariant();
-                var connString = API.GetConvar("fiveprs_db_connection", "");
 
                 var dbType = dbTypeRaw == "mysql" ? DatabaseType.MySQL : DatabaseType.SQLite;
                 _databaseType = dbType;
                 await _db.InitializeAsync(dbType, string.IsNullOrEmpty(connString) ? null : connString);
                 _civilians = new CivilianService(_db.Civilians, () => ConfigManager.Settings, () => ConfigManager.Licenses, () => DateTime.UtcNow);
                 _lookup    = new LookupService(_db.Civilians, () => ConfigManager.Settings, () => ConfigManager.Licenses);
+                _street    = new StreetService(_db.Civilians, _lookup);
                 _appearances = new AppearanceService(_db.Civilians, _db.Appearances, () => ConfigManager.Settings.Creator);
                 _roster    = new RosterService(_db.Roster);
                 await _roster.LoadAsync();
@@ -97,9 +110,21 @@ namespace FivePRS.Server
                 LogStartup();
                 Debug.WriteLine("[FivePRS] ServerBrain online.");
             }
+            catch (Exception ex) when (ex is NotSupportedException || ex is DatabaseSetupException)
+            {
+                Debug.WriteLine($"[FivePRS] FATAL: {ex.Message}");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                Debug.WriteLine($"[FivePRS] FATAL: {ex.Message} The server's user account needs write access to the fiveprs resource folder.");
+            }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[FivePRS] FATAL: DB init failed: {ex}");
+                var problem = DatabaseErrors.Describe(ex, connString);
+                if (problem is not null)
+                    Debug.WriteLine($"[FivePRS] FATAL: {problem}");
+                else
+                    ServerLog.Error("FATAL: The database didn't start", ex);
             }
         }
 
@@ -143,6 +168,7 @@ namespace FivePRS.Server
         private void OnPlayerDropped([FromSource] Player player, string reason)
         {
             _rateLimiter.Forget(player.Handle);
+            ClearDowned(ServerId(player));
             _dispatch.SetOffDuty(ServerId(player));
 
             var license = GetLicense(player);
@@ -170,6 +196,7 @@ namespace FivePRS.Server
 
                 SendPlayerData(player, data);
                 SendEntryOptions(player);
+                SendDownedPlayers(player);
                 await SendAppearanceAsync(player, license);
                 await SendPreferencesAsync(player, license);
 

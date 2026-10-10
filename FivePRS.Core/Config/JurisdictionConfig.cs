@@ -82,6 +82,22 @@ namespace FivePRS.Core.Config
                 CallsignPrefix = "BCSO",
                 Territories    = new List<string> { "blaine_county" },
             },
+            new AgencyDef
+            {
+                Id             = "lsfd",
+                Name           = "Los Santos Fire Department",
+                Department     = Department.Fire,
+                CallsignPrefix = "LSFD",
+                Territories    = new List<string> { "los_santos", "blaine_county" },
+            },
+            new AgencyDef
+            {
+                Id             = "sams",
+                Name           = "San Andreas Medical Services",
+                Department     = Department.EMS,
+                CallsignPrefix = "SAMS",
+                Territories    = new List<string> { "los_santos", "blaine_county" },
+            },
         };
     }
 }

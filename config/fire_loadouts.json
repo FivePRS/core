@@ -1,0 +1,32 @@
+{
+    "recruit": {
+        "weapons": [
+            { "name": "WEAPON_FIREEXTINGUISHER", "ammo": 2000, "setCurrent": true },
+            { "name": "WEAPON_FLASHLIGHT",       "ammo": 1 }
+        ]
+    },
+    "officer": {
+        "weapons": [
+            { "name": "WEAPON_FIREEXTINGUISHER", "ammo": 2000, "setCurrent": true },
+            { "name": "WEAPON_FLASHLIGHT",       "ammo": 1 }
+        ]
+    },
+    "senior": {
+        "weapons": [
+            { "name": "WEAPON_FIREEXTINGUISHER", "ammo": 2000, "setCurrent": true },
+            { "name": "WEAPON_FLASHLIGHT",       "ammo": 1 },
+            { "name": "WEAPON_HATCHET",          "ammo": 1 }
+        ]
+    },
+    "command": {
+        "weapons": [
+            { "name": "WEAPON_FIREEXTINGUISHER", "ammo": 2000, "setCurrent": true },
+            { "name": "WEAPON_FLASHLIGHT",       "ammo": 1 },
+            { "name": "WEAPON_HATCHET",          "ammo": 1 }
+        ]
+    },
+    "uniform":        { "pedModels": { "male": "s_m_y_fireman_01", "female": "s_m_y_fireman_01" } },
+    "commandUniform": { "pedModels": { "male": "s_m_y_fireman_01", "female": "s_m_y_fireman_01" } },
+    "fallbackPedModels": { "male": "s_m_y_fireman_01", "female": "s_m_y_fireman_01" },
+    "agencies": {}
+}

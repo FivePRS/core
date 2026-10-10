@@ -6,7 +6,7 @@ author 'Pixel <https://codemeapixel.dev>'
 description 'The Unified Public Response Framework for FiveM.'
 repository 'https://github.com/FivePRS/core'
 license 'AGPL-3.0-or-later'
-version '0.9.0-ptb.2'
+version '0.9.0-ptb.3'
 
 lua54 'yes'
 
@@ -21,6 +21,8 @@ client_scripts {
     'scripts/relay.lua',
     'client/FivePRS.Client.net.dll',
     'client/FivePRS.Police.net.dll',
+    'client/FivePRS.Fire.net.dll',
+    'client/FivePRS.EMS.net.dll',
     'plugins/*.net.dll',
     'callouts/*.net.dll',
     'apps/*.net.dll',
@@ -55,4 +57,5 @@ convar_policy {
     'fiveprs_db_connection',
     'fiveprs_max_xp',
     'fiveprs_xp_multiplier',
+    'fiveprs_debug',
 }

@@ -16,13 +16,13 @@ namespace FivePRS.Tests
         [InlineData(20, LoadoutTier.Command)]
         public void TierForRank_MapsRankBands(int rank, LoadoutTier expected)
         {
-            Assert.Equal(expected, PoliceLoadoutsConfig.TierForRank(rank));
+            Assert.Equal(expected, DepartmentLoadoutsConfig.TierForRank(rank));
         }
 
         [Fact]
         public void Vehicles_Bcso_UsesSheriffModels()
         {
-            var config = new PoliceVehiclesConfig();
+            var config = new DepartmentVehiclesConfig();
 
             Assert.Equal(new[] { "sheriff", "sheriff2" }, config.TierFor("BCSO", LoadoutTier.Recruit).Models);
             Assert.Equal(new[] { "police", "police2" }, config.TierFor("lspd", LoadoutTier.Recruit).Models);
@@ -32,7 +32,7 @@ namespace FivePRS.Tests
         [Fact]
         public void Vehicles_AgencyMissingTier_FallsBackToDefault()
         {
-            var config = new PoliceVehiclesConfig();
+            var config = new DepartmentVehiclesConfig();
             config.Agencies["sasp"] = new AgencyVehicleDef { Patrol = new VehicleTierDef { Models = new[] { "police4" } } };
 
             Assert.Equal(new[] { "police4" }, config.TierFor("sasp", LoadoutTier.Officer).Models);
@@ -42,7 +42,7 @@ namespace FivePRS.Tests
         [Fact]
         public void Loadouts_AgencyOverride_ReplacesOnlyGivenParts()
         {
-            var config = new PoliceLoadoutsConfig();
+            var config = new DepartmentLoadoutsConfig();
             var sheriffUniform = new UniformDef
             {
                 PedModels = new PedModelsDef { Male = "s_m_y_sheriff_01", Female = "s_f_y_sheriff_01" },
@@ -56,8 +56,8 @@ namespace FivePRS.Tests
         }
 
         [Theory]
-        [InlineData("police_loadouts.json", typeof(PoliceLoadoutsConfig))]
-        [InlineData("police_vehicles.json", typeof(PoliceVehiclesConfig))]
+        [InlineData("police_loadouts.json", typeof(DepartmentLoadoutsConfig))]
+        [InlineData("police_vehicles.json", typeof(DepartmentVehiclesConfig))]
         [InlineData("settings.json", typeof(ResourceSettings))]
         public void BundledConfigFile_MatchesBuiltInDefaults(string file, Type type)
         {

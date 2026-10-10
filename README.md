@@ -13,7 +13,10 @@ The full documentation lives at **[fiveprs.org/docs](https://fiveprs.org/docs)**
 3. Add the [server configuration](#server-configuration) below to `server.cfg`, ending with `ensure fiveprs`.
 4. Start the server. The console shows `[FivePRS] Database (SQLite) ready.` and `[FivePRS] ServerBrain online.`
 
-FivePRS runs on Windows and Linux servers. It uses SQLite out of the box, so there is nothing else to set up; MySQL is supported too.
+FivePRS runs on Windows and Linux servers. On GTA V Legacy servers it uses SQLite out of the box, so there is nothing else to set up; MySQL 8 and MariaDB 10.6+ are supported too.
+
+> [!IMPORTANT]
+> **GTA V Enhanced servers need a MySQL or MariaDB database.** FiveM for Enhanced doesn't let resources load native libraries, so SQLite can't run there. Set `fiveprs_db_type "mysql"` and `fiveprs_db_connection` (see [Server Configuration](#server-configuration)) before the first start.
 
 Optional official addons (a loading screen, Discord rich presence and a Notes app) are in the [addons repository](https://github.com/FivePRS/addons): download `fiveprs_addons.zip` from its releases.
 
@@ -24,12 +27,13 @@ On Windows, run `publish.ps1` to build everything and package `dist/fiveprs.zip`
 
 ## Server Configuration
 ```cfg
-set fiveprs_db_type              "sqlite"   # or "mysql"
+set fiveprs_db_type              "sqlite"   # or "mysql" (required on GTA V Enhanced; also for MariaDB)
 set fiveprs_db_connection        ""         # MySQL connection string, or a custom SQLite path
 set fiveprs_max_xp               500        # cap on XP awarded per call
 set fiveprs_xp_multiplier        1.0
 set fiveprs_restrict_departments false      # true limits departments to the ACE below or the admin roster
 set fiveprs_server_icon          true       # use the FivePRS icon unless load_server_icon sets your own
+set fiveprs_debug                false      # true adds full error details to the console
 
 add_ace group.admin fiveprs.admin allow
 add_ace group.police fiveprs.department.police allow
@@ -136,6 +140,11 @@ On-duty police get a Records app. Search for a person by name or a vehicle by pl
 
 Every change is stamped with the officer's name and callsign and written to the audit log. If the person's owner is online, they get a notification and their Characters app updates. A character with an active warrant cannot be deleted.
 
+### Traffic stops
+On duty as police, with your emergency lights on, get behind an AI-driven vehicle and press `Left Shift` to pull it over. Walk up to the driver and press `E` to ask for ID, run the plate, have them step out, search them, issue a warning or citation, serve a warrant, record an arrest or release them. AI drivers get a generated identity (name, date of birth, license status and sometimes a warrant) that is saved the first time it's checked, so citations and arrests show up in Records. Offences and fines are in `config/citations.json`; fines are capped at `maxFine`.
+
+On foot, face any pedestrian and press `E` to stop them. The same menu opens without the vehicle actions. People and vehicles that belong to an active callout can't be stopped this way.
+
 ### Characters, Licenses and Vehicles
 Every player has three civilian apps for roleplay records, all for their active character:
 
@@ -167,6 +176,19 @@ FivePRS checks the [core repository's releases](https://github.com/FivePRS/core/
 Settings are under `updates` in `config/settings.json`: `checkForUpdates`, `repository`, `assetName` (the release file to download, `fiveprs.zip`), `checkIntervalHours` and `includePreReleases`.
 
 To publish a release, move the `Unreleased` entries in `CHANGELOG.md` under a new version heading, set the same `version` in `fxmanifest.lua`, commit, and push a tag named `v<version>`. GitHub Actions checks the versions match, builds and tests, and creates the release with `fiveprs.zip` attached and that changelog section as its notes. Versions with a suffix, like `0.9.0-ptb.1`, are published as pre-releases, and servers running a pre-release are offered newer pre-releases automatically.
+
+## Fire and EMS
+Fire (LSFD) and EMS (SAMS) are playable departments. Go on duty at a fire station or hospital like police do.
+
+- **Fire** callouts (Vehicle Fire, Brush Fire) start real fires that spread until they're put out with the extinguisher or the fire engine's water cannon.
+- **EMS** callouts (Medical Emergency, Traffic Collision) have a patient to treat with `E`, load into the ambulance with `E`, and drive to the nearest hospital.
+- Equipment and vehicles are in `config/fire_loadouts.json`, `fire_vehicles.json`, `ems_loadouts.json` and `ems_vehicles.json`, in the same format as the police files. Uniforms default to GTA's firefighter and paramedic peds; swap in freemode outfits if your server uses custom characters.
+
+## Death and revive
+When a player dies they stay down where they fell instead of respawning, and EMS gets an automatic 911 call. On-duty EMS revive them with `E`; after `respawnSeconds` the player can press `E` to respawn at the nearest hospital. Admins can use `fprs_revive <player id>`. Settings are under `death` in `config/settings.json`: `enabled`, `respawnSeconds`, `notifyEms` and `reviveXp`. Turn it off if you use another death script.
+
+## Game world
+FivePRS turns off wanted levels and GTA's own AI police, ambulance and fire response, so they don't interfere with roleplay. Set these under `world` in `config/settings.json`: `disableWantedLevel` and `disableDispatchServices` (both `true` by default) and `disableRandomCops` (`false` by default; `true` also stops ambient AI police from spawning).
 
 ## Rate limits
 Each player can only send so many requests to the server in a short time, so one player can't flood dispatch, records or the database. Requests over the limit are ignored, the player is told to slow down where it matters (911 calls, records, civilian actions), and the console logs the first one in each window. Limits are under `rateLimits` in `config/settings.json`, as a `limit` per `perSeconds` for each kind of request; set `enabled` to `false` to turn them off.
@@ -234,5 +256,11 @@ The original model and clothing are restored when going off duty, but freemode f
 Duty changes, department changes, XP awards, rank-ups, admin actions and denied permission checks are recorded in the `fiveprs_audit` table.
 
 ## Troubleshooting
+
+**`NotImplementedException` at `KeyExchangeStrength` when connecting to MySQL or MariaDB.** FiveM's server runtime can't make encrypted database connections. FivePRS now adds `SslMode=None` automatically; on older builds, add it to `fiveprs_db_connection` yourself. Keep the database on the same machine or a private network.
+
+**`Access to the path … is denied`.** The server's user account can't write to `resources/fiveprs`. On Linux, `chown -R <server user> resources/fiveprs`.
+
+**`SQLite can't run` / `P/Invoke is not allowed` on a GTA V Enhanced server.** Enhanced servers block resources from loading native libraries, and SQLite is one. Use MySQL: set `fiveprs_db_type "mysql"` and `fiveprs_db_connection` in `server.cfg`.
 
 **`Could not load native SQLite` or `DllNotFoundException: e_sqlite3`.** The resource's `server/` folder must contain `e_sqlite3.dll` (Windows) or `libe_sqlite3.so` (Linux). Re-extract `fiveprs.zip` rather than copying individual DLLs.

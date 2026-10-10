@@ -32,7 +32,7 @@ namespace FivePRS.Server
 
         private static ReleaseVersion InstalledVersion()
         {
-            var text = API.GetResourceMetadata(API.GetCurrentResourceName(), "version", 0);
+            var text = API.GetResourceMetadata(Resource.Name, "version", 0);
             return ReleaseVersion.TryParse(text, out var version) ? version : ReleaseVersion.Zero;
         }
 
@@ -100,7 +100,7 @@ namespace FivePRS.Server
                     return $"FivePRS {release.Version} has no {ConfigManager.Settings.Updates.AssetName} to download. Get it from {release.Url}";
 
                 var version      = release.Version.ToString();
-                var resourcePath = API.GetResourcePath(API.GetCurrentResourceName());
+                var resourcePath = Resource.Path;
                 var zipRelative  = $"data/updates/fiveprs-{version}.zip";
                 var zipPath      = Path.Combine(resourcePath, zipRelative);
                 var target       = Path.Combine(resourcePath, "data", "updates", version);

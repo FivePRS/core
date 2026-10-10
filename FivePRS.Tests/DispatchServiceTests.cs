@@ -277,7 +277,7 @@ namespace FivePRS.Tests
         {
             _dispatch.SetOnDuty(7, "Medic", Department.EMS, 1);
 
-            Assert.Equal("EMS-7", _dispatch.GetUnit(7)!.Callsign);
+            Assert.Equal("SAMS-7", _dispatch.GetUnit(7)!.Callsign);
         }
 
         [Fact]

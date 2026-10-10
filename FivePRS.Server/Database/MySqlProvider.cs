@@ -16,7 +16,24 @@ namespace FivePRS.Server.Database
 
         public MySqlProvider(string connectionString)
         {
-            _connectionString = connectionString;
+            _connectionString = PrepareConnectionString(connectionString);
+        }
+
+        public static string PrepareConnectionString(string connectionString)
+        {
+            var builder = new MySqlConnectionStringBuilder(connectionString);
+
+            if (!builder.ContainsKey("SslMode"))
+                builder.SslMode = MySqlSslMode.None;
+            else if (builder.SslMode != MySqlSslMode.None)
+                throw new NotSupportedException(
+                    "FiveM's server runtime can't make encrypted (TLS) connections to MySQL or MariaDB. " +
+                    "Remove SslMode from fiveprs_db_connection or set SslMode=None, and keep the database on the same machine or a private network.");
+
+            if (!builder.ContainsKey("AllowPublicKeyRetrieval"))
+                builder.AllowPublicKeyRetrieval = true;
+
+            return builder.ConnectionString;
         }
 
         public async Task InitializeAsync()

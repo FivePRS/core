@@ -116,7 +116,7 @@ namespace FivePRS.Server
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[FivePRS] Records action failed for {player.Name}: {ex}");
+                ServerLog.Error($"Records action failed for {player.Name}", ex);
                 TriggerClientEvent(player, EventNames.ClientLookupError, "Something went wrong. Please try again.");
             }
         }
