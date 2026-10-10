@@ -87,6 +87,8 @@ Every player has a Civilian tab for roleplay records:
 
 `maxCharacters` and `maxVehiclesPerCharacter` are set in `config/settings.json`.
 
+**Appearance:** each character has its own look. Creating a character opens the character creator, and **Edit appearance** on the Civilian tab reopens it (off duty only). Players build a custom male or female character (parents, face shape, hair, facial details, eye colour and clothing), or pick one of the standard GTA peds listed under `creator.standardPeds` in `config/settings.json` (set `creator.allowStandardPeds` to `false` to require custom characters). The look is saved per character, reapplied on every spawn and character switch, and restored when going off duty. Locker uniforms need a custom character; standard peds get the department's `fallbackPedModels` instead.
+
 ### 911
 Every player has a 911 tab to call Police, EMS or Fire from their current position, optionally as an anonymous caller. On-duty units in that department are notified and see the call in their Dispatch tab with the caller and description; it has no primary unit, and any unit can attach to respond. The caller is told when units respond and when the call is cleared, and can cancel it while it is open. An attached unit clears the call from the Dispatch tab when finished.
 

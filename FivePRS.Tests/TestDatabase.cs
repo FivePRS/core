@@ -17,6 +17,8 @@ namespace FivePRS.Tests
 
         public RosterStore Roster { get; private set; } = null!;
 
+        public AppearanceStore Appearances { get; private set; } = null!;
+
         public IDatabaseProvider Provider { get; private set; } = null!;
 
         public static async Task<TestDatabase> CreateAsync()
@@ -41,6 +43,8 @@ namespace FivePRS.Tests
             await database.Store.InitializeAsync();
             database.Roster = new RosterStore(provider);
             await database.Roster.InitializeAsync();
+            database.Appearances = new AppearanceStore(provider);
+            await database.Appearances.InitializeAsync();
             return database;
         }
 
@@ -49,7 +53,7 @@ namespace FivePRS.Tests
             using var conn = new MySqlConnection(connectionString);
             await conn.OpenAsync();
             using var cmd = conn.CreateCommand();
-            cmd.CommandText = "DROP TABLE IF EXISTS fiveprs_records, fiveprs_licenses, fiveprs_vehicles, fiveprs_characters, fiveprs_roster, ers_players;";
+            cmd.CommandText = "DROP TABLE IF EXISTS fiveprs_records, fiveprs_licenses, fiveprs_vehicles, fiveprs_characters, fiveprs_roster, fiveprs_appearances, ers_players;";
             await cmd.ExecuteNonQueryAsync();
         }
 

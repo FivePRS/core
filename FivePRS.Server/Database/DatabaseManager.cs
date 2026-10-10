@@ -23,6 +23,8 @@ namespace FivePRS.Server.Database
 
         public RosterStore Roster { get; private set; } = null!;
 
+        public AppearanceStore Appearances { get; private set; } = null!;
+
         public async Task InitializeAsync(DatabaseType dbType, string? connectionString)
         {
             if (dbType == DatabaseType.MySQL)
@@ -46,6 +48,9 @@ namespace FivePRS.Server.Database
 
             Roster = new RosterStore(_provider);
             await Roster.InitializeAsync();
+
+            Appearances = new AppearanceStore(_provider);
+            await Appearances.InitializeAsync();
 
             IsReady = true;
 

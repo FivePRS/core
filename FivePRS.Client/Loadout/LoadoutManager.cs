@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using CitizenFX.Core;
 using CitizenFX.Core.Native;
+using FivePRS.Client.Appearance;
 
 namespace FivePRS.Client.Loadout
 {
@@ -65,6 +66,15 @@ namespace FivePRS.Client.Loadout
         {
             var ped = Game.PlayerPed;
             if (!ped.Exists() || _savedComponents is null) return;
+
+            if (AppearanceManager.Current is not null)
+            {
+                var before = API.GetEntityModel(ped.Handle);
+                ClearSavedAppearance();
+                await AppearanceManager.ApplyCurrentAsync();
+                if (API.GetEntityModel(Game.PlayerPed.Handle) != before) ReissueWeapons(Game.PlayerPed.Handle);
+                return;
+            }
 
             if (_savedModel != 0 && API.GetEntityModel(ped.Handle) != _savedModel &&
                 await ChangeModelAsync(new Model(_savedModel)))

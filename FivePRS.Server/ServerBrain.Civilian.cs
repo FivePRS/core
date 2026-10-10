@@ -36,7 +36,12 @@ namespace FivePRS.Server
             RunCivilian(player, (service, license) => service.SelectCharacterAsync(license, characterId));
 
         private void OnCharacterDelete([FromSource] Player player, int characterId) =>
-            RunCivilian(player, (service, license) => service.DeleteCharacterAsync(license, characterId),
+            RunCivilian(player, async (service, license) =>
+                {
+                    var error = await service.DeleteCharacterAsync(license, characterId);
+                    if (error is null && _appearances is not null) await _appearances.DeleteAsync(characterId);
+                    return error;
+                },
                 AuditActions.CharacterDeleted, $"character {characterId}");
 
         private void OnLicenseApply([FromSource] Player player, string type) =>
@@ -88,6 +93,7 @@ namespace FivePRS.Server
 
                 var state = await _civilians.GetStateAsync(license);
                 TriggerClientEvent(player, EventNames.ClientCivilianState, JsonConvert.SerializeObject(state));
+                await SendAppearanceAsync(player, license);
             }
             catch (Exception ex)
             {

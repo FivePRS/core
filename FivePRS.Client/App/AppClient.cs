@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using CitizenFX.Core;
 using CitizenFX.Core.Native;
+using FivePRS.Client.Appearance;
 using FivePRS.Client.Callouts;
 using FivePRS.Client.Dispatch;
 using FivePRS.Core.Config;
@@ -61,6 +62,7 @@ namespace FivePRS.Client.App
             RegisterCallback("civApplyLicense",    data => CivilianPanel.ApplyLicense(data));
             RegisterCallback("civRegisterVehicle", _    => OnRegisterVehicle());
             RegisterCallback("civRemoveVehicle",   data => CivilianPanel.RemoveVehicle(data));
+            RegisterCallback("civAppearance",      _    => OpenCreator());
             RegisterCallback("civSetVehicleStolen", data => CivilianPanel.SetVehicleStolen(data));
             RegisterCallback("recSearchName",   data => RecordsPanel.SearchName(data));
             RegisterCallback("recSearchPlate",  data => RecordsPanel.SearchPlate(data));
@@ -119,6 +121,7 @@ namespace FivePRS.Client.App
 
         private void OnCivilianState(string json)
         {
+            var before = CivilianPanel.CharacterCount;
             try
             {
                 CivilianPanel.SetState(json);
@@ -126,6 +129,12 @@ namespace FivePRS.Client.App
             catch (Exception ex)
             {
                 Debug.WriteLine($"[AppClient] Failed to parse civilian state: {ex.Message}");
+                return;
+            }
+
+            if (_open && before is not null && CivilianPanel.CharacterCount > before)
+            {
+                OpenCreator();
                 return;
             }
 
@@ -199,6 +208,15 @@ namespace FivePRS.Client.App
             }
 
             Refresh();
+        }
+
+        private void OpenCreator()
+        {
+            var active = CivilianPanel.ActiveCharacter;
+            if (active is null || ClientBrain.LocalPlayerData.IsOnDuty) return;
+
+            Close();
+            CharacterCreator.Open(active.Id, active.FullName);
         }
 
         private void OnRegisterVehicle()

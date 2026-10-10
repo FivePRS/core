@@ -52,6 +52,9 @@ namespace FivePRS.Core.Config
         [JsonConverter(typeof(StringEnumConverter), true)]
         public DutyEquipmentMode DutyEquipment { get; set; } = DutyEquipmentMode.ByStart;
 
+        [JsonProperty("creator")]
+        public CreatorSettings Creator { get; set; } = new();
+
         [JsonProperty("branding")]
         public BrandingSettings Branding { get; set; } = new();
     }

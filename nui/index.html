@@ -303,7 +303,10 @@
                 <p id="civ-name" class="civ-name"></p>
                 <p id="civ-details" class="muted"></p>
               </div>
-              <button id="civ-delete" type="button" class="button small danger">Delete character</button>
+              <div class="actions">
+                <button id="civ-appearance" type="button" class="button small">Edit appearance</button>
+                <button id="civ-delete" type="button" class="button small danger">Delete character</button>
+              </div>
             </section>
 
             <section class="panel">
@@ -420,6 +423,29 @@
     </main>
   </div>
 
+  <aside id="creator" class="creator" hidden>
+    <div class="lightbar" aria-hidden="true"></div>
+    <header class="creator-head">
+      <p class="panel-title">Character appearance</p>
+      <h1 id="creator-name" class="creator-name"></h1>
+      <nav id="creator-tabs" class="creator-tabs"></nav>
+    </header>
+    <div id="creator-body" class="creator-body"></div>
+    <footer class="creator-foot">
+      <div class="creator-view">
+        <button type="button" class="button small" data-focus="face">Face</button>
+        <button type="button" class="button small" data-focus="body">Body</button>
+        <button type="button" class="button small" data-focus="legs">Legs</button>
+        <button type="button" class="button small" data-rotate="-30" aria-label="Rotate left">&#10226;</button>
+        <button type="button" class="button small" data-rotate="30" aria-label="Rotate right">&#10227;</button>
+      </div>
+      <div class="creator-actions">
+        <button id="creator-cancel" type="button" class="button">Cancel</button>
+        <button id="creator-save" type="button" class="button primary">Save</button>
+      </div>
+    </footer>
+  </aside>
+
   <aside id="menu" class="cmenu" hidden>
     <div class="lightbar" aria-hidden="true"></div>
     <header class="cmenu-head">
@@ -445,6 +471,7 @@
   <script src="emergency.js"></script>
   <script src="admin.js"></script>
   <script src="menu.js"></script>
+  <script src="creator.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

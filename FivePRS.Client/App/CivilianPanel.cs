@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CitizenFX.Core;
 using CitizenFX.Core.Native;
 using FivePRS.Core.Civilian;
@@ -25,6 +26,11 @@ namespace FivePRS.Client.App
         private static CivilianState? _state;
 
         public static void SetState(string json) => _state = JsonConvert.DeserializeObject<CivilianState>(json);
+
+        public static int? CharacterCount => _state?.Characters.Count;
+
+        public static CharacterInfo? ActiveCharacter =>
+            _state?.Characters.FirstOrDefault(c => c.Id == _state.ActiveCharacterId);
 
         public static void RequestState() => ClientEvents.TriggerServer(EventNames.ServerCivilianRequest);
 
@@ -76,6 +82,7 @@ namespace FivePRS.Client.App
             return new
             {
                 State          = _state,
+                OnDuty         = ClientBrain.LocalPlayerData.IsOnDuty,
                 Genders        = CivilianRules.Genders,
                 MaxNameLength  = CivilianRules.MaxNameLength,
                 CurrentVehicle = vehicle,

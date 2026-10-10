@@ -173,6 +173,9 @@ function renderCivilian(view, reset) {
 
   setText("civ-name", `${active.firstName} ${active.lastName}`);
   setText("civ-details", `Born ${active.dateOfBirth} · ${age(active.dateOfBirth)} years old · ${active.gender}`);
+  const appearanceButton = document.getElementById("civ-appearance");
+  appearanceButton.disabled = Boolean(view.onDuty);
+  appearanceButton.title = view.onDuty ? "Go off duty to change your appearance" : "";
   const deleteButton = document.getElementById("civ-delete");
   delete deleteButton.dataset.armed;
   deleteButton.textContent = "Delete character";
@@ -205,6 +208,8 @@ civilianTab.addEventListener("click", (event) => {
     toggleCharacterForm(false);
   } else if (target.dataset.character) {
     post("civSelectCharacter", { characterId: Number(target.dataset.character) });
+  } else if (target.id === "civ-appearance") {
+    post("civAppearance");
   } else if (target.id === "civ-delete") {
     if (confirmButton(target, "Click again to delete")) {
       target.disabled = true;
