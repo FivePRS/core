@@ -40,7 +40,7 @@ namespace FivePRS.Server.Database
 
             try
             {
-                return new MySqlConnectionStringBuilder(connectionString);
+                return new MySqlConnectionStringBuilder(connectionString!);
             }
             catch (ArgumentException)
             {

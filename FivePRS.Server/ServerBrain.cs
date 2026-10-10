@@ -32,9 +32,10 @@ namespace FivePRS.Server
 
         public ServerBrain()
         {
+            Resource.Capture();
             MainThread.Enable();
             ConfigManager.Log = message => Debug.WriteLine(message);
-            var resource = API.GetCurrentResourceName();
+            var resource = Resource.Name;
             ConfigManager.LoadSettings(API.LoadResourceFile(resource, "config/settings.json"));
             ConfigManager.LoadJurisdictions(API.LoadResourceFile(resource, "config/jurisdictions.json"));
             ConfigManager.LoadLicenses(API.LoadResourceFile(resource, "config/licenses.json"));
@@ -107,7 +108,7 @@ namespace FivePRS.Server
                 LogStartup();
                 Debug.WriteLine("[FivePRS] ServerBrain online.");
             }
-            catch (NotSupportedException ex)
+            catch (Exception ex) when (ex is NotSupportedException || ex is DatabaseSetupException)
             {
                 Debug.WriteLine($"[FivePRS] FATAL: {ex.Message}");
             }

@@ -79,7 +79,7 @@ namespace FivePRS.Server
 
         private static IEnumerable<string> StartedAddons()
         {
-            var current = API.GetCurrentResourceName();
+            var current = Resource.Name;
             for (var i = 0; i < API.GetNumResources(); i++)
             {
                 var name = API.GetResourceByFindIndex(i);

@@ -41,12 +41,17 @@ namespace FivePRS.Server.Database
             if (dbType == DatabaseType.MySQL)
             {
                 if (connectionString is null || string.IsNullOrWhiteSpace(connectionString))
-                    throw new ArgumentException("[FivePRS] MySQL selected but fiveprs_db_connection is empty.");
+                    throw new DatabaseSetupException("fiveprs_db_type is mysql, but fiveprs_db_connection is empty. Set it to your MySQL or MariaDB connection string.");
                 _provider = new MySqlProvider(connectionString);
             }
             else
             {
-                var resourcePath = API.GetResourcePath(API.GetCurrentResourceName());
+                if (connectionString is not null && connectionString.Contains("="))
+                    throw new DatabaseSetupException(
+                        "fiveprs_db_connection is set to a MySQL connection string, but fiveprs_db_type is sqlite. " +
+                        "Set fiveprs_db_type \"mysql\" to use MySQL or MariaDB, or clear fiveprs_db_connection to use SQLite.");
+
+                var resourcePath = Resource.Path;
                 var nativePath = SqliteNativeLoader.Load(Path.Combine(resourcePath, "server"));
                 Debug.WriteLine($"[FivePRS] Native SQLite loaded from {nativePath}.");
 

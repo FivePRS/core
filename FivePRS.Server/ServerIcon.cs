@@ -32,7 +32,7 @@ namespace FivePRS.Server
         {
             if (!IsEnabled() || HasIcon() || string.IsNullOrWhiteSpace(url)) return;
 
-            var resourcePath = API.GetResourcePath(API.GetCurrentResourceName());
+            var resourcePath = Resource.Path;
             var path         = Path.Combine(resourcePath, RelativePath);
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
 
@@ -48,7 +48,7 @@ namespace FivePRS.Server
 
             if (HasIcon()) return;
 
-            var resource = API.GetCurrentResourceName();
+            var resource = Resource.Name;
             if (!API.IsPrincipalAceAllowed($"resource.{resource}", LoadCommandAce))
             {
                 Debug.WriteLine(
