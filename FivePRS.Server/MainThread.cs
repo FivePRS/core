@@ -8,13 +8,19 @@ namespace FivePRS.Server
     public static class MainThread
     {
         private static readonly ConcurrentQueue<TaskCompletionSource<bool>> Waiting = new();
+        private static bool _enabled;
         private static int _threadId;
 
-        public static void Attach() => _threadId = Thread.CurrentThread.ManagedThreadId;
+        public static void Enable() => _enabled = true;
 
-        public static void Detach() => _threadId = 0;
+        public static void Disable()
+        {
+            _enabled = false;
+            _threadId = 0;
+            Drain();
+        }
 
-        public static bool IsCurrent => _threadId == 0 || Thread.CurrentThread.ManagedThreadId == _threadId;
+        public static bool IsCurrent => !_enabled || (_threadId != 0 && Thread.CurrentThread.ManagedThreadId == _threadId);
 
         public static Task Resume()
         {
@@ -25,7 +31,13 @@ namespace FivePRS.Server
             return completion.Task;
         }
 
-        public static void Drain()
+        public static void Tick()
+        {
+            _threadId = Thread.CurrentThread.ManagedThreadId;
+            Drain();
+        }
+
+        private static void Drain()
         {
             while (Waiting.TryDequeue(out var completion))
                 completion.TrySetResult(true);

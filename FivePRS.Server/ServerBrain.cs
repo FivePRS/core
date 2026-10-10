@@ -32,7 +32,7 @@ namespace FivePRS.Server
 
         public ServerBrain()
         {
-            MainThread.Attach();
+            MainThread.Enable();
             ConfigManager.Log = message => Debug.WriteLine(message);
             var resource = API.GetCurrentResourceName();
             ConfigManager.LoadSettings(API.LoadResourceFile(resource, "config/settings.json"));
@@ -83,7 +83,7 @@ namespace FivePRS.Server
 
         private static Task DrainMainThreadAsync()
         {
-            MainThread.Drain();
+            MainThread.Tick();
             return Task.FromResult(0);
         }
 
