@@ -13,6 +13,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Pedestrian stops: face anyone on foot and press `E` to stop them, with the same ID, search, citation and arrest actions
 
 ### Fixed
+- MySQL and MariaDB connections no longer fail with `NotImplementedException` when the database offers TLS; FivePRS connects without TLS, which FiveM's runtime can't do
+- A resource folder the server can't write to now logs a clear message instead of an unhandled exception
+
+### Changed
+- Server console errors are one line with the cause; set `fiveprs_debug true` for full details
+- Common database problems (missing database, wrong login, no access, server unreachable) are explained in plain language with the fix
 - FivePRS now starts on GTA V Enhanced servers, which reject assemblies that load native code. Enhanced servers need a MySQL or MariaDB database, since SQLite needs a native library
 
 ## [0.9.0-ptb.2] - 2026-10-10

@@ -32,6 +32,7 @@ namespace FivePRS.Server
 
         public ServerBrain()
         {
+            MainThread.Attach();
             ConfigManager.Log = message => Debug.WriteLine(message);
             var resource = API.GetCurrentResourceName();
             ConfigManager.LoadSettings(API.LoadResourceFile(resource, "config/settings.json"));
@@ -62,6 +63,7 @@ namespace FivePRS.Server
             EventHandlers[EventNames.ServerSetAiCallouts]    += new Action<Player, bool>(OnSetAiCallouts);
             EventHandlers[EventNames.LocalHttpResponse]      += new Action<string, int, string, string>(HttpBridge.OnResponse);
 
+            Tick += DrainMainThreadAsync;
             Tick += DispatchTickAsync;
             RegisterAdminCommands();
             RegisterCivilianEvents();
@@ -79,12 +81,18 @@ namespace FivePRS.Server
             _ = InitDbAsync();
         }
 
+        private static Task DrainMainThreadAsync()
+        {
+            MainThread.Drain();
+            return Task.FromResult(0);
+        }
+
         private async Task InitDbAsync()
         {
+            var connString = API.GetConvar("fiveprs_db_connection", "");
             try
             {
                 var dbTypeRaw  = API.GetConvar("fiveprs_db_type", "sqlite").ToLowerInvariant();
-                var connString = API.GetConvar("fiveprs_db_connection", "");
 
                 var dbType = dbTypeRaw == "mysql" ? DatabaseType.MySQL : DatabaseType.SQLite;
                 _databaseType = dbType;
@@ -109,7 +117,11 @@ namespace FivePRS.Server
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[FivePRS] FATAL: DB init failed: {ex}");
+                var problem = DatabaseErrors.Describe(ex, connString);
+                if (problem is not null)
+                    Debug.WriteLine($"[FivePRS] FATAL: {problem}");
+                else
+                    ServerLog.Error("FATAL: The database didn't start", ex);
             }
         }
 

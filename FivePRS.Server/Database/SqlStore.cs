@@ -15,7 +15,16 @@ namespace FivePRS.Server.Database
 
         protected string LastInsertId => IsMySql ? "SELECT LAST_INSERT_ID()" : "SELECT last_insert_rowid()";
 
-        protected async Task ExecuteAsync(string sql, params (string Name, object Value)[] parameters)
+        protected Task ExecuteAsync(string sql, params (string Name, object Value)[] parameters) =>
+            MainThread.Run(() => ExecuteCoreAsync(sql, parameters));
+
+        protected Task<object?> ScalarAsync(string sql, params (string Name, object Value)[] parameters) =>
+            MainThread.Run(() => ScalarCoreAsync(sql, parameters));
+
+        protected Task<List<T>> QueryAsync<T>(string sql, Func<DbDataReader, T> read, params (string Name, object Value)[] parameters) =>
+            MainThread.Run(() => QueryCoreAsync(sql, read, parameters));
+
+        private async Task ExecuteCoreAsync(string sql, (string Name, object Value)[] parameters)
         {
             using var conn = Db.CreateConnection();
             await conn.OpenAsync();
@@ -23,7 +32,7 @@ namespace FivePRS.Server.Database
             await cmd.ExecuteNonQueryAsync();
         }
 
-        protected async Task<object?> ScalarAsync(string sql, params (string Name, object Value)[] parameters)
+        private async Task<object?> ScalarCoreAsync(string sql, (string Name, object Value)[] parameters)
         {
             using var conn = Db.CreateConnection();
             await conn.OpenAsync();
@@ -31,7 +40,7 @@ namespace FivePRS.Server.Database
             return await cmd.ExecuteScalarAsync();
         }
 
-        protected async Task<List<T>> QueryAsync<T>(string sql, Func<DbDataReader, T> read, params (string Name, object Value)[] parameters)
+        private async Task<List<T>> QueryCoreAsync<T>(string sql, Func<DbDataReader, T> read, (string Name, object Value)[] parameters)
         {
             using var conn = Db.CreateConnection();
             await conn.OpenAsync();

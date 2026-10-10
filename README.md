@@ -33,6 +33,7 @@ set fiveprs_max_xp               500        # cap on XP awarded per call
 set fiveprs_xp_multiplier        1.0
 set fiveprs_restrict_departments false      # true limits departments to the ACE below or the admin roster
 set fiveprs_server_icon          true       # use the FivePRS icon unless load_server_icon sets your own
+set fiveprs_debug                false      # true adds full error details to the console
 
 add_ace group.admin fiveprs.admin allow
 add_ace group.police fiveprs.department.police allow
@@ -242,6 +243,10 @@ The original model and clothing are restored when going off duty, but freemode f
 Duty changes, department changes, XP awards, rank-ups, admin actions and denied permission checks are recorded in the `fiveprs_audit` table.
 
 ## Troubleshooting
+
+**`NotImplementedException` at `KeyExchangeStrength` when connecting to MySQL or MariaDB.** FiveM's server runtime can't make encrypted database connections. FivePRS now adds `SslMode=None` automatically; on older builds, add it to `fiveprs_db_connection` yourself. Keep the database on the same machine or a private network.
+
+**`Access to the path … is denied`.** The server's user account can't write to `resources/fiveprs`. On Linux, `chown -R <server user> resources/fiveprs`.
 
 **`SQLite can't run` / `P/Invoke is not allowed` on a GTA V Enhanced server.** Enhanced servers block resources from loading native libraries, and SQLite is one. Use MySQL: set `fiveprs_db_type "mysql"` and `fiveprs_db_connection` in `server.cfg`.
 

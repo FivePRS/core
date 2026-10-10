@@ -55,4 +55,5 @@ convar_policy {
     'fiveprs_db_connection',
     'fiveprs_max_xp',
     'fiveprs_xp_multiplier',
+    'fiveprs_debug',
 }

@@ -31,7 +31,10 @@ namespace FivePRS.Server.Database
 
         public int SchemaVersion { get; private set; }
 
-        public async Task InitializeAsync(DatabaseType dbType, string? connectionString)
+        public Task InitializeAsync(DatabaseType dbType, string? connectionString) =>
+            MainThread.Run(() => InitializeCoreAsync(dbType, connectionString));
+
+        private async Task InitializeCoreAsync(DatabaseType dbType, string? connectionString)
         {
             Func<int, Task>? backup = null;
 
@@ -84,15 +87,15 @@ namespace FivePRS.Server.Database
         }
 
         public Task<PlayerData?> GetPlayerAsync(string license)
-            => _provider.GetPlayerAsync(license);
+            => MainThread.Run(() => _provider.GetPlayerAsync(license));
 
         public Task SavePlayerAsync(PlayerData player)
-            => _provider.SavePlayerAsync(player);
+            => MainThread.Run(() => _provider.SavePlayerAsync(player));
 
         public Task UpdateDutyStatusAsync(string license, bool isOnDuty)
-            => _provider.UpdateDutyStatusAsync(license, isOnDuty);
+            => MainThread.Run(() => _provider.UpdateDutyStatusAsync(license, isOnDuty));
 
         public Task AddAuditAsync(AuditEntry entry)
-            => _provider.AddAuditAsync(entry);
+            => MainThread.Run(() => _provider.AddAuditAsync(entry));
     }
 }

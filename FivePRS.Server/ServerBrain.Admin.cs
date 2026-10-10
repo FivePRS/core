@@ -48,7 +48,7 @@ namespace FivePRS.Server
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"[FivePRS] {name} failed: {ex}");
+                    ServerLog.Error($"{name} failed", ex);
                     Reply(caller, $"{name} failed: {ex.Message}");
                 }
             }), false);

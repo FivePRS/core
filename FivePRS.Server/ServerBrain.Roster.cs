@@ -56,7 +56,7 @@ namespace FivePRS.Server
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[FivePRS] Roster change failed for {player.Name}: {ex}");
+                ServerLog.Error($"Roster change failed for {player.Name}", ex);
                 Notify(player, "~r~Roster change failed. Check the server console.");
             }
         }
