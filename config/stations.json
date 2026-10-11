@@ -3,7 +3,7 @@
     "stations": [
         {
             "id": "mission_row_pd", "name": "Mission Row Police Station", "department": "Police", "agencies": ["lspd"],
-            "dutyPoint": [433.6, -981.8, 30.7], "heading": 90,
+            "dutyPoint": [440.89, -981.43, 30.69], "heading": 13.97, 
             "armory": [451.7, -980.1, 30.7],
             "locker": [452.6, -992.8, 30.7],
             "garage": [454.6, -1017.4, 28.4],
