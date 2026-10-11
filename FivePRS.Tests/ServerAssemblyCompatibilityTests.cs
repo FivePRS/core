@@ -25,5 +25,19 @@ namespace FivePRS.Tests
 
             Assert.Empty(pinvokes);
         }
+
+        [Fact]
+        public void ServerAssembly_DoesNotReferenceNativeHelper()
+        {
+            using var stream = File.OpenRead(typeof(SqlStore).Assembly.Location);
+            using var pe = new PEReader(stream);
+            var metadata = pe.GetMetadataReader();
+
+            var references = metadata.AssemblyReferences
+                .Select(handle => metadata.GetString(metadata.GetAssemblyReference(handle).Name))
+                .ToList();
+
+            Assert.DoesNotContain("FivePRS.Native", references);
+        }
     }
 }

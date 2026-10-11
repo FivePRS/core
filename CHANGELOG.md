@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+- GTA V Enhanced servers no longer log `Failed to load assembly FivePRS.Native: P/Invoke is not allowed` when using MySQL or MariaDB; the native SQLite helper is now only loaded when SQLite is used
+
 ## [0.9.0-ptb.3] - 2026-10-10
 
 ### Added
