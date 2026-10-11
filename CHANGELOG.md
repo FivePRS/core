@@ -24,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The native SQLite helper is only loaded when SQLite is the database
 - MySQL and MariaDB now go through [oxmysql](https://github.com/overextended/oxmysql) instead of a bundled driver. Install oxmysql, set `mysql_connection_string` as `mysql://user:password@host:port/database`, and `ensure oxmysql` before `fiveprs`. `fiveprs_db_connection` is now only for a custom SQLite path
 - The server package is smaller: MySqlConnector and the six libraries it needed are no longer shipped
+- Updated duty point for the Mission Row station to be infront of the front desk.
 
 ### Known issues
 - GTA V Enhanced servers aren't supported yet. Enhanced runs C# resources on .NET 10 in a sandbox that FivePRS doesn't run in yet; support is coming in a later release. Use a GTA V Legacy server
