@@ -474,6 +474,121 @@ namespace FivePRS.Tests
             Assert.Equal(1, _dispatch.RegisterCallouts(new[] { Definition("Traffic Stop", Department.Police, xp: 20) }));
         }
 
+        [Fact]
+        public void Backup_OffCall_CreatesBackupCallWithRequesterOnScene()
+        {
+            _dispatch.SetOnDuty(Officer, "Officer", Department.Police, 1);
+
+            var (callId, error) = _dispatch.RequestBackup(Officer, 3, 10f, 20f, 30f);
+
+            Assert.Null(error);
+            var snapshot = _dispatch.CreateSnapshot();
+            var call = Assert.Single(snapshot.Calls);
+            Assert.Equal(callId, call.Id);
+            Assert.Equal(DispatchService.BackupCallName, call.Name);
+            Assert.Equal(3, call.BackupCode);
+            Assert.Equal(CalloutPriority.High, call.Priority);
+            Assert.Equal(new[] { Officer }, call.Units);
+            Assert.Equal(UnitStatus.OnScene, snapshot.Units.Single().Status);
+        }
+
+        [Fact]
+        public void Backup_OnCall_FlagsThatCallInsteadOfCreatingOne()
+        {
+            var callId = AcceptedCall(Officer);
+
+            var (backupCall, error) = _dispatch.RequestBackup(Officer, 2, 0f, 0f, 0f);
+
+            Assert.Null(error);
+            Assert.Equal(callId, backupCall);
+            var call = Assert.Single(_dispatch.CreateSnapshot().Calls);
+            Assert.Equal(2, call.BackupCode);
+            Assert.Equal("Traffic Stop", call.Name);
+        }
+
+        [Fact]
+        public void Backup_Responder_AttachesAndEarnsNothingOnABackupCall()
+        {
+            _dispatch.SetOnDuty(Officer, "Officer", Department.Police, 1);
+            _dispatch.SetOnDuty(Backup, "Backup", Department.Police, 1);
+            var (callId, _) = _dispatch.RequestBackup(Officer, 3, 0f, 0f, 0f);
+
+            Assert.True(_dispatch.Attach(Backup, callId!));
+            var awards = _dispatch.End(Officer, callId!, CalloutResult.Completed);
+
+            Assert.All(awards, award => Assert.Equal(0, award.Amount));
+            Assert.Empty(_dispatch.CreateSnapshot().Calls);
+        }
+
+        [Fact]
+        public void Backup_Cancel_ClosesOwnBackupCallAndFreesUnits()
+        {
+            _dispatch.SetOnDuty(Officer, "Officer", Department.Police, 1);
+            _dispatch.SetOnDuty(Backup, "Backup", Department.Police, 1);
+            var (callId, _) = _dispatch.RequestBackup(Officer, 3, 0f, 0f, 0f);
+            _dispatch.Attach(Backup, callId!);
+
+            Assert.True(_dispatch.CancelBackup(Officer));
+
+            var snapshot = _dispatch.CreateSnapshot();
+            Assert.Empty(snapshot.Calls);
+            Assert.All(snapshot.Units, unit => Assert.Equal(UnitStatus.Available, unit.Status));
+        }
+
+        [Fact]
+        public void Backup_CancelOnCall_KeepsTheCall()
+        {
+            AcceptedCall(Officer);
+            _dispatch.RequestBackup(Officer, 3, 0f, 0f, 0f);
+
+            Assert.True(_dispatch.CancelBackup(Officer));
+
+            Assert.Equal(0, Assert.Single(_dispatch.CreateSnapshot().Calls).BackupCode);
+            Assert.False(_dispatch.CancelBackup(Officer));
+        }
+
+        [Fact]
+        public void Backup_RepeatedWithinCooldown_IsRefused()
+        {
+            _dispatch.SetOnDuty(Officer, "Officer", Department.Police, 1);
+            _dispatch.RequestBackup(Officer, 3, 0f, 0f, 0f);
+            _dispatch.CancelBackup(Officer);
+
+            var (_, error) = _dispatch.RequestBackup(Officer, 3, 0f, 0f, 0f);
+            Assert.Contains("wait", error);
+
+            Advance(_settings.Backup.CooldownSeconds);
+            Assert.Null(_dispatch.RequestBackup(Officer, 3, 0f, 0f, 0f).Error);
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(4)]
+        public void Backup_InvalidCode_IsRefused(int code)
+        {
+            _dispatch.SetOnDuty(Officer, "Officer", Department.Police, 1);
+
+            Assert.NotNull(_dispatch.RequestBackup(Officer, code, 0f, 0f, 0f).Error);
+            Assert.Empty(_dispatch.CreateSnapshot().Calls);
+        }
+
+        [Fact]
+        public void Backup_OffDuty_IsRefused()
+        {
+            Assert.NotNull(_dispatch.RequestBackup(Officer, 3, 0f, 0f, 0f).Error);
+        }
+
+        [Fact]
+        public void Backup_Responders_ArePoliceAndTheRequestersDepartment()
+        {
+            _dispatch.SetOnDuty(Officer, "Medic", Department.EMS, 1);
+            _dispatch.SetOnDuty(Backup, "Cop", Department.Police, 1);
+            _dispatch.SetOnDuty(3, "Medic 2", Department.EMS, 1);
+            _dispatch.SetOnDuty(4, "Firefighter", Department.Fire, 1);
+
+            Assert.Equal(new[] { Backup, 3 }, _dispatch.BackupResponders(Officer).OrderBy(id => id));
+        }
+
         private void Advance(int seconds) => _now = _now.AddSeconds(seconds);
 
         private static CalloutDefinition Definition(string name, Department department, int xp, int cooldown = 0) => new()

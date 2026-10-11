@@ -17,6 +17,7 @@ artifacts/
 
 .idea/
 *.sln.iml
+tools
 
 .ideas/
 
@@ -34,3 +35,5 @@ packages/
 *.tmp
 
 TESTING.md
+
+tools/smoke/.cache/

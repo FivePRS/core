@@ -13,6 +13,8 @@ function Warn($msg) { Write-Host "[FivePRS] WARNING: $msg" -ForegroundColor Yell
 # 1. Clean dist
 Info "Cleaning previous dist..."
 if (Test-Path -LiteralPath $DistRoot) { Remove-Item -LiteralPath $DistRoot -Recurse -Force }
+$BinRoot = Join-Path $Root "bin"
+if (Test-Path -LiteralPath $BinRoot) { Remove-Item -LiteralPath $BinRoot -Recurse -Force }
 $null = New-Item -ItemType Directory -Path "$DistDir\client"
 $null = New-Item -ItemType Directory -Path "$DistDir\server"
 $null = New-Item -ItemType Directory -Path "$DistDir\plugins"
@@ -41,21 +43,41 @@ Info "Copying NUI files..."
 Copy-Item -Recurse "$Root\nui" "$DistDir\nui"
 Copy-Item -Recurse "$Root\scripts" "$DistDir\scripts"
 
-# 4. Copy client DLLs  (bin\client -> client)
-# CitizenFX.* is injected by FiveM at runtime - do NOT bundle it.
-Info "Copying client binaries..."
-Get-ChildItem "$Root\bin\client" -File | Where-Object {
-    $_.Extension -eq ".dll" -and
-    $_.Name -notlike "CitizenFX.*"
-} | Copy-Item -Destination "$DistDir\client"
+# 4-5. Copy the shipped binaries. Only the files listed here are packaged; a new or missing
+# file stops the build so every dependency change is a deliberate decision.
+$ClientFiles = @(
+    "FivePRS.Client.net.dll", "FivePRS.Police.net.dll", "FivePRS.Fire.net.dll", "FivePRS.EMS.net.dll",
+    "FivePRS.Core.dll", "Newtonsoft.Json.dll"
+)
+$ServerFiles = @(
+    "FivePRS.Server.net.dll", "FivePRS.Core.dll", "FivePRS.Native.dll", "Newtonsoft.Json.dll",
+    "Microsoft.Data.Sqlite.dll", "SQLitePCLRaw.batteries_v2.dll", "SQLitePCLRaw.core.dll",
+    "SQLitePCLRaw.provider.dynamic_cdecl.dll", "SQLitePCLRaw.provider.e_sqlite3.dll",
+    "System.Buffers.dll", "System.Memory.dll", "System.Numerics.Vectors.dll", "System.Runtime.CompilerServices.Unsafe.dll",
+    "Windows.dll", "Microsoft.Windows.SDK.NET.dll",
+    "e_sqlite3.dll", "libe_sqlite3.so"
+)
 
-# 5. Copy server DLLs  (bin\server -> server)
-# Native SQLite (e_sqlite3.dll on Windows, libe_sqlite3.so on Linux) sits next to the DLLs.
-Info "Copying server binaries..."
-Get-ChildItem "$Root\bin\server" -File | Where-Object {
-    ($_.Extension -eq ".dll" -or $_.Extension -eq ".so") -and
-    $_.Name -notlike "CitizenFX.*"
-} | Copy-Item -Destination "$DistDir\server"
+function Copy-Shipped($name, $from, $to, $files) {
+    Info "Copying $name binaries..."
+    $built = Get-ChildItem $from -File | Where-Object {
+        ($_.Extension -eq ".dll" -or $_.Extension -eq ".so") -and $_.Name -notlike "CitizenFX.*"
+    } | ForEach-Object { $_.Name }
+
+    $unexpected = $built | Where-Object { $files -notcontains $_ }
+    $absent     = $files | Where-Object { $built -notcontains $_ }
+    if ($unexpected -or $absent) {
+        $unexpected | ForEach-Object { Write-Host "   NEW (not in the $name list): $_" -ForegroundColor Red }
+        $absent     | ForEach-Object { Write-Host "   MISSING from the build: $_" -ForegroundColor Red }
+        Write-Error "The $name binaries changed. Update the list in publish.ps1 once you've checked the change."
+        exit 1
+    }
+
+    $files | ForEach-Object { Copy-Item (Join-Path $from $_) -Destination $to }
+}
+
+Copy-Shipped "client" "$Root\bin\client" "$DistDir\client" $ClientFiles
+Copy-Shipped "server" "$Root\bin\server" "$DistDir\server" $ServerFiles
 
 # 6. Drop READMEs into plugins/, callouts/ and apps/
 @(
@@ -166,7 +188,7 @@ Write-Host ""
 Write-Host "Next steps:" -ForegroundColor Yellow
 Write-Host "  1. Extract fiveprs.zip into your server resources\ directory." -ForegroundColor Yellow
 Write-Host "  2. Add to server.cfg:" -ForegroundColor Yellow
-Write-Host '       set fiveprs_db_type      "sqlite"   # or "mysql"' -ForegroundColor Gray
+Write-Host '       set fiveprs_db_type      "sqlite"   # or "mysql" (needs oxmysql and mysql_connection_string)' -ForegroundColor Gray
 Write-Host '       set fiveprs_restrict_departments "false" # "true" to require ACE per department' -ForegroundColor Gray
 Write-Host "       ensure fiveprs" -ForegroundColor Gray
 Write-Host ""

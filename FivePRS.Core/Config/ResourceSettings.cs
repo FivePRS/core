@@ -67,6 +67,9 @@ namespace FivePRS.Core.Config
         [JsonProperty("death")]
         public DeathSettings Death { get; set; } = new();
 
+        [JsonProperty("backup")]
+        public BackupSettings Backup { get; set; } = new();
+
         [JsonProperty("terminal")]
         public TerminalSettings Terminal { get; set; } = new();
 

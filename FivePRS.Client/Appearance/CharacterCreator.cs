@@ -72,6 +72,7 @@ namespace FivePRS.Client.Appearance
         private static float _heading;
         private static string _focus = "body";
         private static CharacterCreator? _instance;
+        private static Func<Task>? _onClosed;
 
         public static bool IsOpen => _open;
 
@@ -91,17 +92,18 @@ namespace FivePRS.Client.Appearance
             });
         }
 
-        public static async void Open(int characterId, string characterName)
+        public static async void Open(int characterId, string characterName, bool allowOnDuty = false, Func<Task>? onClosed = null)
         {
             if (_open || _instance is null) return;
 
-            if (ClientBrain.LocalPlayerData.IsOnDuty)
+            if (!allowOnDuty && ClientBrain.LocalPlayerData.IsOnDuty)
             {
-                ClientBrain.ShowNotification("Go off duty before changing your appearance.", "Appearance");
+                ClientBrain.ShowNotification("Go off duty, or use the locker at your station, to change your appearance.", "Appearance");
                 return;
             }
 
             _open          = true;
+            _onClosed      = onClosed;
             _characterId   = characterId;
             _characterName = characterName;
             _original      = AppearanceManager.Current;
@@ -258,6 +260,14 @@ namespace FivePRS.Client.Appearance
             ClientEvents.TriggerServer(EventNames.ServerAppearanceSave, _characterId, JsonConvert.SerializeObject(_working));
             ClientBrain.ShowNotification($"Saved {_characterName}'s appearance.", "Appearance");
             Teardown();
+            await RunClosedAsync();
+        }
+
+        private static async Task RunClosedAsync()
+        {
+            var onClosed = _onClosed;
+            _onClosed = null;
+            if (onClosed is not null) await onClosed();
         }
 
         private static async Task CancelAsync()
@@ -281,6 +291,8 @@ namespace FivePRS.Client.Appearance
                 _busy = false;
                 Teardown();
             }
+
+            await RunClosedAsync();
         }
 
         private static void Teardown()

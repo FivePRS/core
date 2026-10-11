@@ -13,6 +13,8 @@ namespace FivePRS.Tests
 
         private readonly string _path = Path.Combine(Path.GetTempPath(), $"fiveprs-test-{Guid.NewGuid():N}.db");
 
+        public PlayerStore Players { get; private set; } = null!;
+
         public CivilianStore Store { get; private set; } = null!;
 
         public RosterStore Roster { get; private set; } = null!;
@@ -38,12 +40,13 @@ namespace FivePRS.Tests
             else
             {
                 await DropTablesAsync(mySql);
-                provider = new MySqlProvider(mySql);
+                provider = new OxMySqlProvider(new FakeOxMySql(mySql));
             }
 
             await provider.InitializeAsync();
             await new Migrator(provider).MigrateAsync();
             database.Provider = provider;
+            database.Players = new PlayerStore(provider);
             database.Store = new CivilianStore(provider);
             database.Roster = new RosterStore(provider);
             database.Appearances = new AppearanceStore(provider);

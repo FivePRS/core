@@ -47,6 +47,15 @@ namespace FivePRS.Core.Config
         public string Female { get; set; } = string.Empty;
     }
 
+    public sealed class OutfitDef
+    {
+        [JsonProperty("components")]
+        public ClothingDef[] Components { get; set; } = new ClothingDef[0];
+
+        [JsonProperty("props")]
+        public ClothingDef[] Props { get; set; } = new ClothingDef[0];
+    }
+
     public sealed class UniformDef
     {
         [JsonProperty("components")]
@@ -54,6 +63,9 @@ namespace FivePRS.Core.Config
 
         [JsonProperty("props")]
         public ClothingDef[] Props { get; set; } = new ClothingDef[0];
+
+        [JsonProperty("female", NullValueHandling = NullValueHandling.Ignore)]
+        public OutfitDef? Female { get; set; }
 
         [JsonProperty("pedModels", NullValueHandling = NullValueHandling.Ignore)]
         public PedModelsDef? PedModels { get; set; }
@@ -128,10 +140,19 @@ namespace FivePRS.Core.Config
         {
             Components = new[]
             {
-                Clothing(3, 4), Clothing(4, 24), Clothing(6, 24),
+                Clothing(3, 0), Clothing(4, 24), Clothing(6, 24),
                 Clothing(8, 58), Clothing(9, 0), Clothing(11, 55),
             },
             Props = new[] { Clothing(0, 46), Clothing(1, -1, -1) },
+            Female = new OutfitDef
+            {
+                Components = new[]
+                {
+                    Clothing(3, 14), Clothing(4, 34), Clothing(6, 25),
+                    Clothing(8, 35), Clothing(9, 0), Clothing(11, 48),
+                },
+                Props = new[] { Clothing(0, 45), Clothing(1, -1, -1) },
+            },
         };
 
         [JsonProperty("commandUniform")]
@@ -143,6 +164,15 @@ namespace FivePRS.Core.Config
                 Clothing(8, 58), Clothing(9, 0), Clothing(11, 48),
             },
             Props = new[] { Clothing(0, -1, -1), Clothing(1, -1, -1) },
+            Female = new OutfitDef
+            {
+                Components = new[]
+                {
+                    Clothing(3, 14), Clothing(4, 34), Clothing(6, 25),
+                    Clothing(8, 35), Clothing(9, 0), Clothing(11, 48),
+                },
+                Props = new[] { Clothing(0, -1, -1), Clothing(1, -1, -1) },
+            },
         };
 
         [JsonProperty("fallbackPedModels")]

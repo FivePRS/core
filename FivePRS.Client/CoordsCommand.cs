@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using CitizenFX.Core;
 using CitizenFX.Core.Native;
 using Newtonsoft.Json;
@@ -19,7 +20,7 @@ namespace FivePRS.Client
 
         private static void Capture(string? point)
         {
-            var pointName = Array.Find(PointNames, p => string.Equals(p, point, StringComparison.OrdinalIgnoreCase));
+            var pointName = PointNames.FirstOrDefault(p => string.Equals(p, point, StringComparison.OrdinalIgnoreCase));
 
             var ped       = Game.PlayerPed;
             var vehicle   = ped.CurrentVehicle;

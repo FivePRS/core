@@ -20,6 +20,7 @@ namespace FivePRS.Core.Events
         public const string ClientDownedPlayers     = "FivePRS:Client:DownedPlayers";
         public const string ClientRevived           = "FivePRS:Client:Revived";
         public const string ClientEmergencyStatus   = "FivePRS:Client:EmergencyStatus";
+        public const string ClientBackupRequested   = "FivePRS:Client:BackupRequested";
         public const string ClientEmergencyError    = "FivePRS:Client:EmergencyError";
         public const string ClientAdminState        = "FivePRS:Client:AdminState";
         public const string ClientAppearance        = "FivePRS:Client:Appearance";
@@ -34,6 +35,8 @@ namespace FivePRS.Core.Events
         public const string ServerCalloutEnded      = "FivePRS:Server:CalloutEnded";
         public const string ServerSetUnitStatus     = "FivePRS:Server:SetUnitStatus";
         public const string ServerAttachToCall      = "FivePRS:Server:AttachToCall";
+        public const string ServerRequestBackup     = "FivePRS:Server:RequestBackup";
+        public const string ServerCancelBackup      = "FivePRS:Server:CancelBackup";
         public const string ServerSetAiCallouts     = "FivePRS:Server:SetAiCallouts";
         public const string ServerCivilianRequest   = "FivePRS:Server:CivilianRequest";
         public const string ServerCharacterCreate   = "FivePRS:Server:CharacterCreate";
@@ -70,6 +73,8 @@ namespace FivePRS.Core.Events
         public const string LocalOpenMenu           = "FivePRS:Local:OpenMenu";
         public const string LocalHttpRequest        = "FivePRS:Local:HttpRequest";
         public const string LocalHttpResponse       = "FivePRS:Local:HttpResponse";
+        public const string LocalDbRequest          = "FivePRS:Local:DbRequest";
+        public const string LocalDbResponse         = "FivePRS:Local:DbResponse";
 
         public const string PublicAppAction         = "fiveprs:appAction";
         public const string LocalCalloutReceived    = "FivePRS:Local:CalloutReceived";

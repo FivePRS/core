@@ -132,17 +132,23 @@ namespace FivePRS.Client.Gear
 
         private LoadoutDefinition ToOutfit(UniformDef uniform) => new()
         {
-            Components = uniform.Components
-                .Select(c => new ComponentEntry { ComponentId = c.Slot, DrawableId = c.Drawable, TextureId = c.Texture })
-                .ToArray(),
-            Props = uniform.Props
-                .Select(p => new PropEntry { PropId = p.Slot, DrawableId = p.Drawable, TextureId = p.Texture })
-                .ToArray(),
+            Components       = ToComponents(uniform.Components),
+            Props            = ToProps(uniform.Props),
+            FemaleComponents = uniform.Female is null ? null : ToComponents(uniform.Female.Components),
+            FemaleProps      = uniform.Female is null ? null : ToProps(uniform.Female.Props),
             MalePedModel           = NullIfEmpty(uniform.PedModels?.Male),
             FemalePedModel         = NullIfEmpty(uniform.PedModels?.Female),
             FallbackMalePedModel   = NullIfEmpty(Loadouts.FallbackPedModels.Male),
             FallbackFemalePedModel = NullIfEmpty(Loadouts.FallbackPedModels.Female),
         };
+
+        private static ComponentEntry[] ToComponents(ClothingDef[] components) => components
+            .Select(c => new ComponentEntry { ComponentId = c.Slot, DrawableId = c.Drawable, TextureId = c.Texture })
+            .ToArray();
+
+        private static PropEntry[] ToProps(ClothingDef[] props) => props
+            .Select(p => new PropEntry { PropId = p.Slot, DrawableId = p.Drawable, TextureId = p.Texture })
+            .ToArray();
 
         private static WeaponEntry ToEntry(WeaponDef weapon) => new()
         {

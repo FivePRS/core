@@ -13,12 +13,12 @@ namespace FivePRS.Server.Database
         public async Task<SavedPosition?> GetAsync(string license)
         {
             var rows = await QueryAsync("SELECT x, y, z, heading FROM fiveprs_positions WHERE license = @license",
-                reader => new SavedPosition
+                row => new SavedPosition
                 {
-                    X       = Convert.ToSingle(reader.GetValue(0)),
-                    Y       = Convert.ToSingle(reader.GetValue(1)),
-                    Z       = Convert.ToSingle(reader.GetValue(2)),
-                    Heading = Convert.ToSingle(reader.GetValue(3)),
+                    X       = (float)row.GetDouble("x"),
+                    Y       = (float)row.GetDouble("y"),
+                    Z       = (float)row.GetDouble("z"),
+                    Heading = (float)row.GetDouble("heading"),
                 },
                 ("@license", license));
             return rows.Count > 0 ? rows[0] : null;

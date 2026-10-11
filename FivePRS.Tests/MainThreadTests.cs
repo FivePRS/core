@@ -48,6 +48,34 @@ namespace FivePRS.Tests
         }
 
         [Fact]
+        public async Task Resume_FromAnotherThread_ContinuesOnTheTickThread()
+        {
+            MainThread.Enable();
+            try
+            {
+                MainThread.Tick();
+                var continuedOn = 0;
+                var resumed = Task.Run(async () =>
+                {
+                    await MainThread.Resume();
+                    continuedOn = System.Threading.Thread.CurrentThread.ManagedThreadId;
+                });
+                await Task.Delay(100);
+                Assert.False(resumed.IsCompleted);
+
+                var tickThread = System.Threading.Thread.CurrentThread.ManagedThreadId;
+                MainThread.Tick();
+                await resumed;
+
+                Assert.Equal(tickThread, continuedOn);
+            }
+            finally
+            {
+                MainThread.Disable();
+            }
+        }
+
+        [Fact]
         public async Task Run_FromAnotherThread_FinishesOnlyAfterTick()
         {
             MainThread.Enable();

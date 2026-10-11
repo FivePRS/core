@@ -77,6 +77,7 @@ namespace FivePRS.Tests
             "System.Char.IsLowSurrogate",
             "System.Char.IsSurrogate",
             "System.Char.IsSurrogatePair",
+            "System.Array.Find",
         };
 
         private static readonly string[] BlockedClientTypes =

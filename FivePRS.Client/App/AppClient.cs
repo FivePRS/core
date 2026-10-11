@@ -23,7 +23,10 @@ namespace FivePRS.Client.App
             ContractResolver = new CamelCasePropertyNamesContractResolver(),
         };
 
+        private const int CreatorAfterDutyMs = 2_000;
+
         private bool _open;
+        private int? _creatorPending;
 
         public AppClient()
         {
@@ -138,8 +141,15 @@ namespace FivePRS.Client.App
 
             if (_open && before is not null && CivilianPanel.CharacterCount > before)
             {
-                OpenCreator();
-                return;
+                if (!ClientBrain.LocalPlayerData.IsOnDuty)
+                {
+                    OpenCreator();
+                    return;
+                }
+
+                _creatorPending = CivilianPanel.ActiveCharacter?.Id;
+                var name = CivilianPanel.ActiveCharacter?.FullName ?? "Your character";
+                ClientBrain.ShowNotification($"{name} created. Use the locker at your station, or go off duty, to set up their appearance.", "Characters");
             }
 
             Refresh();
@@ -252,11 +262,20 @@ namespace FivePRS.Client.App
                 Send("civilianError", error);
         }
 
-        private void OnDutyChanged(bool isOnDuty, int departmentId)
+        private async void OnDutyChanged(bool isOnDuty, int departmentId)
         {
             DutyPanel.SetOnDuty(isOnDuty);
             if (!isOnDuty) RecordsPanel.Clear();
             Close();
+
+            if (isOnDuty || _creatorPending is null) return;
+
+            await Delay(CreatorAfterDutyMs);
+            var active = CivilianPanel.ActiveCharacter;
+            if (active is null || active.Id != _creatorPending || ClientBrain.LocalPlayerData.IsOnDuty) return;
+
+            _creatorPending = null;
+            if (AppearanceManager.Current is null || AppearanceManager.CharacterId != active.Id) OpenCreator();
         }
 
         private void OnDutyEnter(IDictionary<string, object> data)

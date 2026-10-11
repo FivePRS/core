@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Data.Common;
 using System.Threading.Tasks;
 using FivePRS.Core.Civilian;
 
@@ -17,7 +16,7 @@ namespace FivePRS.Server.Database
             "id, character_id, type, description, fine, officer_name, officer_callsign, created_at, active, resolution";
 
         private const string ActiveWarrantExists =
-            "EXISTS (SELECT 1 FROM fiveprs_records r WHERE r.character_id = c.id AND r.type = 3 AND r.active = 1)";
+            "EXISTS (SELECT 1 FROM fiveprs_records r WHERE r.character_id = c.id AND r.type = 3 AND r.active = 1) AS has_warrant";
 
         public CivilianStore(IDatabaseProvider db) : base(db)
         {
@@ -46,9 +45,9 @@ namespace FivePRS.Server.Database
         public async Task<int> CreateCharacterAsync(CharacterInfo character)
         {
             var now = DateTime.UtcNow;
-            var id = await ScalarAsync(
+            var id = await InsertAsync(
                 "INSERT INTO fiveprs_characters (owner_license, first_name, last_name, date_of_birth, gender, created_at, last_used_at) " +
-                $"VALUES (@owner, @first, @last, @dob, @gender, @now, @now); {LastInsertId};",
+                "VALUES (@owner, @first, @last, @dob, @gender, @now, @now)",
                 ("@owner", character.OwnerLicense), ("@first", character.FirstName), ("@last", character.LastName),
                 ("@dob", character.DateOfBirth), ("@gender", character.Gender), ("@now", now));
             return Convert.ToInt32(id);
@@ -59,21 +58,20 @@ namespace FivePRS.Server.Database
                 ("@now", DateTime.UtcNow), ("@id", id));
 
         public Task DeleteCharacterAsync(int id) =>
-            ExecuteAsync(
-                "DELETE FROM fiveprs_records WHERE character_id = @id; " +
-                "DELETE FROM fiveprs_licenses WHERE character_id = @id; " +
-                "DELETE FROM fiveprs_vehicles WHERE character_id = @id; " +
-                "DELETE FROM fiveprs_characters WHERE id = @id;",
-                ("@id", id));
+            BatchAsync(
+                new SqlStatement("DELETE FROM fiveprs_records WHERE character_id = @id", ("@id", id)),
+                new SqlStatement("DELETE FROM fiveprs_licenses WHERE character_id = @id", ("@id", id)),
+                new SqlStatement("DELETE FROM fiveprs_vehicles WHERE character_id = @id", ("@id", id)),
+                new SqlStatement("DELETE FROM fiveprs_characters WHERE id = @id", ("@id", id)));
 
         public Task<List<LicenseInfo>> GetLicensesAsync(int characterId) =>
             QueryAsync("SELECT character_id, type, status, issued_at FROM fiveprs_licenses WHERE character_id = @id ORDER BY type",
-                reader => new LicenseInfo
+                row => new LicenseInfo
                 {
-                    CharacterId = Convert.ToInt32(reader.GetValue(0)),
-                    Type        = reader.GetString(1),
-                    Status      = (LicenseStatus)Convert.ToInt32(reader.GetValue(2)),
-                    IssuedAt    = reader.GetDateTime(3),
+                    CharacterId = row.GetInt32("character_id"),
+                    Type        = row.GetString("type"),
+                    Status      = (LicenseStatus)row.GetInt32("status"),
+                    IssuedAt    = row.GetDateTime("issued_at"),
                 },
                 ("@id", characterId));
 
@@ -106,9 +104,9 @@ namespace FivePRS.Server.Database
 
         public async Task<int> AddVehicleAsync(VehicleInfo vehicle)
         {
-            var id = await ScalarAsync(
+            var id = await InsertAsync(
                 "INSERT INTO fiveprs_vehicles (character_id, plate, model, status, registered_at) " +
-                $"VALUES (@character, @plate, @model, @status, @now); {LastInsertId};",
+                "VALUES (@character, @plate, @model, @status, @now)",
                 ("@character", vehicle.CharacterId), ("@plate", vehicle.Plate), ("@model", vehicle.Model),
                 ("@status", (int)vehicle.Status), ("@now", DateTime.UtcNow));
             return Convert.ToInt32(id);
@@ -150,9 +148,9 @@ namespace FivePRS.Server.Database
 
         public async Task<int> AddRecordAsync(RecordInfo record, string officerLicense)
         {
-            var id = await ScalarAsync(
+            var id = await InsertAsync(
                 "INSERT INTO fiveprs_records (character_id, type, description, fine, officer_license, officer_name, officer_callsign, created_at, active) " +
-                $"VALUES (@character, @type, @description, @fine, @officerLicense, @officerName, @callsign, @now, @active); {LastInsertId};",
+                "VALUES (@character, @type, @description, @fine, @officerLicense, @officerName, @callsign, @now, @active)",
                 ("@character", record.CharacterId), ("@type", (int)record.Type), ("@description", record.Description),
                 ("@fine", record.Fine), ("@officerLicense", officerLicense), ("@officerName", record.OfficerName),
                 ("@callsign", record.OfficerCallsign), ("@now", DateTime.UtcNow), ("@active", record.Active ? 1 : 0));
@@ -163,50 +161,50 @@ namespace FivePRS.Server.Database
             ExecuteAsync("UPDATE fiveprs_records SET active = 0, resolution = @resolution WHERE id = @id",
                 ("@resolution", resolution), ("@id", id));
 
-        private static CharacterSummary ReadSummary(DbDataReader reader) => new()
+        private static CharacterSummary ReadSummary(DbRow row) => new()
         {
-            Id               = Convert.ToInt32(reader.GetValue(0)),
-            FirstName        = reader.GetString(1),
-            LastName         = reader.GetString(2),
-            DateOfBirth      = reader.GetString(3),
-            Gender           = reader.GetString(4),
-            HasActiveWarrant = Convert.ToInt32(reader.GetValue(5)) != 0,
+            Id               = row.GetInt32("id"),
+            FirstName        = row.GetString("first_name"),
+            LastName         = row.GetString("last_name"),
+            DateOfBirth      = row.GetString("date_of_birth"),
+            Gender           = row.GetString("gender"),
+            HasActiveWarrant = row.GetBoolean("has_warrant"),
         };
 
-        private static RecordInfo ReadRecord(DbDataReader reader) => new()
+        private static RecordInfo ReadRecord(DbRow row) => new()
         {
-            Id              = Convert.ToInt32(reader.GetValue(0)),
-            CharacterId     = Convert.ToInt32(reader.GetValue(1)),
-            Type            = (RecordType)Convert.ToInt32(reader.GetValue(2)),
-            Description     = reader.GetString(3),
-            Fine            = Convert.ToInt32(reader.GetValue(4)),
-            OfficerName     = reader.GetString(5),
-            OfficerCallsign = reader.GetString(6),
-            CreatedAt       = reader.GetDateTime(7),
-            Active          = Convert.ToInt32(reader.GetValue(8)) != 0,
-            Resolution      = reader.IsDBNull(9) ? null : reader.GetString(9),
+            Id              = row.GetInt32("id"),
+            CharacterId     = row.GetInt32("character_id"),
+            Type            = (RecordType)row.GetInt32("type"),
+            Description     = row.GetString("description"),
+            Fine            = row.GetInt32("fine"),
+            OfficerName     = row.GetString("officer_name"),
+            OfficerCallsign = row.GetString("officer_callsign"),
+            CreatedAt       = row.GetDateTime("created_at"),
+            Active          = row.GetBoolean("active"),
+            Resolution      = row.IsNull("resolution") ? null : row.GetString("resolution"),
         };
 
-        private static CharacterInfo ReadCharacter(DbDataReader reader) => new()
+        private static CharacterInfo ReadCharacter(DbRow row) => new()
         {
-            Id           = Convert.ToInt32(reader.GetValue(0)),
-            OwnerLicense = reader.GetString(1),
-            FirstName    = reader.GetString(2),
-            LastName     = reader.GetString(3),
-            DateOfBirth  = reader.GetString(4),
-            Gender       = reader.GetString(5),
-            CreatedAt    = reader.GetDateTime(6),
-            LastUsedAt   = reader.GetDateTime(7),
+            Id           = row.GetInt32("id"),
+            OwnerLicense = row.GetString("owner_license"),
+            FirstName    = row.GetString("first_name"),
+            LastName     = row.GetString("last_name"),
+            DateOfBirth  = row.GetString("date_of_birth"),
+            Gender       = row.GetString("gender"),
+            CreatedAt    = row.GetDateTime("created_at"),
+            LastUsedAt   = row.GetDateTime("last_used_at"),
         };
 
-        private static VehicleInfo ReadVehicle(DbDataReader reader) => new()
+        private static VehicleInfo ReadVehicle(DbRow row) => new()
         {
-            Id           = Convert.ToInt32(reader.GetValue(0)),
-            CharacterId  = Convert.ToInt32(reader.GetValue(1)),
-            Plate        = reader.GetString(2),
-            Model        = reader.GetString(3),
-            Status       = (VehicleStatus)Convert.ToInt32(reader.GetValue(4)),
-            RegisteredAt = reader.GetDateTime(5),
+            Id           = row.GetInt32("id"),
+            CharacterId  = row.GetInt32("character_id"),
+            Plate        = row.GetString("plate"),
+            Model        = row.GetString("model"),
+            Status       = (VehicleStatus)row.GetInt32("status"),
+            RegisteredAt = row.GetDateTime("registered_at"),
         };
     }
 }

@@ -44,8 +44,8 @@ namespace FivePRS.Server.Database
             catch (Exception ex)
             {
                 throw new NotSupportedException(
-                    "This server doesn't allow resources to load native libraries (GTA V Enhanced servers block them), so SQLite can't run. " +
-                    "Use MySQL or MariaDB instead: set fiveprs_db_type \"mysql\" and fiveprs_db_connection in server.cfg.", ex);
+                    "SQLite can't run because this server doesn't allow resources to load native libraries. " +
+                    "GTA V Enhanced servers aren't supported yet; use a GTA V Legacy server.", ex);
             }
 
             var open   = library.GetMethod("Open", BindingFlags.Public | BindingFlags.Static)!;

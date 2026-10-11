@@ -12,7 +12,7 @@ namespace FivePRS.Server.Database
         public async Task<string?> GetAsync(int characterId)
         {
             var rows = await QueryAsync("SELECT data FROM fiveprs_appearances WHERE character_id = @id",
-                reader => reader.GetString(0), ("@id", characterId));
+                row => row.GetString("data"), ("@id", characterId));
             return rows.Count > 0 ? rows[0] : null;
         }
 

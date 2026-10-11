@@ -1,23 +1,26 @@
-using System.Data.Common;
+using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
-using FivePRS.Core.Models;
 
 namespace FivePRS.Server.Database
 {
-    public interface IDatabaseProvider
+    public interface ISqlExecutor
     {
         SqlDialect Dialect { get; }
 
-        DbConnection CreateConnection();
+        Task<int> ExecuteAsync(string sql, params (string Name, object? Value)[] parameters);
 
+        Task<long> InsertAsync(string sql, params (string Name, object? Value)[] parameters);
+
+        Task<List<DbRow>> QueryAsync(string sql, params (string Name, object? Value)[] parameters);
+    }
+
+    public interface IDatabaseProvider : ISqlExecutor
+    {
         Task InitializeAsync();
 
-        Task<PlayerData?> GetPlayerAsync(string license);
+        Task BatchAsync(IReadOnlyList<SqlStatement> statements);
 
-        Task SavePlayerAsync(PlayerData player);
-
-        Task UpdateDutyStatusAsync(string license, bool isOnDuty);
-
-        Task AddAuditAsync(AuditEntry entry);
+        Task ApplySchemaAsync(Func<ISqlExecutor, Task> work);
     }
 }

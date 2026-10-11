@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Data.Common;
 using System.Threading.Tasks;
 
 namespace FivePRS.Server.Database
@@ -65,19 +64,15 @@ namespace FivePRS.Server.Database
 
         public async Task<int> CurrentVersionAsync()
         {
-            using var conn = _db.CreateConnection();
-            await conn.OpenAsync();
-            await EnsureSchemaTableAsync(conn);
-            return await ReadVersionAsync(conn);
+            await EnsureSchemaTableAsync();
+            return await ReadVersionAsync();
         }
 
         public async Task<MigrationResult> MigrateAsync(Func<int, Task>? beforeMigrating = null)
         {
-            using var conn = _db.CreateConnection();
-            await conn.OpenAsync();
-            await EnsureSchemaTableAsync(conn);
+            await EnsureSchemaTableAsync();
 
-            var from = await ReadVersionAsync(conn);
+            var from = await ReadVersionAsync();
             var current = from;
             var applied = new List<Migration>();
 
@@ -88,7 +83,15 @@ namespace FivePRS.Server.Database
                 if (applied.Count == 0 && beforeMigrating is not null)
                     await beforeMigrating(from);
 
-                await ApplyAsync(conn, migration);
+                await _db.ApplySchemaAsync(async db =>
+                {
+                    foreach (var step in migration.Steps)
+                        await step.ApplyAsync(db);
+
+                    await db.ExecuteAsync("INSERT INTO fiveprs_schema (version, name, applied_at) VALUES (@version, @name, @now)",
+                        ("@version", migration.Version), ("@name", migration.Name), ("@now", DateTime.UtcNow));
+                });
+
                 applied.Add(migration);
                 current = migration.Version;
             }
@@ -96,42 +99,13 @@ namespace FivePRS.Server.Database
             return new MigrationResult(from, current, LatestVersion, applied);
         }
 
-        private async Task ApplyAsync(DbConnection conn, Migration migration)
+        private Task EnsureSchemaTableAsync() =>
+            _db.ExecuteAsync(_db.Dialect == SqlDialect.MySql ? MySqlSchemaTable : SqliteSchemaTable);
+
+        private async Task<int> ReadVersionAsync()
         {
-            using var transaction = _db.Dialect == SqlDialect.Sqlite ? conn.BeginTransaction() : null;
-
-            foreach (var step in migration.Steps)
-                await step.ApplyAsync(conn, transaction, _db.Dialect);
-
-            using (var cmd = conn.CreateCommand())
-            {
-                cmd.Transaction = transaction;
-                cmd.CommandText = "INSERT INTO fiveprs_schema (version, name, applied_at) VALUES (@version, @name, @now)";
-                AddParameter(cmd, "@version", migration.Version);
-                AddParameter(cmd, "@name", migration.Name);
-                AddParameter(cmd, "@now", DateTime.UtcNow);
-                await cmd.ExecuteNonQueryAsync();
-            }
-
-            transaction?.Commit();
-        }
-
-        private Task EnsureSchemaTableAsync(DbConnection conn) =>
-            MigrationStep.ExecuteAsync(conn, null, _db.Dialect == SqlDialect.MySql ? MySqlSchemaTable : SqliteSchemaTable);
-
-        private static async Task<int> ReadVersionAsync(DbConnection conn)
-        {
-            using var cmd = conn.CreateCommand();
-            cmd.CommandText = "SELECT COALESCE(MAX(version), 0) FROM fiveprs_schema";
-            return Convert.ToInt32(await cmd.ExecuteScalarAsync());
-        }
-
-        private static void AddParameter(DbCommand cmd, string name, object value)
-        {
-            var parameter = cmd.CreateParameter();
-            parameter.ParameterName = name;
-            parameter.Value = value;
-            cmd.Parameters.Add(parameter);
+            var rows = await _db.QueryAsync("SELECT COALESCE(MAX(version), 0) AS version FROM fiveprs_schema");
+            return rows.Count > 0 ? rows[0].GetInt32("version") : 0;
         }
     }
 }

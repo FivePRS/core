@@ -32,7 +32,7 @@ namespace FivePRS.Tests
             await provider.InitializeAsync();
             await new Migrator(provider).MigrateAsync();
 
-            var player = await provider.GetPlayerAsync("license:old");
+            var player = await new PlayerStore(provider).GetAsync("license:old");
             Assert.NotNull(player);
             Assert.Equal("Veteran", player!.Name);
             Assert.Equal(3, player.Rank);
@@ -46,7 +46,7 @@ namespace FivePRS.Tests
             await provider.InitializeAsync();
             await new Migrator(provider).MigrateAsync();
 
-            await provider.SavePlayerAsync(new PlayerData
+            await new PlayerStore(provider).SaveAsync(new PlayerData
             {
                 License    = "license:new",
                 Name       = "Rookie",
@@ -55,7 +55,7 @@ namespace FivePRS.Tests
                 Callsign   = "1-ADAM-12",
             });
 
-            var player = await provider.GetPlayerAsync("license:new");
+            var player = await new PlayerStore(provider).GetAsync("license:new");
             Assert.Equal("1-ADAM-12", player!.Callsign);
             Assert.Equal("lspd", player.Agency);
         }
