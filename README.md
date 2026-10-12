@@ -1,4 +1,4 @@
-![FivePRS Logo](https://cmap.pics/ibNxG/uXr_2c.png/raw)
+![FivePRS Logo](https://cdn.fiveprs.org/fiveprs/forum/00-banner.png)
 
 **FivePRS** is a free, open-source public response framework for FiveM: police, fire and EMS roleplay in one resource, with server-side dispatch, real jurisdictions, records, civilian life and an in-car terminal.
 
