@@ -10,7 +10,7 @@ namespace FivePRS.Client
 {
     public class CoordsCommand : BaseScript
     {
-        private static readonly string[] PointNames = { "Armory", "Locker", "Garage" };
+        private static readonly string[] PointNames = { "Armory", "Locker", "Garage", "Parking" };
 
         public CoordsCommand()
         {
@@ -33,7 +33,7 @@ namespace FivePRS.Client
             var h = Format(entity.Heading);
 
             string label, text;
-            if (inVehicle)
+            if (inVehicle || pointName == "Parking")
             {
                 label = "Parking spot";
                 text  = $"[{x}, {y}, {z}, {h}]";

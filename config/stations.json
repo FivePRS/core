@@ -2,14 +2,48 @@
     "blips": "always",
     "stations": [
         {
-            "id": "mission_row_pd", "name": "Mission Row Police Station", "department": "Police", "agencies": ["lspd"],
-            "dutyPoint": [440.89, -981.43, 30.69], "heading": 13.97, 
+            "id": "mission_row_pd", 
+            "name": "Mission Row Police Station", 
+            "department": "Police", 
+            "agencies": [
+                "lspd"
+            ],
+            "dutyPoint": [440.89, -981.43, 30.69], 
+            "heading": 13.97, 
             "armory": [451.7, -980.1, 30.7],
             "locker": [452.6, -992.8, 30.7],
             "garage": [454.6, -1017.4, 28.4],
-            "parking": [[438.4, -1018.3, 27.7, 90], [441.0, -1024.2, 28.3, 90], [453.5, -1022.2, 28.0, 90], [450.9, -1016.5, 28.1, 90]]
+            "parking": [
+                [438.4, -1018.3, 27.7, 90], 
+                [441.0, -1024.2, 28.3, 90], 
+                [453.5, -1022.2, 28.0, 90], 
+                [450.9, -1016.5, 28.1, 90]
+            ]
         },
-        { "id": "vespucci_pd",      "name": "Vespucci Police Station",       "department": "Police", "agencies": ["lspd"], "dutyPoint": [-1108.4, -845.0, 19.3],  "heading": 130, "parking": [] },
+        { 
+            "id": "vespucci_pd",      
+            "name": "Vespucci Police Station",       
+            "department": "Police", 
+            "agencies": ["lspd"], 
+            "dutyPoint": [-1108.4, -845.0, 19.3],  
+            "heading": 130,
+            "garage": [-1069.38, -851.58, 4.87], 
+            "parking": [
+                [-1112.0, -855.4, 13.15, 39.06],
+                [-1115.56, -857.49, 13.15, 36.32],
+                [-1122.86, -863.01, 13.18, 37.99],
+                [-1125.93, -865.23, 13.17, 39.99],
+                [-1068.91, -879.26, 4.48, 29.76],
+                [-1072.48, -881.0, 4.38, 28.74],
+                [-1075.87, -882.96, 4.29, 30.07],
+                [-1079.18, -884.83, 4.21, 29.75],
+                [-1039.28, -855.73, 4.49, 57.64],
+                [-1041.44, -858.76, 4.5, 55.63],
+                [-1044.94, -861.52, 4.53, 58.72],
+                [-1048.26, -864.48, 4.61, 59.69],
+                [-1051.36, -867.29, 4.74, 57.23]
+            ]
+        },
         { "id": "la_mesa_pd",       "name": "La Mesa Police Station",        "department": "Police", "agencies": ["lspd"], "dutyPoint": [826.8, -1290.0, 28.2],   "heading": 90,  "parking": [] },
         { "id": "davis_pd",         "name": "Davis Police Station",          "department": "Police", "agencies": ["lspd"], "dutyPoint": [360.9, -1584.7, 29.3],   "heading": 50,  "parking": [] },
         { "id": "vinewood_pd",      "name": "Vinewood Police Station",       "department": "Police", "agencies": ["lspd"], "dutyPoint": [638.6, 1.7, 82.8],       "heading": 250, "parking": [] },

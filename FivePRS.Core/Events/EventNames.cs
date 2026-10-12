@@ -72,6 +72,8 @@ namespace FivePRS.Core.Events
         public const string LocalDutyChanged        = "FivePRS:Local:DutyChanged";
         public const string LocalOpenMenu           = "FivePRS:Local:OpenMenu";
         public const string LocalHttpRequest        = "FivePRS:Local:HttpRequest";
+        public const string LocalSpawnTarget        = "FivePRS:Local:SpawnTarget";
+        public const string LocalSpawnHandled       = "FivePRS:Local:SpawnHandled";
         public const string LocalHttpResponse       = "FivePRS:Local:HttpResponse";
         public const string LocalDbRequest          = "FivePRS:Local:DbRequest";
         public const string LocalDbResponse         = "FivePRS:Local:DbResponse";

@@ -25,8 +25,8 @@ namespace FivePRS.Tests
             var config = new DepartmentVehiclesConfig();
 
             Assert.Equal(new[] { "sheriff", "sheriff2" }, config.TierFor("BCSO", LoadoutTier.Recruit).Models);
-            Assert.Equal(new[] { "police", "police2" }, config.TierFor("lspd", LoadoutTier.Recruit).Models);
-            Assert.Equal(new[] { "police3" }, config.TierFor(null, LoadoutTier.Command).Models);
+            Assert.Same(config.Patrol, config.TierFor("lspd", LoadoutTier.Recruit));
+            Assert.Same(config.Command, config.TierFor(null, LoadoutTier.Command));
         }
 
         [Fact]
@@ -36,7 +36,7 @@ namespace FivePRS.Tests
             config.Agencies["sasp"] = new AgencyVehicleDef { Patrol = new VehicleTierDef { Models = new[] { "police4" } } };
 
             Assert.Equal(new[] { "police4" }, config.TierFor("sasp", LoadoutTier.Officer).Models);
-            Assert.Equal(new[] { "police3" }, config.TierFor("sasp", LoadoutTier.Command).Models);
+            Assert.Same(config.Command, config.TierFor("sasp", LoadoutTier.Command));
         }
 
         [Fact]

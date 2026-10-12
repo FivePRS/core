@@ -20,6 +20,7 @@ ui_page 'nui/index.html'
 
 client_scripts {
     'scripts/relay.lua',
+    'scripts/spawn.lua',
     'client/FivePRS.Client.net.dll',
     'client/FivePRS.Police.net.dll',
     'client/FivePRS.Fire.net.dll',
