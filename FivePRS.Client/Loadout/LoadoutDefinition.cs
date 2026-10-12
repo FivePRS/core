@@ -12,6 +12,10 @@ namespace FivePRS.Client.Loadout
 
         public IReadOnlyList<PropEntry> Props { get; set; } = new List<PropEntry>();
 
+        public IReadOnlyList<ComponentEntry>? FemaleComponents { get; set; }
+
+        public IReadOnlyList<PropEntry>? FemaleProps { get; set; }
+
         public string? MalePedModel { get; set; }
 
         public string? FemalePedModel { get; set; }

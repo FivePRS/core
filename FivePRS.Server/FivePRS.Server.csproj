@@ -15,7 +15,6 @@
   <ItemGroup>
     <PackageReference Include="CitizenFX.Core.Server" Version="1.0.26803" ExcludeAssets="runtime" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-    <PackageReference Include="MySqlConnector" Version="2.6.2" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="6.0.36" />
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" ExcludeAssets="runtime" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.13" />
@@ -25,7 +24,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FivePRS.Core\FivePRS.Core.csproj" />
-    <ProjectReference Include="..\FivePRS.Native\FivePRS.Native.csproj" />
   </ItemGroup>
 
   <Target Name="CopySqliteNatives" AfterTargets="Build">

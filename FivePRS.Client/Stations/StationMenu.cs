@@ -3,6 +3,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using CitizenFX.Core;
 using FivePRS.Client.Agency;
+using FivePRS.Client.App;
+using FivePRS.Client.Appearance;
 using FivePRS.Client.Loadout;
 using FivePRS.Client.Menu;
 using FivePRS.Core.Config;
@@ -195,6 +197,22 @@ namespace FivePRS.Client.Stations
                 {
                     await LoadoutManager.RestoreClothingAsync();
                     Notify("Locker", "Changed into your own clothes.");
+                },
+            });
+
+            var character = CivilianPanel.ActiveCharacter;
+            page.Items.Add(new MenuItem
+            {
+                Label    = "Edit appearance",
+                Detail   = character is null ? "Choose a character first" : character.FullName,
+                Disabled = character is null || CharacterCreator.IsOpen,
+                Select   = async () =>
+                {
+                    CompactMenu.Close();
+                    var outfit = LoadoutManager.Outfit;
+                    await LoadoutManager.RestoreClothingAsync();
+                    CharacterCreator.Open(character!.Id, character.FullName, true,
+                        outfit is null ? null : () => LoadoutManager.WearAsync(outfit));
                 },
             });
 

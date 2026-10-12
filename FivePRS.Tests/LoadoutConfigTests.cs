@@ -25,8 +25,8 @@ namespace FivePRS.Tests
             var config = new DepartmentVehiclesConfig();
 
             Assert.Equal(new[] { "sheriff", "sheriff2" }, config.TierFor("BCSO", LoadoutTier.Recruit).Models);
-            Assert.Equal(new[] { "police", "police2" }, config.TierFor("lspd", LoadoutTier.Recruit).Models);
-            Assert.Equal(new[] { "police3" }, config.TierFor(null, LoadoutTier.Command).Models);
+            Assert.Same(config.Patrol, config.TierFor("lspd", LoadoutTier.Recruit));
+            Assert.Same(config.Command, config.TierFor(null, LoadoutTier.Command));
         }
 
         [Fact]
@@ -36,7 +36,7 @@ namespace FivePRS.Tests
             config.Agencies["sasp"] = new AgencyVehicleDef { Patrol = new VehicleTierDef { Models = new[] { "police4" } } };
 
             Assert.Equal(new[] { "police4" }, config.TierFor("sasp", LoadoutTier.Officer).Models);
-            Assert.Equal(new[] { "police3" }, config.TierFor("sasp", LoadoutTier.Command).Models);
+            Assert.Same(config.Command, config.TierFor("sasp", LoadoutTier.Command));
         }
 
         [Fact]
@@ -53,6 +53,36 @@ namespace FivePRS.Tests
             Assert.Same(sheriffUniform, config.UniformFor("bcso", LoadoutTier.Command));
             Assert.Same(config.Officer, config.WeaponsFor("bcso", LoadoutTier.Officer));
             Assert.Same(config.CommandUniform, config.UniformFor("lspd", LoadoutTier.Command));
+        }
+
+        [Fact]
+        public void Uniform_ConfigWithoutFemale_KeepsBuiltInFemaleOutfit()
+        {
+            var config = JsonConvert.DeserializeObject<DepartmentLoadoutsConfig>(
+                "{ \"uniform\": { \"components\": [ { \"slot\": 11, \"drawable\": 99, \"texture\": 0 } ], \"props\": [] } }")!;
+
+            Assert.Equal(99, Assert.Single(config.Uniform.Components).Drawable);
+            Assert.Contains(config.Uniform.Female!.Components, c => c.Slot == 3 && c.Drawable == 14);
+        }
+
+        [Fact]
+        public void Uniform_FemaleOutfit_IsReadFromConfig()
+        {
+            var config = JsonConvert.DeserializeObject<DepartmentLoadoutsConfig>(
+                "{ \"uniform\": { \"components\": [], \"props\": [], \"female\": { \"components\": [ { \"slot\": 11, \"drawable\": 7, \"texture\": 2 } ], \"props\": [] } } }")!;
+
+            var top = Assert.Single(config.Uniform.Female!.Components);
+            Assert.Equal(7, top.Drawable);
+            Assert.Equal(2, top.Texture);
+        }
+
+        [Fact]
+        public void Uniform_AgencyWithoutFemale_HasNoFemaleOutfit()
+        {
+            var config = JsonConvert.DeserializeObject<DepartmentLoadoutsConfig>(
+                "{ \"agencies\": { \"bcso\": { \"uniform\": { \"components\": [], \"props\": [] } } } }")!;
+
+            Assert.Null(config.UniformFor("bcso", LoadoutTier.Officer).Female);
         }
 
         [Theory]

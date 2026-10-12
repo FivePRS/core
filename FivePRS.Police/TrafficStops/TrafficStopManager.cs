@@ -7,6 +7,7 @@ using CitizenFX.Core.Native;
 using FivePRS.Client;
 using FivePRS.Client.Agency;
 using FivePRS.Client.Arrest;
+using FivePRS.Client.Dispatch;
 using FivePRS.Client.Menu;
 using FivePRS.Core.Civilian;
 using FivePRS.Core.Config;
@@ -334,6 +335,8 @@ namespace FivePRS.Police.TrafficStops
                     Select   = () => Run(() => RecordArrest(stop)),
                 }
                 : new MenuItem { Label = "Arrest", Detail = $"Press {Binds.Cuff}", Disabled = true });
+
+            page.Items.Add(BackupClient.MenuEntry());
 
             page.Items.Add(new MenuItem
             {

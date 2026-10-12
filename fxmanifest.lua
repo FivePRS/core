@@ -6,12 +6,13 @@ author 'Pixel <https://codemeapixel.dev>'
 description 'The Unified Public Response Framework for FiveM.'
 repository 'https://github.com/FivePRS/core'
 license 'AGPL-3.0-or-later'
-version '0.9.0-ptb.3'
+version '0.9.0-ptb.4'
 
 lua54 'yes'
 
 server_scripts {
     'scripts/http.lua',
+    'scripts/db.lua',
     'server/FivePRS.Server.net.dll',
 }
 
@@ -19,6 +20,7 @@ ui_page 'nui/index.html'
 
 client_scripts {
     'scripts/relay.lua',
+    'scripts/spawn.lua',
     'client/FivePRS.Client.net.dll',
     'client/FivePRS.Police.net.dll',
     'client/FivePRS.Fire.net.dll',

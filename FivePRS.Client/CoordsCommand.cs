@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using CitizenFX.Core;
 using CitizenFX.Core.Native;
 using Newtonsoft.Json;
@@ -9,7 +10,7 @@ namespace FivePRS.Client
 {
     public class CoordsCommand : BaseScript
     {
-        private static readonly string[] PointNames = { "Armory", "Locker", "Garage" };
+        private static readonly string[] PointNames = { "Armory", "Locker", "Garage", "Parking" };
 
         public CoordsCommand()
         {
@@ -19,7 +20,7 @@ namespace FivePRS.Client
 
         private static void Capture(string? point)
         {
-            var pointName = Array.Find(PointNames, p => string.Equals(p, point, StringComparison.OrdinalIgnoreCase));
+            var pointName = PointNames.FirstOrDefault(p => string.Equals(p, point, StringComparison.OrdinalIgnoreCase));
 
             var ped       = Game.PlayerPed;
             var vehicle   = ped.CurrentVehicle;
@@ -32,7 +33,7 @@ namespace FivePRS.Client
             var h = Format(entity.Heading);
 
             string label, text;
-            if (inVehicle)
+            if (inVehicle || pointName == "Parking")
             {
                 label = "Parking spot";
                 text  = $"[{x}, {y}, {z}, {h}]";

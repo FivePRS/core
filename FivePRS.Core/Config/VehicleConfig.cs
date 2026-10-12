@@ -47,13 +47,13 @@ namespace FivePRS.Core.Config
     public sealed class DepartmentVehiclesConfig
     {
         [JsonProperty("patrol")]
-        public VehicleTierDef Patrol { get; set; } = new() { Models = new[] { "police", "police2" } };
+        public VehicleTierDef Patrol { get; set; } = new() { Models = new[] { "police", "police3", "police5" } };
 
         [JsonProperty("senior")]
-        public VehicleTierDef Senior { get; set; } = new() { Models = new[] { "police2", "police4" } };
+        public VehicleTierDef Senior { get; set; } = new() { Models = new[] { "police2", "police4", "policebuffalo" } };
 
         [JsonProperty("command")]
-        public VehicleTierDef Command { get; set; } = new() { Models = new[] { "police3" } };
+        public VehicleTierDef Command { get; set; } = new() { Models = new[] { "policebuffalo6", "polgauntlet", "policeb", "policeb2" } };
 
         [JsonProperty("agencies", ObjectCreationHandling = ObjectCreationHandling.Replace)]
         public Dictionary<string, AgencyVehicleDef> Agencies { get; set; } = new()

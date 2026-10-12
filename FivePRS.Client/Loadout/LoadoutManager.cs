@@ -23,6 +23,8 @@ namespace FivePRS.Client.Loadout
 
         public static bool IsInUniform => _savedComponents is not null;
 
+        public static LoadoutDefinition? Outfit { get; private set; }
+
         public static async Task ApplyAsync(LoadoutDefinition loadout)
         {
             if (!Game.PlayerPed.Exists()) return;
@@ -41,6 +43,7 @@ namespace FivePRS.Client.Loadout
 
             if (_savedComponents is null)
                 SaveAppearance(ped.Handle);
+            Outfit = outfit;
 
             var male     = API.IsPedMale(ped.Handle);
             var own      = male ? outfit.MalePedModel : outfit.FemalePedModel;
@@ -58,8 +61,9 @@ namespace FivePRS.Client.Loadout
 
             if (fallback) return;
 
-            ApplyComponents(ped.Handle, outfit.Components);
-            ApplyProps(ped.Handle, outfit.Props);
+            var female = !API.IsPedMale(ped.Handle);
+            ApplyComponents(ped.Handle, female && outfit.FemaleComponents is not null ? outfit.FemaleComponents : outfit.Components);
+            ApplyProps(ped.Handle, female && outfit.FemaleProps is not null ? outfit.FemaleProps : outfit.Props);
         }
 
         public static async Task RestoreClothingAsync()
@@ -179,6 +183,7 @@ namespace FivePRS.Client.Loadout
             _savedComponents = null;
             _savedProps      = null;
             _savedModel      = 0;
+            Outfit           = null;
         }
 
         private static async Task<bool> ChangeModelAsync(Model model)

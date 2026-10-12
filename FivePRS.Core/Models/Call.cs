@@ -31,6 +31,7 @@ namespace FivePRS.Core.Models
         public bool            IsEmergency { get; set; }
         public string?         Description { get; set; }
         public string?         Caller      { get; set; }
+        public int             BackupCode  { get; set; }
     }
 
     public sealed class EmergencyCallStatus

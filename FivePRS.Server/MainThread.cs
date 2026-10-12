@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -7,7 +8,7 @@ namespace FivePRS.Server
 {
     public static class MainThread
     {
-        private static readonly ConcurrentQueue<TaskCompletionSource<bool>> Waiting = new();
+        private static readonly ConcurrentQueue<Action> Waiting = new();
         private static bool _enabled;
         private static int _threadId;
 
@@ -22,14 +23,7 @@ namespace FivePRS.Server
 
         public static bool IsCurrent => !_enabled || (_threadId != 0 && Thread.CurrentThread.ManagedThreadId == _threadId);
 
-        public static Task Resume()
-        {
-            if (IsCurrent) return Task.FromResult(true);
-
-            var completion = new TaskCompletionSource<bool>();
-            Waiting.Enqueue(completion);
-            return completion.Task;
-        }
+        public static Awaitable Resume() => default;
 
         public static void Tick()
         {
@@ -39,8 +33,8 @@ namespace FivePRS.Server
 
         private static void Drain()
         {
-            while (Waiting.TryDequeue(out var completion))
-                completion.TrySetResult(true);
+            while (Waiting.TryDequeue(out var continuation))
+                continuation();
         }
 
         public static async Task Run(Func<Task> work)
@@ -64,6 +58,19 @@ namespace FivePRS.Server
             finally
             {
                 await Resume();
+            }
+        }
+
+        public readonly struct Awaitable : INotifyCompletion
+        {
+            public Awaitable GetAwaiter() => this;
+
+            public bool IsCompleted => IsCurrent;
+
+            public void OnCompleted(Action continuation) => Waiting.Enqueue(continuation);
+
+            public void GetResult()
+            {
             }
         }
     }

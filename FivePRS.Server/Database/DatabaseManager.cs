@@ -19,6 +19,8 @@ namespace FivePRS.Server.Database
 
         public bool IsReady { get; private set; }
 
+        public PlayerStore Players { get; private set; } = null!;
+
         public CivilianStore Civilians { get; private set; } = null!;
 
         public RosterStore Roster { get; private set; } = null!;
@@ -40,9 +42,9 @@ namespace FivePRS.Server.Database
 
             if (dbType == DatabaseType.MySQL)
             {
-                if (connectionString is null || string.IsNullOrWhiteSpace(connectionString))
-                    throw new DatabaseSetupException("fiveprs_db_type is mysql, but fiveprs_db_connection is empty. Set it to your MySQL or MariaDB connection string.");
-                _provider = new MySqlProvider(connectionString);
+                if (connectionString is not null && !string.IsNullOrWhiteSpace(connectionString))
+                    Debug.WriteLine("[FivePRS] WARNING: fiveprs_db_connection is ignored with MySQL. FivePRS now connects through oxmysql, which reads mysql_connection_string. Set it as mysql://user:password@host:port/database.");
+                _provider = new OxMySqlProvider(new OxMySqlBridge());
             }
             else
             {
@@ -72,6 +74,7 @@ namespace FivePRS.Server.Database
                 Debug.WriteLine($"[FivePRS] WARNING: The database is at schema version {result.FromVersion}, but this FivePRS build only knows up to {result.LatestVersion}. Update FivePRS, or restore the database backup taken before you downgraded.");
             SchemaVersion = result.ToVersion;
 
+            Players     = new PlayerStore(_provider);
             Civilians   = new CivilianStore(_provider);
             Roster      = new RosterStore(_provider);
             Appearances = new AppearanceStore(_provider);
@@ -91,16 +94,12 @@ namespace FivePRS.Server.Database
             Debug.WriteLine($"[FivePRS] Backed up the database to {path} before updating it.");
         }
 
-        public Task<PlayerData?> GetPlayerAsync(string license)
-            => MainThread.Run(() => _provider.GetPlayerAsync(license));
+        public Task<PlayerData?> GetPlayerAsync(string license) => Players.GetAsync(license);
 
-        public Task SavePlayerAsync(PlayerData player)
-            => MainThread.Run(() => _provider.SavePlayerAsync(player));
+        public Task SavePlayerAsync(PlayerData player) => Players.SaveAsync(player);
 
-        public Task UpdateDutyStatusAsync(string license, bool isOnDuty)
-            => MainThread.Run(() => _provider.UpdateDutyStatusAsync(license, isOnDuty));
+        public Task UpdateDutyStatusAsync(string license, bool isOnDuty) => Players.UpdateDutyStatusAsync(license, isOnDuty);
 
-        public Task AddAuditAsync(AuditEntry entry)
-            => MainThread.Run(() => _provider.AddAuditAsync(entry));
+        public Task AddAuditAsync(AuditEntry entry) => Players.AddAuditAsync(entry);
     }
 }

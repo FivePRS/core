@@ -12,5 +12,6 @@ namespace FivePRS.Core.Text
         public const string Escort     = "er_escort";
         public const string AiCallouts = "er_aicallouts";
         public const string TrafficStop = "fiveprs_trafficstop";
+        public const string Backup      = "fiveprs_request_backup";
     }
 }

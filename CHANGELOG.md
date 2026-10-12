@@ -6,6 +6,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+
+## [0.9.0-ptb.4] - 2026-10-11
+
+### Added
+- Request backup at Code 2 or Code 3 from the stop menu, with `/backup`, or with a key you bind. Choose any unit (players first, then an NPC unit if nobody attaches), an NPC unit straight away, or players only. On a call, backup is requested for that call; otherwise a Backup Request call is created at your position. Responding units get a notification and a flashing map marker. Settings are under `backup` in `config/settings.json`
+- The station locker has Edit appearance: change your character's look while on duty, then your uniform goes back on
+- Creating a character while on duty explains how to set up their appearance, and the character creator opens when you next go off duty. The Characters app says why Edit appearance is unavailable on duty
+- Uniforms can give female characters their own clothing under `female`, since male and female freemode characters number their clothing differently. The default police uniforms include a female version
+- On start, FivePRS removes server DLLs left over from older versions (MySqlConnector and the libraries it used)
+
+### Fixed
+- The default police uniform no longer hides the officer's arms
+- `/fprs_coords` works again instead of failing with `BadImageFormatException`
+- Joining puts you straight at your last location instead of spawning at the map's spawn point and then teleporting (with spawnmanager; other spawn scripts still get the teleport)
+- You spawn as your last used character. A character with no saved look yet spawns as a plain male or female character, with a reminder to set up their appearance, instead of the map's ped
+
+### Changed
+- The native SQLite helper is only loaded when SQLite is the database
+- MySQL and MariaDB now go through [oxmysql](https://github.com/overextended/oxmysql) instead of a bundled driver. Install oxmysql, set `mysql_connection_string` as `mysql://user:password@host:port/database`, and `ensure oxmysql` before `fiveprs`. `fiveprs_db_connection` is now only for a custom SQLite path
+- The server package is smaller: MySqlConnector and the six libraries it needed are no longer shipped
+- Updated duty point for the Mission Row station to be infront of the front desk.
+- Updated vehicle list for ranking police officers (LSPD)
+
+### Known issues
+- GTA V Enhanced servers aren't supported yet. Enhanced runs C# resources on .NET 10 in a sandbox that FivePRS doesn't run in yet; support is coming in a later release. Use a GTA V Legacy server
+
 ## [0.9.0-ptb.3] - 2026-10-10
 
 ### Added
@@ -81,6 +107,7 @@ The first public test build.
 - Back up your database before updating between test builds
 
 [Unreleased]: https://github.com/FivePRS/core/compare/v0.9.0-ptb.3...HEAD
+[0.9.0-ptb.3]: https://github.com/FivePRS/core/compare/v0.9.0-ptb.3...v0.9.0-ptb.4
 [0.9.0-ptb.3]: https://github.com/FivePRS/core/compare/v0.9.0-ptb.2...v0.9.0-ptb.3
 [0.9.0-ptb.2]: https://github.com/FivePRS/core/compare/v0.9.0-ptb.1...v0.9.0-ptb.2
 [0.9.0-ptb.1]: https://github.com/FivePRS/core/releases/tag/v0.9.0-ptb.1

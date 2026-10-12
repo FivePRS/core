@@ -16,8 +16,8 @@ namespace FivePRS.Tests
         public async Task InitializeAsync()
         {
             _database = await TestDatabase.CreateAsync();
-            await _database.Provider.SavePlayerAsync(new PlayerData { License = Alice, Name = "Alice Cooper", Rank = 4 });
-            await _database.Provider.SavePlayerAsync(new PlayerData { License = "license:bob", Name = "Bob Ross" });
+            await _database.Players.SaveAsync(new PlayerData { License = Alice, Name = "Alice Cooper", Rank = 4 });
+            await _database.Players.SaveAsync(new PlayerData { License = "license:bob", Name = "Bob Ross" });
             _roster = new RosterService(_database.Roster);
             await _roster.LoadAsync();
         }

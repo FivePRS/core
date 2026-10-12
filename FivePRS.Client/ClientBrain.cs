@@ -92,6 +92,7 @@ namespace FivePRS.Client
                     "~b~/er_end_callout~w~ — End active callout~n~" +
                     "~b~/er_calls~w~ — List active calls~n~" +
                     "~b~/er_attach [id]~w~ — Respond as backup~n~" +
+                    "~b~/backup [2|3] [npc|players]~w~ — Request backup; /backup cancel to stand down~n~" +
                     "~b~/er_status [available|busy]~w~ — Set unit status~n~" +
                     "~b~/er_cuff~w~ — Cuff nearest suspect~n~" +
                     "~b~/er_uncuff~w~ — Release cuffed suspect~n~" +

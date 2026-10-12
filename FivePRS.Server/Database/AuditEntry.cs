@@ -28,6 +28,7 @@ namespace FivePRS.Server.Database
         public const string RosterGranted    = "roster.grant";
         public const string RosterRevoked    = "roster.revoke";
         public const string PlayerRevived    = "player.revive";
+        public const string BackupRequested  = "backup.request";
     }
 
     public sealed class AuditEntry

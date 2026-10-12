@@ -1,4 +1,4 @@
-![FivePRS Logo](https://cmap.pics/ibNxG/uXr_2c.png/raw)
+![FivePRS Logo](https://cdn.fiveprs.org/fiveprs/forum/00-banner.png)
 
 **FivePRS** is a free, open-source public response framework for FiveM: police, fire and EMS roleplay in one resource, with server-side dispatch, real jurisdictions, records, civilian life and an in-car terminal.
 
@@ -13,10 +13,10 @@ The full documentation lives at **[fiveprs.org/docs](https://fiveprs.org/docs)**
 3. Add the [server configuration](#server-configuration) below to `server.cfg`, ending with `ensure fiveprs`.
 4. Start the server. The console shows `[FivePRS] Database (SQLite) ready.` and `[FivePRS] ServerBrain online.`
 
-FivePRS runs on Windows and Linux servers. On GTA V Legacy servers it uses SQLite out of the box, so there is nothing else to set up; MySQL 8 and MariaDB 10.6+ are supported too.
+FivePRS runs on Windows and Linux servers for GTA V Legacy. It uses SQLite out of the box, so there is nothing else to set up; MySQL 8 and MariaDB 10.6+ are supported too.
 
 > [!IMPORTANT]
-> **GTA V Enhanced servers need a MySQL or MariaDB database.** FiveM for Enhanced doesn't let resources load native libraries, so SQLite can't run there. Set `fiveprs_db_type "mysql"` and `fiveprs_db_connection` (see [Server Configuration](#server-configuration)) before the first start.
+> **GTA V Enhanced isn't supported yet.** FiveM for Enhanced runs C# resources on .NET 10 in a sandbox that FivePRS doesn't run in yet. Enhanced support is coming in a later release; until then, use a GTA V Legacy server.
 
 Optional official addons (a loading screen, Discord rich presence and a Notes app) are in the [addons repository](https://github.com/FivePRS/addons): download `fiveprs_addons.zip` from its releases.
 
@@ -25,10 +25,12 @@ To update, see [Updates](#updates): FivePRS tells you when a new release is out 
 ### Building from source
 On Windows, run `publish.ps1` to build everything and package `dist/fiveprs.zip`. Run the tests with `dotnet test`.
 
+Before a release, run `tools/smoke/smoke.ps1` with Docker running and `FIVEPRS_LICENSE_KEY` set to a Cfx.re server key. It starts the package on a real Linux FXServer with SQLite, then with MySQL (MariaDB and oxmysql), and fails if FivePRS doesn't come online or the server crashes. Add `-Build` to rebuild first.
+
 ## Server Configuration
 ```cfg
-set fiveprs_db_type              "sqlite"   # or "mysql" (required on GTA V Enhanced; also for MariaDB)
-set fiveprs_db_connection        ""         # MySQL connection string, or a custom SQLite path
+set fiveprs_db_type              "sqlite"   # or "mysql" (also for MariaDB; needs oxmysql, see below)
+set fiveprs_db_connection        ""         # optional custom SQLite path
 set fiveprs_max_xp               500        # cap on XP awarded per call
 set fiveprs_xp_multiplier        1.0
 set fiveprs_restrict_departments false      # true limits departments to the ACE below or the admin roster
@@ -41,6 +43,19 @@ add_ace resource.fiveprs command.load_server_icon allow   # lets FivePRS set the
 
 ensure fiveprs
 ```
+
+### MySQL and MariaDB
+FivePRS connects to MySQL 8 and MariaDB 10.6+ through [oxmysql](https://github.com/overextended/oxmysql/releases). Install it, then set its connection string and start it before FivePRS:
+
+```cfg
+set mysql_connection_string "mysql://user:password@localhost/fiveprs?charset=utf8mb4"
+set fiveprs_db_type         "mysql"
+
+ensure oxmysql
+ensure fiveprs
+```
+
+If you used `fiveprs_db_connection` for MySQL before, rewrite it in the `mysql://user:password@host:port/database` form above for `mysql_connection_string`. oxmysql doesn't read every key of the old `Server=…;Database=…;Password=…` format.
 
 | Permission | Grants |
 |---|---|
@@ -187,6 +202,9 @@ Fire (LSFD) and EMS (SAMS) are playable departments. Go on duty at a fire statio
 ## Death and revive
 When a player dies they stay down where they fell instead of respawning, and EMS gets an automatic 911 call. On-duty EMS revive them with `E`; after `respawnSeconds` the player can press `E` to respawn at the nearest hospital. Admins can use `fprs_revive <player id>`. Settings are under `death` in `config/settings.json`: `enabled`, `respawnSeconds`, `notifyEms` and `reviveXp`. Turn it off if you use another death script.
 
+## Backup requests
+On-duty units can request backup at Code 2 or Code 3 from the stop menu, with `/backup [2|3] [npc|players]`, or with a key bound under FivePRS in the key bindings; `/backup cancel` ends the request. **Any unit** alerts on-duty players and sends an NPC unit if nobody attaches in time (or after a few seconds when nobody else is on duty), **NPC unit** sends one straight away for roleplay with NPCs, and **Players only** never sends one. On a call, backup is requested for that call; otherwise a Backup Request call is created at the officer's position. Police and the requester's own department are alerted with a notification and a flashing marker. Settings are under `backup` in `config/settings.json`: `enabled`, `cooldownSeconds`, `npcEnabled`, `npcWaitSeconds`, `npcVehicle`, `npcPedModel` and `npcCrew`.
+
 ## Game world
 FivePRS turns off wanted levels and GTA's own AI police, ambulance and fire response, so they don't interfere with roleplay. Set these under `world` in `config/settings.json`: `disableWantedLevel` and `disableDispatchServices` (both `true` by default) and `disableRandomCops` (`false` by default; `true` also stops ambient AI police from spawning).
 
@@ -257,10 +275,10 @@ Duty changes, department changes, XP awards, rank-ups, admin actions and denied 
 
 ## Troubleshooting
 
-**`NotImplementedException` at `KeyExchangeStrength` when connecting to MySQL or MariaDB.** FiveM's server runtime can't make encrypted database connections. FivePRS now adds `SslMode=None` automatically; on older builds, add it to `fiveprs_db_connection` yourself. Keep the database on the same machine or a private network.
+**`oxmysql isn't installed` / `oxmysql couldn't connect to the database`.** With `fiveprs_db_type "mysql"`, FivePRS needs oxmysql started before it and `mysql_connection_string` set. oxmysql prints its own message explaining connection failures just above the FivePRS one.
 
 **`Access to the path … is denied`.** The server's user account can't write to `resources/fiveprs`. On Linux, `chown -R <server user> resources/fiveprs`.
 
-**`SQLite can't run` / `P/Invoke is not allowed` on a GTA V Enhanced server.** Enhanced servers block resources from loading native libraries, and SQLite is one. Use MySQL: set `fiveprs_db_type "mysql"` and `fiveprs_db_connection` in `server.cfg`.
+**`MissingMethodException`, `SecurityException` or `P/Invoke is not allowed` on startup.** The server is running FiveM for GTA V Enhanced, which FivePRS doesn't support yet. Use a GTA V Legacy server.
 
 **`Could not load native SQLite` or `DllNotFoundException: e_sqlite3`.** The resource's `server/` folder must contain `e_sqlite3.dll` (Windows) or `libe_sqlite3.so` (Linux). Re-extract `fiveprs.zip` rather than copying individual DLLs.

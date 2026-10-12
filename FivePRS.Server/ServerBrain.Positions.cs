@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CitizenFX.Core;
+using FivePRS.Core.Civilian;
 using FivePRS.Core.Config;
 using FivePRS.Core.Events;
 using FivePRS.Core.Models;
+using Newtonsoft.Json;
 
 namespace FivePRS.Server
 {
@@ -53,8 +55,37 @@ namespace FivePRS.Server
                 Debug.WriteLine($"[FivePRS] Could not load the last position for {player.Name}: {ex.Message}");
             }
 
+            var model = string.Empty;
+            try
+            {
+                model = await SpawnModelAsync(license);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[FivePRS] Could not load the spawn model for {player.Name}: {ex.Message}");
+            }
+
             TriggerClientEvent(player, EventNames.ClientLastPosition, position is not null,
-                position?.X ?? 0f, position?.Y ?? 0f, position?.Z ?? 0f, position?.Heading ?? 0f);
+                position?.X ?? 0f, position?.Y ?? 0f, position?.Z ?? 0f, position?.Heading ?? 0f, model);
+        }
+
+        private async Task<string> SpawnModelAsync(string license)
+        {
+            if (_civilians is null || _appearances is null || !_db.IsReady) return string.Empty;
+
+            var active = await _civilians.GetActiveCharacterAsync(license);
+            if (active is null) return string.Empty;
+
+            var json = await _appearances.GetAsync(active.Id);
+            if (!string.IsNullOrEmpty(json))
+            {
+                var model = JsonConvert.DeserializeObject<CharacterAppearance>(json!)?.Model;
+                if (!string.IsNullOrEmpty(model)) return model!;
+            }
+
+            return string.Equals(active.Gender, "Female", StringComparison.OrdinalIgnoreCase)
+                ? AppearanceRules.FemaleFreemode
+                : AppearanceRules.MaleFreemode;
         }
 
         private async Task SavePositionAsync(string license)

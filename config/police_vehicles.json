@@ -1,7 +1,26 @@
 {
-    "patrol":  { "models": ["police", "police2"] },
-    "senior":  { "models": ["police2", "police4"] },
-    "command": { "models": ["police3"] },
+    "patrol":  { 
+        "models": [
+            "police", 
+            "police3",
+            "police5"
+        ] 
+    },
+    "senior":  { 
+        "models": [
+            "police2", 
+            "police4",
+            "policebuffalo"
+        ] 
+    },
+    "command": { 
+        "models": [
+            "policebuffalo6",
+            "polgauntlet",
+            "policeb",
+            "policeb2"
+        ] 
+    },
     "agencies": {
         "bcso": {
             "patrol":  { "models": ["sheriff", "sheriff2"] },

@@ -13,7 +13,7 @@ namespace FivePRS.Server.Database
 
         public Task<List<(string License, Department Department)>> GetAllAsync() =>
             QueryAsync("SELECT license, department FROM fiveprs_roster",
-                reader => (reader.GetString(0), (Department)Convert.ToInt32(reader.GetValue(1))));
+                row => (row.GetString("license"), (Department)row.GetInt32("department")));
 
         public Task GrantAsync(string license, Department department, string grantedBy) =>
             ExecuteAsync(
@@ -28,13 +28,13 @@ namespace FivePRS.Server.Database
         public Task<List<RosterPlayer>> SearchPlayersAsync(string term, int limit) =>
             QueryAsync(
                 $"SELECT license, name, department, rank_level, last_seen FROM ers_players WHERE name LIKE @term ORDER BY last_seen DESC LIMIT {limit}",
-                reader => new RosterPlayer
+                row => new RosterPlayer
                 {
-                    License    = reader.GetString(0),
-                    Name       = reader.GetString(1),
-                    Department = (Department)Convert.ToInt32(reader.GetValue(2)),
-                    Rank       = Convert.ToInt32(reader.GetValue(3)),
-                    LastSeen   = reader.IsDBNull(4) ? DateTime.MinValue : reader.GetDateTime(4),
+                    License    = row.GetString("license"),
+                    Name       = row.GetString("name"),
+                    Department = (Department)row.GetInt32("department"),
+                    Rank       = row.GetInt32("rank_level"),
+                    LastSeen   = row.IsNull("last_seen") ? DateTime.MinValue : row.GetDateTime("last_seen"),
                 },
                 ("@term", $"%{term}%"));
     }

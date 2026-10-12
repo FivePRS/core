@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Data.Common;
 using System.Threading.Tasks;
 
 namespace FivePRS.Server.Database
@@ -23,27 +22,7 @@ namespace FivePRS.Server.Database
 
     public abstract class MigrationStep
     {
-        internal abstract Task ApplyAsync(DbConnection conn, DbTransaction? transaction, SqlDialect dialect);
-
-        internal static async Task ExecuteAsync(DbConnection conn, DbTransaction? transaction, string sql)
-        {
-            using var cmd = conn.CreateCommand();
-            cmd.Transaction = transaction;
-            cmd.CommandText = sql;
-            await cmd.ExecuteNonQueryAsync();
-        }
-
-        internal static async Task<object?> ScalarAsync(DbConnection conn, DbTransaction? transaction, string sql, string name, object value)
-        {
-            using var cmd = conn.CreateCommand();
-            cmd.Transaction = transaction;
-            cmd.CommandText = sql;
-            var parameter = cmd.CreateParameter();
-            parameter.ParameterName = name;
-            parameter.Value = value;
-            cmd.Parameters.Add(parameter);
-            return await cmd.ExecuteScalarAsync();
-        }
+        internal abstract Task ApplyAsync(ISqlExecutor db);
     }
 
     public sealed class SqlStep : MigrationStep
@@ -58,8 +37,11 @@ namespace FivePRS.Server.Database
 
         public string MySql { get; }
 
-        internal override Task ApplyAsync(DbConnection conn, DbTransaction? transaction, SqlDialect dialect) =>
-            ExecuteAsync(conn, transaction, dialect == SqlDialect.MySql ? MySql : Sqlite);
+        internal override async Task ApplyAsync(ISqlExecutor db)
+        {
+            foreach (var statement in SqlStatement.Split(db.Dialect == SqlDialect.MySql ? MySql : Sqlite))
+                await db.ExecuteAsync(statement);
+        }
     }
 
     public sealed class AddColumnStep : MigrationStep
@@ -80,17 +62,17 @@ namespace FivePRS.Server.Database
 
         public string MySqlDefinition { get; }
 
-        internal override async Task ApplyAsync(DbConnection conn, DbTransaction? transaction, SqlDialect dialect)
+        internal override async Task ApplyAsync(ISqlExecutor db)
         {
-            var mySql = dialect == SqlDialect.MySql;
-            var exists = await ScalarAsync(conn, transaction,
+            var mySql = db.Dialect == SqlDialect.MySql;
+            var rows = await db.QueryAsync(
                 mySql
-                    ? $"SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '{Table}' AND COLUMN_NAME = @column"
-                    : $"SELECT COUNT(*) FROM pragma_table_info('{Table}') WHERE name = @column",
-                "@column", Column);
-            if (Convert.ToInt64(exists) > 0) return;
+                    ? $"SELECT COUNT(*) AS found FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '{Table}' AND COLUMN_NAME = @column"
+                    : $"SELECT COUNT(*) AS found FROM pragma_table_info('{Table}') WHERE name = @column",
+                ("@column", Column));
+            if (rows.Count > 0 && rows[0].GetInt64("found") > 0) return;
 
-            await ExecuteAsync(conn, transaction,
+            await db.ExecuteAsync(
                 mySql
                     ? $"ALTER TABLE `{Table}` ADD COLUMN `{Column}` {MySqlDefinition}"
                     : $"ALTER TABLE {Table} ADD COLUMN {Column} {SqliteDefinition}");

@@ -64,9 +64,12 @@ namespace FivePRS.Server.Dispatch
             public string            Description { get; set; } = string.Empty;
             public string            CallerName  { get; set; } = string.Empty;
             public int               CallerId    { get; set; }
+            public bool              IsBackup    { get; set; }
+            public int               BackupCode  { get; set; }
         }
 
         public const string EmergencyCallName = "911 Call";
+        public const string BackupCallName    = "Backup Request";
 
         private const int MaxCatalogSize = 500;
         private const int MaxCalloutNameLength = 64;
@@ -83,6 +86,7 @@ namespace FivePRS.Server.Dispatch
         private readonly Dictionary<string, CalloutDefinition> _catalog       = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, DateTime>         _lastDispatched = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<int, DateTime>            _lastEmergency  = new();
+        private readonly Dictionary<int, DateTime>            _lastBackup     = new();
 
         private int _nextCallNumber = 1000;
 
@@ -417,6 +421,78 @@ namespace FivePRS.Server.Dispatch
             return call.CallerId;
         }
 
+        public (string? CallId, string? Error) RequestBackup(int unitId, int code, float x, float y, float z)
+        {
+            if (!_units.TryGetValue(unitId, out var unit)) return (null, "You need to be on duty to request backup.");
+            if (code != 2 && code != 3) return (null, "Backup can be Code 2 or Code 3.");
+            if (unit.PendingCall is not null) return (null, "Answer the call offer first.");
+
+            var now = _clock();
+            if (_lastBackup.TryGetValue(unitId, out var last) && (now - last).TotalSeconds < Settings.Backup.CooldownSeconds)
+            {
+                var wait = Settings.Backup.CooldownSeconds - (int)(now - last).TotalSeconds;
+                return (null, $"Please wait {wait}s before requesting backup again.");
+            }
+
+            var priority = code == 3 ? CalloutPriority.High : CalloutPriority.Medium;
+            if (unit.Info.CallId is not null && _calls.TryGetValue(unit.Info.CallId, out var current))
+            {
+                current.BackupCode = code;
+                if (current.IsBackup) current.Definition.Priority = priority;
+                _lastBackup[unitId] = now;
+                IsDirty = true;
+                return (current.Id, null);
+            }
+
+            var call = new Call
+            {
+                Id          = (_nextCallNumber++).ToString(),
+                Definition  = new CalloutDefinition { Name = BackupCallName, Department = unit.Info.Department, Priority = priority },
+                Status      = CallStatus.Active,
+                PrimaryUnit = unitId,
+                OfferedUtc  = now,
+                HasLocation = true,
+                Territory   = _territories().Resolve(x, y)?.Id,
+                X           = x,
+                Y           = y,
+                Z           = z,
+                IsBackup    = true,
+                BackupCode  = code,
+            };
+
+            _calls[call.Id]     = call;
+            _lastBackup[unitId] = now;
+            unit.Info.CallId    = call.Id;
+            unit.Info.Status    = UnitStatus.OnScene;
+            IsDirty = true;
+            return (call.Id, null);
+        }
+
+        public bool CancelBackup(int unitId)
+        {
+            if (!_units.TryGetValue(unitId, out var unit) || unit.Info.CallId is null) return false;
+            if (!_calls.TryGetValue(unit.Info.CallId, out var call) || call.BackupCode == 0) return false;
+
+            if (call.IsBackup && call.PrimaryUnit == unitId)
+                CloseCall(call, Settings.PostCompleteCooldownSeconds);
+            else
+                call.BackupCode = 0;
+
+            IsDirty = true;
+            return true;
+        }
+
+        public IEnumerable<int> BackupResponders(int requesterId)
+        {
+            if (!_units.TryGetValue(requesterId, out var requester)) return Array.Empty<int>();
+
+            return _units.Values
+                .Where(u => u.Info.ServerId != requesterId &&
+                            (u.Info.Department == Department.Police || u.Info.Department == requester.Info.Department))
+                .Select(u => u.Info.ServerId)
+                .ToList();
+        }
+
         public int? GetEmergencyCaller(string callId) =>
             _calls.TryGetValue(callId, out var call) && call.IsEmergency ? call.CallerId : null;
 
@@ -462,6 +538,7 @@ namespace FivePRS.Server.Dispatch
                         IsEmergency = c.IsEmergency,
                         Description = c.IsEmergency ? c.Description : null,
                         Caller      = c.IsEmergency ? c.CallerName : null,
+                        BackupCode  = c.BackupCode,
                     })
                     .ToList(),
             };

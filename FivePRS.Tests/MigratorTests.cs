@@ -144,12 +144,12 @@ namespace FivePRS.Tests
             var provider = new SQLiteProvider(_path);
             await provider.InitializeAsync();
             await new Migrator(provider).MigrateAsync();
-            await provider.SavePlayerAsync(new PlayerData { License = "license:kept", Name = "Kept" });
+            await new PlayerStore(provider).SaveAsync(new PlayerData { License = "license:kept", Name = "Kept" });
 
             await provider.BackupAsync(_backup);
 
             var copy = new SQLiteProvider(_backup);
-            Assert.Equal("Kept", (await copy.GetPlayerAsync("license:kept"))!.Name);
+            Assert.Equal("Kept", (await new PlayerStore(copy).GetAsync("license:kept"))!.Name);
             Assert.Equal(Migrations.All[Migrations.All.Count - 1].Version, await new Migrator(copy).CurrentVersionAsync());
         }
 

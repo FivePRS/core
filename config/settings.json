@@ -29,6 +29,15 @@
         "notifyEms": true,
         "reviveXp": 25
     },
+    "backup": {
+        "enabled": true,
+        "cooldownSeconds": 30,
+        "npcEnabled": true,
+        "npcWaitSeconds": 45,
+        "npcVehicle": "police",
+        "npcPedModel": "s_m_y_cop_01",
+        "npcCrew": 2
+    },
     "world": {
         "disableWantedLevel": true,
         "disableDispatchServices": true,

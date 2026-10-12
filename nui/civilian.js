@@ -179,6 +179,7 @@ function renderCivilian(view, reset) {
   const appearanceButton = document.getElementById("civ-appearance");
   appearanceButton.disabled = Boolean(view.onDuty);
   appearanceButton.title = view.onDuty ? "Go off duty to change your appearance" : "";
+  document.getElementById("civ-appearance-note").hidden = !view.onDuty;
   const deleteButton = document.getElementById("civ-delete");
   delete deleteButton.dataset.armed;
   deleteButton.textContent = "Delete character";

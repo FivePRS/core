@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Threading.Tasks;
 using CitizenFX.Core;
 using CitizenFX.Core.Native;
@@ -33,6 +34,8 @@ namespace FivePRS.Server
         public ServerBrain()
         {
             Resource.Capture();
+            foreach (var name in RetiredFiles.Remove(Path.Combine(Resource.Path, "server"), warning => Debug.WriteLine($"[FivePRS] WARNING: {warning}")))
+                Debug.WriteLine($"[FivePRS] Removed server/{name}, left over from an older FivePRS version.");
             API.SetConvarServerInfo("fiveprs_version", InstalledVersion().ToString());
             MainThread.Enable();
             ConfigManager.Log = message => Debug.WriteLine(message);
@@ -64,6 +67,7 @@ namespace FivePRS.Server
             EventHandlers[EventNames.ServerAttachToCall]     += new Action<Player, string>(OnAttachToCall);
             EventHandlers[EventNames.ServerSetAiCallouts]    += new Action<Player, bool>(OnSetAiCallouts);
             EventHandlers[EventNames.LocalHttpResponse]      += new Action<string, int, string, string>(HttpBridge.OnResponse);
+            EventHandlers[EventNames.LocalDbResponse]        += new Action<string, string, string>(OxMySqlBridge.OnResponse);
 
             Tick += DrainMainThreadAsync;
             Tick += DispatchTickAsync;
@@ -71,6 +75,7 @@ namespace FivePRS.Server
             RegisterCivilianEvents();
             RegisterLookupEvents();
             RegisterEmergencyEvents();
+            RegisterBackupEvents();
             RegisterRosterEvents();
             RegisterAppearanceEvents();
             RegisterTerminalEvents();
@@ -118,13 +123,13 @@ namespace FivePRS.Server
             {
                 Debug.WriteLine($"[FivePRS] FATAL: {ex.Message} The server's user account needs write access to the fiveprs resource folder.");
             }
+            catch (DatabaseQueryException ex)
+            {
+                Debug.WriteLine($"[FivePRS] FATAL: The database didn't start: {ex.Message}");
+            }
             catch (Exception ex)
             {
-                var problem = DatabaseErrors.Describe(ex, connString);
-                if (problem is not null)
-                    Debug.WriteLine($"[FivePRS] FATAL: {problem}");
-                else
-                    ServerLog.Error("FATAL: The database didn't start", ex);
+                ServerLog.Error("FATAL: The database didn't start", ex);
             }
         }
 

@@ -12,7 +12,7 @@ namespace FivePRS.Server.Database
         public async Task<string> GetWallpaperAsync(string license)
         {
             var rows = await QueryAsync("SELECT wallpaper FROM fiveprs_preferences WHERE license = @license",
-                reader => reader.GetString(0), ("@license", license));
+                row => row.GetString("wallpaper"), ("@license", license));
             return rows.Count > 0 ? rows[0] : string.Empty;
         }
 
