@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using CitizenFX.Core;
 using CitizenFX.Core.Native;
 using FivePRS.Core.Events;
+using FivePRS.Core.Logging;
 
 namespace FivePRS.Client.Arrest
 {
@@ -16,6 +17,8 @@ namespace FivePRS.Client.Arrest
 
     public static class ArrestManager
     {
+        private static readonly Logger Log = Logger.For("Arrest");
+
         public const float CuffRangeM    = 2.5f;
         public const float EscortRangeM  = 5.0f;
 
@@ -110,7 +113,7 @@ namespace FivePRS.Client.Arrest
 
             ClientEvents.TriggerLocal(EventNames.LocalSuspectCuffed, suspect.Handle);
 
-            Debug.WriteLine($"[ArrestManager] Suspect (handle {suspect.Handle}) cuffed.");
+            Log.Debug($"Suspect {suspect.Handle} cuffed.");
         }
 
         public static void Uncuff()
@@ -134,7 +137,7 @@ namespace FivePRS.Client.Arrest
             ClientBrain.ShowNotification("~o~Suspect released.");
             ClientEvents.TriggerLocal(EventNames.LocalSuspectUncuffed, suspect.Handle);
 
-            Debug.WriteLine($"[ArrestManager] Suspect (handle {suspect.Handle}) released.");
+            Log.Debug($"Suspect {suspect.Handle} released.");
         }
 
         public static async Task<bool> EscortToVehicleAsync(Vehicle vehicle)
@@ -173,7 +176,7 @@ namespace FivePRS.Client.Arrest
             ClientBrain.ShowNotification("~g~Suspect secured in vehicle.");
             ClientEvents.TriggerLocal(EventNames.LocalSuspectEscorted, suspect.Handle, vehicle.Handle);
 
-            Debug.WriteLine($"[ArrestManager] Suspect escorted to vehicle {vehicle.Handle}.");
+            Log.Debug($"Suspect placed in vehicle {vehicle.Handle}.");
             return true;
         }
 

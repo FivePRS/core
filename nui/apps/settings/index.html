@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Settings</title>
+  <link rel="stylesheet" href="../../theme.css">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <main class="page">
+    <nav class="nav">
+      <button type="button" class="nav-item active" data-section="appearance">Appearance</button>
+      <button type="button" class="nav-item" data-section="duty">Duty</button>
+      <button type="button" class="nav-item" data-section="sound" hidden>Sound</button>
+      <button type="button" class="nav-item" data-section="keys">Key bindings</button>
+      <button type="button" class="nav-item" data-section="about">About</button>
+    </nav>
+
+    <section id="section-appearance" class="section">
+      <div>
+        <h2 class="heading">Wallpaper</h2>
+        <div id="wallpapers" class="wallpapers"></div>
+        <form id="custom" class="custom" hidden>
+          <input id="custom-url" class="input" type="url" placeholder="Custom image link (https://…)" autocomplete="off" spellcheck="false" aria-label="Custom wallpaper link">
+          <button type="submit" class="button primary">Use image</button>
+        </form>
+      </div>
+
+      <div class="card settings">
+        <h2 class="heading">Terminal</h2>
+        <div class="setting">
+          <span>Text size</span>
+          <div class="segmented">
+            <button type="button" data-text-size="s">Small</button>
+            <button type="button" data-text-size="m">Medium</button>
+            <button type="button" data-text-size="l">Large</button>
+          </div>
+        </div>
+        <div class="setting">
+          <span>24-hour clock</span>
+          <button type="button" class="switch" role="switch" data-toggle="clock24" aria-label="24-hour clock"></button>
+        </div>
+        <div class="setting">
+          <span>Reduce motion</span>
+          <button type="button" class="switch" role="switch" data-toggle="reduceMotion" aria-label="Reduce motion"></button>
+        </div>
+      </div>
+    </section>
+
+    <section id="section-duty" class="section" hidden>
+      <div class="card settings">
+        <h2 class="heading">Duty</h2>
+        <div class="setting">
+          <span>
+            <span class="setting-title">AI callouts</span>
+            <span class="setting-detail">Off pauses AI callouts for you. Player 911 calls still reach you.</span>
+          </span>
+          <button id="ai" type="button" class="switch" role="switch" aria-label="AI callouts"></button>
+        </div>
+        <p id="ai-note" class="muted" hidden>Go on duty to change this.</p>
+      </div>
+    </section>
+
+    <section id="section-sound" class="section" hidden>
+      <div class="card settings">
+        <h2 class="heading">Sound</h2>
+        <label class="setting slider">
+          <span>Terminal sounds</span>
+          <input class="range" type="range" min="0" max="100" step="5" data-range="terminalVolume">
+          <span class="mono value" data-value="terminalVolume"></span>
+        </label>
+        <label class="setting slider">
+          <span>Dispatch tones</span>
+          <input class="range" type="range" min="0" max="100" step="5" data-range="dispatchVolume">
+          <span class="mono value" data-value="dispatchVolume"></span>
+        </label>
+        <div class="setting">
+          <span>
+            <span class="setting-title">Hold-the-channel alerts</span>
+            <span class="setting-detail">The tone played when a major incident takes priority on the radio.</span>
+          </span>
+          <button type="button" class="switch" role="switch" data-toggle="holdChannel" aria-label="Hold-the-channel alerts"></button>
+        </div>
+      </div>
+    </section>
+
+    <section id="section-keys" class="section" hidden>
+      <div class="card">
+        <div class="card-head">
+          <h2 class="heading">Key bindings</h2>
+          <span class="muted">Change these in GTA Settings › Key Bindings › FiveM</span>
+        </div>
+        <div id="bindings" class="bindings"></div>
+      </div>
+    </section>
+
+    <section id="section-about" class="section" hidden>
+      <div class="card about">
+        <img id="nameplate" class="about-nameplate" alt="FivePRS" hidden>
+        <p id="wordmark" class="display about-name">FIVE<span class="about-accent">PRS</span></p>
+        <p id="version" class="mono"></p>
+        <p id="channel" class="muted"></p>
+      </div>
+    </section>
+  </main>
+
+  <script src="../../kit.js"></script>
+  <script src="../../app-sdk.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

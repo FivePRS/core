@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading.Tasks;
 using CitizenFX.Core;
 using CitizenFX.Core.Native;
+using FivePRS.Core.Logging;
 using FivePRS.Server.Http;
 
 namespace FivePRS.Server
@@ -11,6 +12,9 @@ namespace FivePRS.Server
     {
         private const string RelativePath = "data/server_icon.png";
         private const string LoadCommandAce = "command.load_server_icon";
+        private const int ApplyTimeoutMs = 2_000;
+
+        private static readonly Logger Log = Logger.For("ServerIcon");
 
         public static async Task ApplyDefaultAsync(string url)
         {
@@ -18,13 +22,13 @@ namespace FivePRS.Server
             {
                 await ApplyAsync(url);
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                Debug.WriteLine($"[FivePRS] Could not set the server icon: {ex.Message} The server's user account needs write access to the fiveprs resource folder.");
+                Log.Warn("Could not set the server icon. The server needs write access to the fiveprs folder.");
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[FivePRS] Could not set the server icon: {ex.Message}");
+                Log.Warn("Could not set the server icon", ex);
             }
         }
 
@@ -41,9 +45,13 @@ namespace FivePRS.Server
             var result = await HttpBridge.GetAsync(url, RelativePath, check: "png");
             if (!result.Ok)
             {
-                Debug.WriteLine($"[FivePRS] Could not download the server icon from {url}: {result.Error}");
-                if (!File.Exists(path)) return;
-                Debug.WriteLine("[FivePRS] Using the previously downloaded server icon.");
+                if (!File.Exists(path))
+                {
+                    Log.Warn($"Could not download the server icon: {result.Error}");
+                    return;
+                }
+
+                Log.Debug($"Could not download the server icon ({result.Error}), using the saved copy.");
             }
 
             if (HasIcon()) return;
@@ -51,18 +59,20 @@ namespace FivePRS.Server
             var resource = Resource.Name;
             if (!API.IsPrincipalAceAllowed($"resource.{resource}", LoadCommandAce))
             {
-                Debug.WriteLine(
-                    $"[FivePRS] FivePRS is not allowed to load the server icon. Add \"add_ace resource.{resource} {LoadCommandAce} allow\" " +
-                    "to server.cfg, or set fiveprs_server_icon false.");
+                Log.Warn($"Server icon skipped. Add \"add_ace resource.{resource} {LoadCommandAce} allow\" to server.cfg, or set fiveprs_server_icon false.");
                 return;
             }
 
             API.ExecuteCommand($"load_server_icon \"{path.Replace('\\', '/')}\"");
-            await BaseScript.Delay(0);
 
-            Debug.WriteLine(HasIcon()
-                ? "[FivePRS] Using the FivePRS server icon. Set your own with load_server_icon in server.cfg."
-                : "[FivePRS] load_server_icon did not set the server icon. Check the server console for the reason.");
+            var deadline = API.GetGameTimer() + ApplyTimeoutMs;
+            while (!HasIcon() && API.GetGameTimer() < deadline)
+                await BaseScript.Delay(100);
+
+            if (HasIcon())
+                Log.Info("Using the FivePRS server icon.");
+            else
+                Log.Warn("load_server_icon didn't set the server icon. Check the console above for the reason.");
         }
 
         private static bool IsEnabled() =>

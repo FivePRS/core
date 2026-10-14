@@ -1,0 +1,214 @@
+body {
+  background: var(--bg);
+}
+
+.page {
+  height: 100%;
+  padding: 1.286rem;
+  overflow-y: auto;
+}
+
+.garage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 30rem;
+  gap: 1.286rem;
+  align-items: start;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.current {
+  display: flex;
+  align-items: center;
+  gap: 1.143rem;
+  padding: 1.143rem;
+  border-radius: var(--radius);
+  background: #0d1a2f;
+  border: 1px solid #1e3a66;
+}
+
+.current.idle {
+  background: var(--surface);
+  border-color: var(--line);
+}
+
+.current-icon {
+  display: grid;
+  place-items: center;
+  width: 3.714rem;
+  height: 3.714rem;
+  flex: none;
+  border-radius: 0.857rem;
+  background: #13284a;
+  color: var(--accent-text);
+}
+
+.current.idle .current-icon {
+  background: var(--grey-soft);
+  color: var(--muted);
+}
+
+.current-icon svg {
+  width: 2rem;
+  height: 2rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.current-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.current-eyebrow {
+  color: var(--accent-text);
+}
+
+.current-title {
+  margin-top: 0.143rem;
+  font-size: 1.286rem;
+  font-weight: 600;
+}
+
+.list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.286rem;
+}
+
+.vehicle-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.714rem;
+}
+
+.vehicle {
+  display: grid;
+  grid-template-columns: 10.714rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1.143rem;
+  padding: 1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  text-align: left;
+}
+
+.vehicle:hover {
+  border-color: var(--line-strong);
+}
+
+.vehicle.selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.plate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 4.571rem;
+  border-radius: 0.571rem;
+  background: #f4f6f8;
+  border: 3px solid #1d3a6e;
+  color: #1d3a6e;
+}
+
+.plate-state {
+  font-family: var(--font-display);
+  font-size: 0.786rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+}
+
+.plate-number {
+  font-family: var(--font-mono);
+  font-size: 1.571rem;
+  font-weight: 600;
+  color: #b91c1c;
+}
+
+.vehicle-name {
+  display: block;
+  font-size: 1.214rem;
+  font-weight: 600;
+}
+
+.vehicle-detail {
+  color: var(--muted);
+}
+
+.slip {
+  padding: 1.286rem;
+  border-radius: 0.857rem;
+  background: #f1ede2;
+  color: #1f2937;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.4);
+}
+
+.slip-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-bottom: 0.571rem;
+  border-bottom: 2px solid #1d3a6e;
+}
+
+.slip-title {
+  font-family: var(--font-display);
+  font-size: 1.286rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #1d3a6e;
+}
+
+.slip-issuer {
+  font-family: var(--font-mono);
+  font-size: 0.786rem;
+  color: #64748b;
+}
+
+.slip-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.714rem 1rem;
+  margin-top: 0.857rem;
+  font-size: 0.929rem;
+}
+
+.slip-grid dt {
+  font-size: 0.714rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.slip-grid dd {
+  margin-top: 0.143rem;
+  font-weight: 600;
+}
+
+.slip-status.valid {
+  color: #15803d;
+}
+
+.slip-status.stolen {
+  color: #b91c1c;
+}
+
+.detail-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.571rem;
+}

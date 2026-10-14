@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin</title>
+  <link rel="stylesheet" href="../../theme.css">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <main class="page">
+    <nav class="nav">
+      <button type="button" class="nav-item active" data-section="players">Players <span id="nav-players" class="nav-count"></span></button>
+      <button type="button" class="nav-item" data-section="roster">Roster</button>
+      <button type="button" class="nav-item" data-section="calls">Active calls <span id="nav-calls" class="nav-count"></span></button>
+      <button type="button" class="nav-item" data-section="audit">Audit log</button>
+      <button type="button" class="nav-item" data-section="server">Server</button>
+      <p id="unrestricted" class="banner warn nav-banner" hidden>Department restriction is off, so anyone can join any department.</p>
+    </nav>
+
+    <section id="section-players" class="section players">
+      <div class="list-column">
+        <div class="list-toolbar">
+          <input id="player-filter" class="input" placeholder="Filter online players" autocomplete="off" spellcheck="false" aria-label="Filter players">
+          <div class="segmented">
+            <button type="button" class="active" data-filter="all">Online</button>
+            <button type="button" data-filter="duty">On duty</button>
+            <button type="button" data-filter="down">Down</button>
+          </div>
+        </div>
+        <div class="table-box">
+          <table class="table">
+            <thead><tr><th>ID</th><th>Player</th><th>Rank</th><th>Status</th></tr></thead>
+            <tbody id="players"></tbody>
+          </table>
+          <p id="players-empty" class="empty" hidden>No players match.</p>
+        </div>
+      </div>
+
+      <aside id="panel" class="panel" hidden>
+        <div>
+          <p id="panel-meta" class="eyebrow"></p>
+          <p id="panel-name" class="display panel-name"></p>
+          <p id="panel-license" class="mono muted panel-license"></p>
+        </div>
+
+        <div class="control">
+          <label class="field">Rank<select id="rank" class="input"></select></label>
+          <button type="button" class="button" data-act="setrank">Set</button>
+        </div>
+        <div class="control">
+          <label class="field">Grant XP<input id="xp" class="input mono" type="number" min="1" value="250"></label>
+          <button type="button" class="button" data-act="addxp">Grant</button>
+        </div>
+        <div class="control">
+          <label class="field">Department<select id="department" class="input"></select></label>
+          <button type="button" class="button" data-act="setdept">Set</button>
+        </div>
+
+        <div>
+          <p class="field-label">Rostered departments</p>
+          <div id="roster" class="switches"></div>
+        </div>
+
+        <div class="panel-actions">
+          <button type="button" class="button" data-act="revive">Revive</button>
+          <button type="button" class="button" data-act="teleport">Teleport to</button>
+          <button type="button" class="button danger wide" data-act="offduty">Force off duty</button>
+        </div>
+      </aside>
+    </section>
+
+    <section id="section-roster" class="section" hidden>
+      <form id="search" class="list-toolbar">
+        <input id="query" class="input" placeholder="Search offline players by name" autocomplete="off" spellcheck="false" aria-label="Search players">
+        <button type="submit" class="button primary">Search</button>
+      </form>
+      <div class="table-box">
+        <table class="table">
+          <thead><tr><th>Player</th><th>Rank</th><th>Department</th><th>Roster</th></tr></thead>
+          <tbody id="results"></tbody>
+        </table>
+        <p id="results-empty" class="empty" hidden>Search by name to find players who aren't online.</p>
+      </div>
+    </section>
+
+    <section id="section-calls" class="section" hidden>
+      <div class="table-box">
+        <table class="table">
+          <thead><tr><th>Call</th><th>Type</th><th>Area</th><th>Units</th><th></th></tr></thead>
+          <tbody id="calls"></tbody>
+        </table>
+        <p id="calls-empty" class="empty" hidden>No active calls.</p>
+      </div>
+    </section>
+
+    <section id="section-audit" class="section" hidden>
+      <div class="table-box">
+        <table class="table">
+          <thead><tr><th>When</th><th>Action</th><th>By</th><th>Details</th></tr></thead>
+          <tbody id="audit"></tbody>
+        </table>
+        <p id="audit-empty" class="empty" hidden>Nothing logged yet.</p>
+      </div>
+    </section>
+
+    <section id="section-server" class="section" hidden>
+      <div id="warnings" class="warnings"></div>
+      <dl id="facts" class="facts"></dl>
+      <div class="card addons">
+        <div class="card-head">
+          <h2 class="heading">Addons</h2>
+          <span id="addon-count" class="eyebrow"></span>
+        </div>
+        <ul id="addons" class="addon-list"></ul>
+        <p id="addons-empty" class="empty" hidden>No addons are running. Find some on fiveprs.org/assets.</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="../../kit.js"></script>
+  <script src="../../app-sdk.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

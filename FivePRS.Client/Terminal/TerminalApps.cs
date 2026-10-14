@@ -4,6 +4,7 @@ using System.Linq;
 using CitizenFX.Core;
 using CitizenFX.Core.Native;
 using FivePRS.Core.Events;
+using FivePRS.Core.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
@@ -11,6 +12,8 @@ namespace FivePRS.Client.Terminal
 {
     public class TerminalApps : BaseScript
     {
+        private static readonly Logger Log = Logger.For("Terminal");
+
         private const int MaxIdLength = 32;
 
         private static readonly JsonSerializerSettings JsonSettings = new()
@@ -45,7 +48,7 @@ namespace FivePRS.Client.Terminal
         {
             if (!IsValidId(app.Id) || Apps.Any(existing => existing.Id == app.Id))
             {
-                Debug.WriteLine($"[FivePRS] Terminal app '{app.Id}' was not registered: the id is invalid or already in use.");
+                Log.Warn($"Terminal app '{app.Id}' was not registered: the id is invalid or already in use.");
                 return;
             }
 
@@ -61,7 +64,7 @@ namespace FivePRS.Client.Terminal
 
             if (!IsValidId(id) || Apps.Any(existing => existing.Id == id && existing.Resource != resource))
             {
-                Debug.WriteLine($"[FivePRS] {resource} could not register terminal app '{id}': the id is invalid or already in use.");
+                Log.Warn($"{resource} could not register terminal app '{id}': the id is invalid or already in use.");
                 return;
             }
 
@@ -94,6 +97,16 @@ namespace FivePRS.Client.Terminal
             Apps.FirstOrDefault(app => app.Id == _openId)?.Instance?.OnClosed();
             _openId = next?.Id;
             next?.Instance?.OnOpened();
+            PushOpenState();
+        }
+
+        internal static void PushOpenState()
+        {
+            var app = Apps.FirstOrDefault(entry => entry.Id == _openId);
+            if (app?.Instance is null || app.Page is null) return;
+
+            var state = app.Instance.BuildState();
+            if (state is not null) SendToApp(app.Id, "state", state);
         }
 
         internal static void Act(string id, string action, IDictionary<string, object> data)
@@ -105,6 +118,12 @@ namespace FivePRS.Client.Terminal
                 app.Instance.OnAction(action, data);
             else
                 TriggerEvent(EventNames.PublicAppAction, id, action, data);
+        }
+
+        internal static bool IsAvailable(string id)
+        {
+            var player = ClientBrain.LocalPlayerData;
+            return Apps.Any(app => app.Id == id && (app.Instance?.IsAvailable(player) ?? app.Available));
         }
 
         internal static object BuildList()
@@ -162,7 +181,7 @@ namespace FivePRS.Client.Terminal
             }
             catch (JsonException ex)
             {
-                Debug.WriteLine($"[FivePRS] Invalid terminal app view: {ex.Message}");
+                Log.Warn("Invalid terminal app view", ex);
                 return null;
             }
         }

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using FivePRS.Client.App;
 using FivePRS.Client.Callouts;
 using FivePRS.Client.Dispatch;
 using FivePRS.Core.Config;
@@ -20,6 +21,13 @@ namespace FivePRS.Client
                 ["onDuty"]     = player.IsOnDuty,
                 ["department"] = player.Department.ToString(),
                 ["rank"]       = player.Rank,
+                ["rankName"]   = player.RankName(),
+                ["prefs"]      = new Dictionary<string, object>
+                {
+                    ["textSize"]     = TerminalPanel.Preferences.TextSize,
+                    ["clock24"]      = TerminalPanel.Preferences.Clock24,
+                    ["reduceMotion"] = TerminalPanel.Preferences.ReduceMotion,
+                },
             };
 
             if (!player.IsOnDuty) return state;

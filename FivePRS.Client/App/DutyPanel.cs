@@ -29,10 +29,19 @@ namespace FivePRS.Client.App
                 .Select(id => (Department)id)
                 .ToList();
 
+        private static double? _localShiftStart;
+
+        public static double? ShiftStartedAt =>
+            _profile?.IsOnDuty != true ? null
+            : _profile.ShiftStartedAt is { } started ? (started - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds
+            : _localShiftStart;
+
         public static void SetOnDuty(bool isOnDuty)
         {
             if (_profile is not null)
                 _profile.IsOnDuty = isOnDuty;
+
+            _localShiftStart = isOnDuty ? DispatchPanel.UnixNowMs() : (double?)null;
         }
 
         public static string? Enter(IDictionary<string, object> data)
@@ -102,15 +111,20 @@ namespace FivePRS.Client.App
             return new
             {
                 profile.Name,
-                profile.Rank,
+                Rank              = profile.Ladder().Clamp(profile.Rank),
+                RankName          = profile.RankName(),
+                NextRankName      = profile.Ladder().IsTop(profile.Rank) ? null : profile.Ladder().NameFor(profile.Rank + 1, profile.Agency),
+                RankCount         = profile.Ladder().Count,
+                Stats             = new { Calls = profile.CallsCompleted, profile.Arrests, Hours = profile.DutySeconds / 3600 },
                 profile.XP,
-                XpToNext          = profile.XPToNextRank,
+                XpToNext          = profile.Ladder().XpToNext(profile.Rank),
                 profile.IsOnDuty,
                 DepartmentId      = (int)profile.Department,
                 Department        = profile.Department.ToString(),
                 AgencyId          = profile.Agency,
                 profile.Callsign,
                 CallsignMaxLength = Callsign.MaxLength,
+                Icons             = ConfigManager.Settings.Branding.Departments,
                 Departments       = departments,
                 Unit              = unit is null ? null : new
                 {

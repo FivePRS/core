@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using FivePRS.Core.Models;
 
 namespace FivePRS.Core.Civilian
 {
@@ -9,6 +10,7 @@ namespace FivePRS.Core.Civilian
         Arrest   = 1,
         Warning  = 2,
         Warrant  = 3,
+        Medical  = 4,
     }
 
     public sealed class RecordInfo
@@ -33,6 +35,7 @@ namespace FivePRS.Core.Civilian
         public string DateOfBirth       { get; set; } = string.Empty;
         public string Gender            { get; set; } = string.Empty;
         public bool   HasActiveWarrant  { get; set; }
+        public string? Photo            { get; set; }
     }
 
     public sealed class LookupRecord
@@ -42,6 +45,7 @@ namespace FivePRS.Core.Civilian
         public List<VehicleInfo> Vehicles     { get; set; } = new();
         public List<RecordInfo>  Records      { get; set; } = new();
         public string?           MatchedPlate { get; set; }
+        public string?           Caution      { get; set; }
     }
 
     public sealed class LookupResult
@@ -56,5 +60,6 @@ namespace FivePRS.Core.Civilian
         public string License  { get; set; } = string.Empty;
         public string Name     { get; set; } = string.Empty;
         public string Callsign { get; set; } = string.Empty;
+        public Department Department { get; set; } = Department.Police;
     }
 }

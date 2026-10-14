@@ -28,6 +28,7 @@ namespace FivePRS.Fire.Callouts
         private readonly Vector3 _location;
 
         private FireScene? _scene;
+        private int _peak;
 
         public BrushFireCallout()
         {
@@ -54,6 +55,8 @@ namespace FivePRS.Fire.Callouts
             if (!FireScene.TryGround(_location.X, _location.Y, Game.PlayerPed.Position.Z, out var center))
             {
                 ClientBrain.ShowNotification($"~b~{Data.Name}~w~ | False alarm. The smoke was from a controlled burn.");
+                FireReport.Draft(Data, _location,
+                    $"Dispatched: {Data.Description}" + NL + NL + "Investigated on arrival. The smoke came from a controlled burn. No action needed.");
                 CalloutCompleted();
                 return;
             }
@@ -79,10 +82,15 @@ namespace FivePRS.Fire.Callouts
             while (!ct.IsCancellationRequested)
             {
                 await Timing.WaitAsync(1_000, ct);
+                _peak = Math.Max(_peak, _scene.ActiveFires);
 
                 if (_scene.IsOut())
                 {
                     ClientBrain.ShowNotification($"~b~{Data.Name}~w~ | ~g~Fire contained.~w~ Good work.");
+                    FireReport.Draft(Data, _scene.Center,
+                        $"Dispatched: {Data.Description}" + NL + NL +
+                        $"Found dry brush burning and spreading, with {FireReport.Fires(Math.Max(_peak, 1))} at the height of the fire." + NL + NL +
+                        "All fires knocked down and the area checked for hot spots. No property damage reported.");
                     CalloutCompleted();
                     return;
                 }
@@ -98,6 +106,8 @@ namespace FivePRS.Fire.Callouts
                     ClientBrain.ShowHelp($"~r~Fires~w~: {_scene.ActiveFires}", 1_100);
             }
         }
+
+        private static readonly string NL = Environment.NewLine;
 
         protected override void OnCleanup() => _scene?.Extinguish();
 

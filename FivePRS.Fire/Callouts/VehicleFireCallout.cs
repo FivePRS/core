@@ -33,6 +33,7 @@ namespace FivePRS.Fire.Callouts
 
         private FireScene? _scene;
         private Vehicle? _vehicle;
+        private int _peak;
 
         public VehicleFireCallout()
         {
@@ -84,10 +85,18 @@ namespace FivePRS.Fire.Callouts
             while (!ct.IsCancellationRequested)
             {
                 await Timing.WaitAsync(1_000, ct);
+                _peak = Math.Max(_peak, _scene.ActiveFires);
 
                 if (_scene.IsOut(_vehicle))
                 {
                     ClientBrain.ShowNotification($"~b~{Data.Name}~w~ | ~g~Fire out.~w~ Scene secured.");
+                    var plate = _vehicle.Exists() ? StreetIdentity.PlateOf(_vehicle) : null;
+                    var name  = _vehicle.Exists() ? StreetIdentity.VehicleName(_vehicle) : "vehicle";
+                    FireReport.Draft(Data, _scene.Center,
+                        $"Dispatched: {Data.Description}" + NL + NL +
+                        $"Found a {name} at the roadside fully involved, with {FireReport.Fires(Math.Max(_peak, 1))} burning. No occupants." + NL + NL +
+                        "Fire knocked down and extinguished. Vehicle left secured at the scene.",
+                        plate);
                     CalloutCompleted();
                     return;
                 }
@@ -103,6 +112,8 @@ namespace FivePRS.Fire.Callouts
                     ClientBrain.ShowHelp($"~r~Fires~w~: {_scene.ActiveFires}", 1_100);
             }
         }
+
+        private static readonly string NL = Environment.NewLine;
 
         protected override void OnCleanup() => _scene?.Extinguish();
 

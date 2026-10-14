@@ -85,7 +85,7 @@ namespace FivePRS.Tests
         public async Task InitializeAsync()
         {
             _database = await TestDatabase.CreateAsync();
-            var lookup = new LookupService(_database.Store, () => new ResourceSettings(), () => new LicensesConfig());
+            var lookup = new LookupService(_database.Store, _database.Photos, () => new ResourceSettings(), () => new LicensesConfig());
             _street = new StreetService(_database.Store, lookup);
         }
 
@@ -98,7 +98,7 @@ namespace FivePRS.Tests
         [Fact]
         public async Task Identify_CreatesPersonOnceWithLicenseAndWarrant()
         {
-            var seed   = Enumerable.Range(0, 1000).First(s => StreetProfiles.Person(s, false) is { Warrant: not null, DriverLicense: StreetLicense.Suspended });
+            var seed   = Enumerable.Range(0, 1000).First(s => StreetProfiles.Person(s, false) is { Warrant: not null, DriverLicense: StreetLicense.Suspended, Medical: null });
             var person = StreetProfiles.Person(seed, false);
 
             var (first, error) = await _street.IdentifyAsync(seed, false);
@@ -113,6 +113,19 @@ namespace FivePRS.Tests
         }
 
         [Fact]
+        public async Task Identify_AddsMedicalHistory()
+        {
+            var seed   = Enumerable.Range(0, 1000).First(s => StreetProfiles.Person(s, true) is { Medical: not null, Warrant: null });
+            var person = StreetProfiles.Person(seed, true);
+
+            var (result, _) = await _street.IdentifyAsync(seed, true);
+
+            var entry = Assert.Single(result!.Record!.Records);
+            Assert.Equal(RecordType.Medical, entry.Type);
+            Assert.Equal(person.Medical, entry.Description);
+        }
+
+        [Fact]
         public async Task Plate_Registered_CreatesVehicleForOwner()
         {
             var plate = Enumerable.Range(0, 1000).Select(i => $"FP{i}").First(p => StreetProfiles.Vehicle(p) is { Registered: true, DriverIsOwner: true, Stolen: false });
@@ -124,6 +137,18 @@ namespace FivePRS.Tests
             var vehicle = Assert.Single(result.Record.Vehicles);
             Assert.Equal(plate, vehicle.Plate);
             Assert.Equal("Sultan", vehicle.Model);
+        }
+
+        [Fact]
+        public async Task Plate_ParkedVehicle_UsesProfileOwner()
+        {
+            var plate   = Enumerable.Range(0, 1000).Select(i => $"PK{i}").First(p => StreetProfiles.Vehicle(p) is { Registered: true, DriverIsOwner: true });
+            var profile = StreetProfiles.Vehicle(plate);
+
+            var (result, error) = await _street.PlateAsync(plate, "Sultan", null);
+
+            Assert.Null(error);
+            Assert.Equal(StreetProfiles.Person(profile.OwnerSeed, profile.OwnerFemale).LastName, result!.Record!.Character.LastName);
         }
 
         [Fact]

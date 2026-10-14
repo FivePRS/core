@@ -121,7 +121,7 @@ namespace FivePRS.Client.Stations
 
         private static MenuPage Kits(StationCatalog catalog)
         {
-            var rank = ClientBrain.LocalPlayerData.Rank;
+            var rank = ClientBrain.LocalPlayerData.Ladder().Clamp(ClientBrain.LocalPlayerData.Rank);
             var page = new MenuPage { Title = "Kits", Subtitle = "Replaces your current weapons" };
 
             foreach (var kit in catalog.Kits)
@@ -130,7 +130,7 @@ namespace FivePRS.Client.Stations
                 page.Items.Add(new MenuItem
                 {
                     Label    = kit.Name,
-                    Detail   = locked ? $"Rank {kit.MinRank}" : $"{kit.Weapons.Count} items",
+                    Detail   = locked ? RequiredRank(kit.MinRank) : $"{kit.Weapons.Count} items",
                     Disabled = locked,
                     Select   = async () =>
                     {
@@ -145,7 +145,7 @@ namespace FivePRS.Client.Stations
 
         private static MenuPage Weapons(StationDef station)
         {
-            var rank = ClientBrain.LocalPlayerData.Rank;
+            var rank = ClientBrain.LocalPlayerData.Ladder().Clamp(ClientBrain.LocalPlayerData.Rank);
             var page = new MenuPage { Title = "Weapons", Subtitle = station.Name };
 
             foreach (var weapon in Catalog().Weapons)
@@ -154,7 +154,7 @@ namespace FivePRS.Client.Stations
                 page.Items.Add(new MenuItem
                 {
                     Label    = weapon.Label,
-                    Detail   = locked ? $"Rank {weapon.MinRank}" : LoadoutManager.HasWeapon(weapon.Weapon.Hash) ? "Issued" : null,
+                    Detail   = locked ? RequiredRank(weapon.MinRank) : LoadoutManager.HasWeapon(weapon.Weapon.Hash) ? "Issued" : null,
                     Disabled = locked,
                     Select   = () =>
                     {
@@ -170,7 +170,7 @@ namespace FivePRS.Client.Stations
 
         private static MenuPage Locker(StationDef station)
         {
-            var rank = ClientBrain.LocalPlayerData.Rank;
+            var rank = ClientBrain.LocalPlayerData.Ladder().Clamp(ClientBrain.LocalPlayerData.Rank);
             var page = new MenuPage { Title = "Locker", Subtitle = station.Name };
 
             foreach (var uniform in Catalog().Uniforms)
@@ -179,7 +179,7 @@ namespace FivePRS.Client.Stations
                 page.Items.Add(new MenuItem
                 {
                     Label    = uniform.Name,
-                    Detail   = locked ? $"Rank {uniform.MinRank}" : null,
+                    Detail   = locked ? RequiredRank(uniform.MinRank) : null,
                     Disabled = locked,
                     Select   = async () =>
                     {
@@ -222,7 +222,7 @@ namespace FivePRS.Client.Stations
         private static MenuPage Garage(StationDef station)
         {
             var agency  = BaseAgency.Active;
-            var rank    = ClientBrain.LocalPlayerData.Rank;
+            var rank    = ClientBrain.LocalPlayerData.Ladder().Clamp(ClientBrain.LocalPlayerData.Rank);
             var current = agency?.Vehicles.Current;
             var page    = new MenuPage
             {
@@ -236,7 +236,7 @@ namespace FivePRS.Client.Stations
                 page.Items.Add(new MenuItem
                 {
                     Label    = vehicle.Label,
-                    Detail   = locked ? $"Rank {vehicle.MinRank}" : null,
+                    Detail   = locked ? RequiredRank(vehicle.MinRank) : null,
                     Disabled = locked || agency is null,
                     Select   = async () =>
                     {
@@ -284,5 +284,12 @@ namespace FivePRS.Client.Stations
 
         private static void Notify(string subject, string message) =>
             ClientBrain.ShowNotification(message, subject);
+
+        private static string RequiredRank(int minRank)
+        {
+            var player = ClientBrain.LocalPlayerData;
+            var ladder = player.Ladder();
+            return minRank > ladder.Count ? "Unavailable" : ladder.NameFor(minRank, player.Agency);
+        }
     }
 }

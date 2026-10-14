@@ -6,6 +6,7 @@ using CitizenFX.Core.Native;
 using FivePRS.Client;
 using FivePRS.Client.Callouts;
 using FivePRS.Client.Tasks;
+using FivePRS.Core.Logging;
 using FivePRS.Core.Models;
 
 namespace FivePRS.Police.Callouts
@@ -93,7 +94,7 @@ namespace FivePRS.Police.Callouts
             var vehModel = new Model(_vehicleModel);
             if (!await vehModel.Request(7_000))
             {
-                Debug.WriteLine($"[VehiclePursuitCallout] Model '{_vehicleModel}' failed.");
+                Log.Warn($"Vehicle model '{_vehicleModel}' failed to load.");
                 CalloutFailed(); return;
             }
 
@@ -107,7 +108,7 @@ namespace FivePRS.Police.Callouts
             var pedModel = new Model(_driverModel);
             if (!await pedModel.Request(7_000))
             {
-                Debug.WriteLine($"[VehiclePursuitCallout] Driver model '{_driverModel}' failed.");
+                Log.Warn($"Driver model '{_driverModel}' failed to load.");
                 CalloutFailed(); return;
             }
 

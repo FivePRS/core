@@ -184,6 +184,66 @@ namespace FivePRS.Server.Database
                         `updated_at` DATETIME(6) NOT NULL,
                         PRIMARY KEY (`license`)
                     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci")),
+            new Migration(2, "Photos, service stats and terminal settings",
+                Sql(@"CREATE TABLE IF NOT EXISTS fiveprs_photos (
+                        character_id INTEGER PRIMARY KEY,
+                        data         TEXT NOT NULL,
+                        updated_at   TEXT NOT NULL)",
+                    @"CREATE TABLE IF NOT EXISTS `fiveprs_photos` (
+                        `character_id` INT UNSIGNED NOT NULL,
+                        `data`         MEDIUMTEXT   NOT NULL,
+                        `updated_at`   DATETIME(6)  NOT NULL,
+                        PRIMARY KEY (`character_id`)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"),
+                new AddColumnStep("ers_players", "calls_completed", "INTEGER NOT NULL DEFAULT 0", "INT UNSIGNED NOT NULL DEFAULT 0"),
+                new AddColumnStep("ers_players", "arrests", "INTEGER NOT NULL DEFAULT 0", "INT UNSIGNED NOT NULL DEFAULT 0"),
+                new AddColumnStep("ers_players", "duty_seconds", "INTEGER NOT NULL DEFAULT 0", "INT UNSIGNED NOT NULL DEFAULT 0"),
+                new AddColumnStep("fiveprs_preferences", "settings", "TEXT NOT NULL DEFAULT '{}'", "VARCHAR(2000) NOT NULL DEFAULT '{}'")),
+            new Migration(3, "Patient and incident reports",
+                Sql(@"CREATE TABLE IF NOT EXISTS fiveprs_reports (
+                        id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                        kind            INTEGER NOT NULL,
+                        department      INTEGER NOT NULL,
+                        call_id         TEXT    NOT NULL,
+                        status          INTEGER NOT NULL DEFAULT 0,
+                        title           TEXT    NOT NULL,
+                        location        TEXT    NOT NULL,
+                        narrative       TEXT    NOT NULL,
+                        character_id    INTEGER NULL,
+                        plate           TEXT    NULL,
+                        crew            TEXT    NOT NULL,
+                        crew_licenses   TEXT    NOT NULL,
+                        author_license  TEXT    NOT NULL,
+                        author_name     TEXT    NOT NULL,
+                        author_callsign TEXT    NOT NULL,
+                        created_at      TEXT    NOT NULL,
+                        filed_at        TEXT    NULL,
+                        filed_by        TEXT    NULL);
+                    CREATE INDEX IF NOT EXISTS idx_fiveprs_reports_status ON fiveprs_reports(status, created_at);
+                    CREATE INDEX IF NOT EXISTS idx_fiveprs_reports_character ON fiveprs_reports(character_id)",
+                    @"CREATE TABLE IF NOT EXISTS `fiveprs_reports` (
+                        `id`              INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                        `kind`            TINYINT UNSIGNED NOT NULL,
+                        `department`      TINYINT UNSIGNED NOT NULL,
+                        `call_id`         VARCHAR(16)   NOT NULL,
+                        `status`          TINYINT UNSIGNED NOT NULL DEFAULT 0,
+                        `title`           VARCHAR(60)   NOT NULL,
+                        `location`        VARCHAR(80)   NOT NULL,
+                        `narrative`       VARCHAR(2000) NOT NULL,
+                        `character_id`    INT UNSIGNED  NULL,
+                        `plate`           VARCHAR(8)    NULL,
+                        `crew`            VARCHAR(200)  NOT NULL,
+                        `crew_licenses`   VARCHAR(700)  NOT NULL,
+                        `author_license`  VARCHAR(60)   NOT NULL,
+                        `author_name`     VARCHAR(100)  NOT NULL,
+                        `author_callsign` VARCHAR(16)   NOT NULL,
+                        `created_at`      DATETIME(6)   NOT NULL,
+                        `filed_at`        DATETIME(6)   NULL,
+                        `filed_by`        VARCHAR(100)  NULL,
+                        PRIMARY KEY (`id`),
+                        KEY `idx_fiveprs_reports_status` (`status`, `created_at`),
+                        KEY `idx_fiveprs_reports_character` (`character_id`)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci")),
         };
 
         private static SqlStep Sql(string sqlite, string mySql) => new SqlStep(sqlite, mySql);

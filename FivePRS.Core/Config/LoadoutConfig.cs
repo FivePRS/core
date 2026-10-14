@@ -205,19 +205,6 @@ namespace FivePRS.Core.Config
             };
         }
 
-        public static LoadoutTier TierForRank(int rank) =>
-            rank >= 8 ? LoadoutTier.Command :
-            rank >= 5 ? LoadoutTier.Senior  :
-            rank >= 3 ? LoadoutTier.Officer : LoadoutTier.Recruit;
-
-        public static int MinRankFor(LoadoutTier tier) => tier switch
-        {
-            LoadoutTier.Command => 8,
-            LoadoutTier.Senior  => 5,
-            LoadoutTier.Officer => 3,
-            _                   => 1,
-        };
-
         public WeaponTierDef WeaponsFor(string? agencyId, LoadoutTier tier)
         {
             var agency = FindAgency(agencyId);

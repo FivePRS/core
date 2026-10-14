@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Vehicles</title>
+  <link rel="stylesheet" href="../../theme.css">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <main class="page">
+    <p id="loading" class="empty">Loading vehicles…</p>
+    <p id="no-character" class="empty" hidden>Create a character in the Characters app to register vehicles.</p>
+
+    <div id="content" class="garage" hidden>
+      <section class="column">
+        <div id="current" class="current">
+          <span class="current-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 16l1.5-5h11L19 16M4 16h16v3H4zM7 19v2M17 19v2"></path></svg></span>
+          <div class="current-text">
+            <p class="eyebrow current-eyebrow">You're driving</p>
+            <p id="current-title" class="current-title"></p>
+            <p id="current-detail" class="muted"></p>
+          </div>
+          <button id="register" type="button" class="button primary">Register</button>
+        </div>
+
+        <div class="list-head">
+          <h2 class="heading">My vehicles</h2>
+          <span id="count" class="eyebrow"></span>
+        </div>
+        <div id="vehicles" class="vehicle-list"></div>
+        <p id="vehicles-empty" class="empty" hidden>No registered vehicles. Get in the driver's seat of one you own to register it.</p>
+      </section>
+
+      <aside id="detail" class="column" hidden>
+        <div class="slip">
+          <div class="slip-head">
+            <span class="slip-title">Vehicle registration</span>
+            <span id="slip-issuer" class="slip-issuer"></span>
+          </div>
+          <dl class="slip-grid">
+            <div><dt>Plate</dt><dd id="slip-plate" class="mono"></dd></div>
+            <div><dt>Model</dt><dd id="slip-model"></dd></div>
+            <div><dt>Owner</dt><dd id="slip-owner"></dd></div>
+            <div><dt>State ID</dt><dd id="slip-id" class="mono"></dd></div>
+            <div><dt>Issued</dt><dd id="slip-issued" class="mono"></dd></div>
+            <div><dt>Status</dt><dd id="slip-status"></dd></div>
+          </dl>
+        </div>
+        <div class="detail-actions">
+          <button id="stolen" type="button" class="button"></button>
+          <button id="remove" type="button" class="button danger">Remove registration</button>
+        </div>
+      </aside>
+    </div>
+  </main>
+  <p id="toast" class="toast" hidden></p>
+
+  <script src="../../kit.js"></script>
+  <script src="../../cards.js"></script>
+  <script src="../../app-sdk.js"></script>
+  <script src="../shared/civilian.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

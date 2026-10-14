@@ -5,6 +5,7 @@ using CitizenFX.Core;
 using CitizenFX.Core.Native;
 using FivePRS.Core.Config;
 using FivePRS.Core.Events;
+using FivePRS.Core.Logging;
 using FivePRS.Core.Models;
 using FivePRS.Core.Text;
 using Newtonsoft.Json;
@@ -13,6 +14,8 @@ namespace FivePRS.Client.Dispatch
 {
     public class DispatchClient : BaseScript
     {
+        private static readonly Logger Log = Logger.For("Dispatch");
+
         public static DispatchSnapshot Snapshot { get; private set; } = new();
 
         public static event Action? SnapshotUpdated;
@@ -43,7 +46,7 @@ namespace FivePRS.Client.Dispatch
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[DispatchClient] Malformed snapshot discarded: {ex.Message}");
+                Log.Warn("Discarded a malformed dispatch snapshot", ex);
                 return;
             }
 
@@ -101,7 +104,7 @@ namespace FivePRS.Client.Dispatch
 
         private static void OnAttachCommand(int source, List<object> args, string raw)
         {
-            var callId = args.Count > 0 ? args[0]?.ToString()?.TrimStart('#') : null;
+            var callId = args.Count == 1 ? args[0]?.ToString()?.Trim().TrimStart('#') : null;
             if (callId is null || callId.Length == 0)
             {
                 ClientBrain.ShowNotification("~r~Usage: ~w~/er_attach [call id]");
@@ -113,15 +116,17 @@ namespace FivePRS.Client.Dispatch
 
         private static void OnStatusCommand(int source, List<object> args, string raw)
         {
-            var input = args.Count > 0 ? args[0]?.ToString() : null;
-            if (!Enum.TryParse<UnitStatus>(input, true, out var status) ||
-                (status != UnitStatus.Available && status != UnitStatus.Busy))
+            var input  = args.Count == 1 ? args[0]?.ToString()?.Trim() : null;
+            var status = string.Equals(input, "available", StringComparison.OrdinalIgnoreCase) ? UnitStatus.Available
+                : string.Equals(input, "busy", StringComparison.OrdinalIgnoreCase) ? UnitStatus.Busy
+                : (UnitStatus?)null;
+            if (status is null)
             {
                 ClientBrain.ShowNotification("~r~Usage: ~w~/er_status [available|busy]");
                 return;
             }
 
-            ClientEvents.TriggerServer(EventNames.ServerSetUnitStatus, (int)status);
+            ClientEvents.TriggerServer(EventNames.ServerSetUnitStatus, (int)status.Value);
         }
     }
 }

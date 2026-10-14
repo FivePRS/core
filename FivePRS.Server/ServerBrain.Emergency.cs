@@ -75,7 +75,7 @@ namespace FivePRS.Server
             }
             catch (Exception ex)
             {
-                ServerLog.Error($"911 call failed for {player.Name}", ex);
+                Log.Error($"911 call failed for {player.Name}", ex);
                 TriggerClientEvent(player, EventNames.ClientEmergencyError, "Something went wrong. Please try again.");
             }
         }

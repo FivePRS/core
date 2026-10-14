@@ -9,6 +9,7 @@ using FivePRS.Client.Agency;
 using FivePRS.Client.Arrest;
 using FivePRS.Client.Dispatch;
 using FivePRS.Client.Menu;
+using FivePRS.Client.Terminal;
 using FivePRS.Core.Civilian;
 using FivePRS.Core.Config;
 using FivePRS.Core.Events;
@@ -34,9 +35,6 @@ namespace FivePRS.Police.TrafficStops
         private const int ScanIntervalMs = 250;
         private const string Subject = "~b~Stop";
 
-        private static readonly Random Rng = new();
-        private static readonly Dictionary<int, int> Seeds = new();
-
         private static TrafficStop? _stop;
         private static Vehicle? _vehicleCandidate;
         private static Ped? _pedestrianCandidate;
@@ -54,7 +52,28 @@ namespace FivePRS.Police.TrafficStops
             });
 
             Interactions.Register(TryInteract);
+            StreetIdentity.CurrentStop = DescribeStop;
             Tick += OnTick;
+        }
+
+        private static StreetStop? DescribeStop()
+        {
+            var stop = _stop;
+            if (stop is null) return null;
+
+            var identity = stop.Identity?.Character;
+            return new StreetStop
+            {
+                Kind         = stop.IsVehicleStop ? "vehicle" : "person",
+                Plate        = stop.Plate,
+                Model        = stop.Model,
+                Name         = identity is null ? null : $"{identity.FirstName} {identity.LastName}",
+                CharacterId  = identity?.Id,
+                OwnerId      = stop.Registration?.Character.Id,
+                PlateChecked = stop.Registration is not null || stop.RegistrationError is not null,
+                Checking     = stop.AwaitingPlate,
+                RunPlate     = stop.IsVehicleStop ? () => RequestPlate(stop) : null,
+            };
         }
 
         private static bool OnDutyAsPolice => BaseAgency.Active?.Department == Department.Police;
@@ -135,13 +154,6 @@ namespace FivePRS.Police.TrafficStops
             return best;
         }
 
-        private static int SeedFor(Ped ped)
-        {
-            if (!Seeds.TryGetValue(ped.Handle, out var seed))
-                Seeds[ped.Handle] = seed = Rng.Next();
-            return seed;
-        }
-
         private static void StartVehicleStop()
         {
             if (_stop is not null || !OnDutyAsPolice) return;
@@ -151,10 +163,11 @@ namespace FivePRS.Police.TrafficStops
             if (vehicle is null || driver is null || !driver.Exists()) return;
 
             _vehicleCandidate = null;
-            _stop = new TrafficStop(driver, vehicle, SeedFor(driver));
+            _stop = new TrafficStop(driver, vehicle, StreetIdentity.SeedFor(driver));
             _stop.PullOver();
 
             ClientBrain.ShowNotification($"Pulling over the ~y~{_stop.Model}~w~, plate ~y~{_stop.Plate}~w~.", Subject);
+            TerminalApps.NotifyChanged();
         }
 
         private static bool StartPedestrianStop(Ped ped)
@@ -162,8 +175,9 @@ namespace FivePRS.Police.TrafficStops
             if (_stop is not null || !OnDutyAsPolice || !ped.Exists() || ped.IsDead) return false;
 
             _pedestrianCandidate = null;
-            var stop = new TrafficStop(ped, null, SeedFor(ped));
+            var stop = new TrafficStop(ped, null, StreetIdentity.SeedFor(ped));
             _stop = stop;
+            TerminalApps.NotifyChanged();
 
             if (stop.Person.WillFlee)
             {
@@ -468,6 +482,7 @@ namespace FivePRS.Police.TrafficStops
             }
 
             CompactMenu.Refresh();
+            TerminalApps.NotifyChanged();
         }
 
         private void OnLookupError(string error)
@@ -505,6 +520,7 @@ namespace FivePRS.Police.TrafficStops
             if (stop is null) return;
 
             _stop = null;
+            TerminalApps.NotifyChanged();
             if (CompactMenu.IsOpen) CompactMenu.Close();
             if (message is not null) ClientBrain.ShowNotification(message, Subject);
 

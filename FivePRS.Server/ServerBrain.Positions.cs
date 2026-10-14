@@ -52,7 +52,7 @@ namespace FivePRS.Server
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[FivePRS] Could not load the last position for {player.Name}: {ex.Message}");
+                Log.Warn($"Could not load {player.Name}'s last position", ex);
             }
 
             var model = string.Empty;
@@ -62,7 +62,7 @@ namespace FivePRS.Server
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[FivePRS] Could not load the spawn model for {player.Name}: {ex.Message}");
+                Log.Warn($"Could not load {player.Name}'s spawn model", ex);
             }
 
             TriggerClientEvent(player, EventNames.ClientLastPosition, position is not null,
@@ -98,7 +98,7 @@ namespace FivePRS.Server
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[FivePRS] Could not save a position: {ex.Message}");
+                Log.Warn("Could not save a position", ex);
             }
         }
 

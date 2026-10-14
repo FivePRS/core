@@ -12,12 +12,14 @@ namespace FivePRS.Server.Civilian
         private const int SearchLimit = 15;
 
         private readonly CivilianStore _store;
+        private readonly PhotoStore _photos;
         private readonly Func<ResourceSettings> _settings;
         private readonly Func<LicensesConfig> _licenses;
 
-        public LookupService(CivilianStore store, Func<ResourceSettings> settings, Func<LicensesConfig> licenses)
+        public LookupService(CivilianStore store, PhotoStore photos, Func<ResourceSettings> settings, Func<LicensesConfig> licenses)
         {
             _store    = store;
+            _photos   = photos;
             _settings = settings;
             _licenses = licenses;
         }
@@ -55,6 +57,7 @@ namespace FivePRS.Server.Civilian
         public async Task<string?> IssueRecordAsync(OfficerInfo officer, int characterId, int type, string? description, int fine)
         {
             if (!Enum.IsDefined(typeof(RecordType), type)) return "Unknown record type.";
+            if (!RecordAccess.CanIssue(officer.Department, (RecordType)type)) return "Your department can't add that kind of entry.";
             if (await _store.GetCharacterAsync(characterId) is null) return "Person not found.";
 
             if (!CivilianRules.TryNormalizeDescription(description, out var text))
@@ -121,17 +124,12 @@ namespace FivePRS.Server.Civilian
             if (summary is null) return null;
 
             var held = await _store.GetLicensesAsync(characterId);
+            summary.Photo = await _photos.GetAsync(characterId);
 
             return new LookupRecord
             {
                 Character = summary,
-                Licenses  = _licenses().Types.Select(type => new LicenseView
-                {
-                    Type        = type.Id,
-                    Name        = type.Name,
-                    SelfService = type.SelfService,
-                    Status      = held.FirstOrDefault(l => string.Equals(l.Type, type.Id, StringComparison.OrdinalIgnoreCase))?.Status,
-                }).ToList(),
+                Licenses  = LicenseViews.Build(characterId, _licenses(), held),
                 Vehicles  = await _store.GetVehiclesAsync(characterId),
                 Records   = await _store.GetRecordsAsync(characterId),
             };

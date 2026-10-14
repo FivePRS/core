@@ -11,6 +11,8 @@ namespace FivePRS.Server
 {
     public partial class ServerBrain
     {
+        private const float ShowCardRangeM = 4f;
+
         private CivilianService? _civilians;
 
         private void RegisterCivilianEvents()
@@ -23,6 +25,51 @@ namespace FivePRS.Server
             EventHandlers[EventNames.ServerVehicleRegister]  += new Action<Player, string>(OnVehicleRegister);
             EventHandlers[EventNames.ServerVehicleRemove]    += new Action<Player, int>(OnVehicleRemove);
             EventHandlers[EventNames.ServerVehicleSetStolen] += new Action<Player, int, bool>(OnVehicleSetStolen);
+            EventHandlers[EventNames.ServerCharacterPhoto]   += new Action<Player, int, string>(OnCharacterPhoto);
+            EventHandlers[EventNames.ServerShowLicense]      += new Action<Player, int, string>(OnShowLicense);
+        }
+
+        private void OnCharacterPhoto([FromSource] Player player, int characterId, string photo) =>
+            RunCivilian(player, (service, license) => service.SetPhotoAsync(license, characterId, photo),
+                AuditActions.PhotoSet, $"character {characterId}");
+
+        private async void OnShowLicense([FromSource] Player player, int targetId, string type)
+        {
+            if (!Allow(player, "civilian", l => l.Civilian) || _civilians is null) return;
+
+            var license = GetLicense(player);
+            if (license is null) return;
+
+            if (!TryGetPlayer(targetId, out var target) || target.Handle == player.Handle || !AreNear(player, target, ShowCardRangeM))
+            {
+                Notify(player, "~r~Nobody is close enough to show your license to.");
+                return;
+            }
+
+            try
+            {
+                var card = await _civilians.GetLicenseCardAsync(license, type);
+                if (card is null)
+                {
+                    Notify(player, "~r~You don't hold that license.");
+                    return;
+                }
+
+                TriggerClientEvent(target, EventNames.ClientShowCard, JsonConvert.SerializeObject(card));
+                Notify(player, $"You showed your {card.License.Name} to {target.Name}.");
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Showing {player.Name}'s license failed", ex);
+            }
+        }
+
+        private static bool AreNear(Player first, Player second, float range)
+        {
+            var a = API.GetEntityCoords(API.GetPlayerPed(first.Handle));
+            var b = API.GetEntityCoords(API.GetPlayerPed(second.Handle));
+            if (a == Vector3.Zero || b == Vector3.Zero) return true;
+            return Vector3.Distance(a, b) <= range;
         }
 
         private void OnCivilianRequest([FromSource] Player player) =>
@@ -103,7 +150,7 @@ namespace FivePRS.Server
             }
             catch (Exception ex)
             {
-                ServerLog.Error($"Civilian action failed for {player.Name}", ex);
+                Log.Error($"Civilian action failed for {player.Name}", ex);
                 TriggerClientEvent(player, EventNames.ClientCivilianError, "Something went wrong. Please try again.");
             }
         }

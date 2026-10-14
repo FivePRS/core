@@ -15,6 +15,8 @@ namespace FivePRS.Client
         private const int HandledTimeoutMs = 2_000;
         private const float MinimumMove = 5f;
         private const float RestoreDistance = 15f;
+        private const string SpawnedKey = "fiveprsSpawned";
+        private const string WelcomedKey = "fiveprsWelcomed";
 
         private bool _requested;
         private bool _restored;
@@ -50,7 +52,11 @@ namespace FivePRS.Client
 
             if (!_restored)
             {
-                if (now - _requestedAt > ReplyTimeoutMs) _restored = true;
+                if (now - _requestedAt > ReplyTimeoutMs)
+                {
+                    _restored = true;
+                    Welcome();
+                }
                 await Delay(500);
                 return;
             }
@@ -87,6 +93,7 @@ namespace FivePRS.Client
 
                 if (!handled)
                 {
+                    await WaitForFirstSpawnAsync();
                     await WaitForSpawnAsync();
                     var ped = Game.PlayerPed;
                     var target = new Vector3(x, y, z);
@@ -95,6 +102,7 @@ namespace FivePRS.Client
                 }
 
                 await WaitForSpawnAsync();
+                Welcome();
                 if (AppearanceManager.Current is null && AppearanceManager.CharacterId != 0)
                     ClientBrain.ShowNotification("Your character doesn't have a look yet. Open the Characters app and choose Edit appearance.", "Characters");
             }
@@ -103,6 +111,21 @@ namespace FivePRS.Client
                 _lastReported = Game.PlayerPed.Position;
                 _restored = true;
             }
+        }
+
+        private static void Welcome()
+        {
+            if (Game.Player.State[WelcomedKey] is true) return;
+
+            Game.Player.State.Set(WelcomedKey, true, false);
+            ClientBrain.ShowHelp($"~y~Welcome to FivePRS!~w~ Press {Binds.Menu} to open the FivePRS menu.", 10_000);
+        }
+
+        private static async Task WaitForFirstSpawnAsync()
+        {
+            var deadline = API.GetGameTimer() + ReplyTimeoutMs * 2;
+            while (Game.Player.State[SpawnedKey] is not true && API.GetGameTimer() < deadline)
+                await Delay(250);
         }
 
         private static async Task WaitForSpawnAsync()

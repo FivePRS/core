@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using CitizenFX.Core;
 using CitizenFX.Core.Native;
+using FivePRS.Core.Logging;
 
 namespace FivePRS.Client.VehicleSpawner
 {
@@ -41,6 +42,8 @@ namespace FivePRS.Client.VehicleSpawner
 
     public sealed class PatrolVehicleSpawner
     {
+        private static readonly Logger Log = Logger.For("Vehicles");
+
         private static readonly Random Rng = new();
 
         private CitizenFX.Core.Vehicle? _vehicle;
@@ -56,7 +59,7 @@ namespace FivePRS.Client.VehicleSpawner
 
             if (config.ModelPool.Count == 0)
             {
-                Debug.WriteLine("[PatrolVehicleSpawner] No vehicle models configured.");
+                Log.Warn("No patrol vehicle models are configured.");
                 return null;
             }
 
@@ -65,7 +68,7 @@ namespace FivePRS.Client.VehicleSpawner
 
             if (!await model.Request(10_000))
             {
-                Debug.WriteLine($"[PatrolVehicleSpawner] Model '{modelName}' failed to load.");
+                Log.Warn($"Vehicle model '{modelName}' failed to load.");
                 model.MarkAsNoLongerNeeded();
                 return null;
             }
@@ -75,7 +78,7 @@ namespace FivePRS.Client.VehicleSpawner
 
             if (_vehicle is null || !_vehicle.Exists())
             {
-                Debug.WriteLine("[PatrolVehicleSpawner] Vehicle creation failed.");
+                Log.Warn("Could not create the patrol vehicle.");
                 return null;
             }
 
@@ -83,7 +86,7 @@ namespace FivePRS.Client.VehicleSpawner
             if (warpIn) WarpPlayerIn(_vehicle);
             AddVehicleBlip(_vehicle, modelName);
 
-            Debug.WriteLine($"[PatrolVehicleSpawner] Spawned '{modelName}' at {spawn.Position}.");
+            Log.Debug($"Spawned '{modelName}' at {spawn.Position}.");
             return _vehicle;
         }
 
@@ -95,7 +98,7 @@ namespace FivePRS.Client.VehicleSpawner
             if (_vehicle is not null && _vehicle.Exists())
             {
                 _vehicle.Delete();
-                Debug.WriteLine("[PatrolVehicleSpawner] Patrol vehicle despawned.");
+                Log.Debug("Patrol vehicle removed.");
             }
 
             _vehicle = null;

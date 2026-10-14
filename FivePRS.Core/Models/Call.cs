@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace FivePRS.Core.Models
@@ -36,10 +37,13 @@ namespace FivePRS.Core.Models
 
     public sealed class EmergencyCallStatus
     {
-        public string     CallId      { get; set; } = string.Empty;
-        public Department Department  { get; set; }
-        public string     Description { get; set; } = string.Empty;
-        public int        Responding  { get; set; }
+        public string       CallId      { get; set; } = string.Empty;
+        public Department   Department  { get; set; }
+        public string       Description { get; set; } = string.Empty;
+        public int          Responding  { get; set; }
+        public bool         OnScene     { get; set; }
+        public DateTime     ReceivedAt  { get; set; }
+        public List<string> Units       { get; set; } = new();
     }
 
     public class DispatchSnapshot

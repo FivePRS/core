@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using FivePRS.Core.Civilian;
 using FivePRS.Core.Config;
+using FivePRS.Core.Models;
 using FivePRS.Server.Civilian;
 using FivePRS.Server.Database;
 using Xunit;
@@ -27,8 +28,8 @@ namespace FivePRS.Tests
         {
             _database  = await TestDatabase.CreateAsync();
             _store     = _database.Store;
-            _civilians = new CivilianService(_store, () => _settings, () => new LicensesConfig(), () => new DateTime(2026, 10, 9));
-            _lookup    = new LookupService(_store, () => _settings, () => new LicensesConfig());
+            _civilians = new CivilianService(_store, _database.Photos, () => _settings, () => new LicensesConfig(), () => new DateTime(2026, 10, 9));
+            _lookup    = new LookupService(_store, _database.Photos, () => _settings, () => new LicensesConfig());
 
             await _civilians.CreateCharacterAsync(Owner, "Trevor", "Philips", "1967-01-01", "Male");
             await _civilians.RegisterVehicleAsync(Owner, "TP 1", "Bodhi");
@@ -77,6 +78,27 @@ namespace FivePRS.Tests
             Assert.Single(result.Record.Vehicles);
 
             Assert.NotNull((await _lookup.SearchByPlateAsync("NOPE 1")).Error);
+        }
+
+        [Fact]
+        public async Task IssueRecord_RespectsDepartment()
+        {
+            var medic = new OfficerInfo { License = "license:medic", Name = "Medic Pixel", Callsign = "MEDIC-4", Department = Department.EMS };
+
+            Assert.NotNull(await _lookup.IssueRecordAsync(medic, _characterId, (int)RecordType.Citation, "Speeding", 100));
+            Assert.NotNull(await _lookup.IssueRecordAsync(Officer, _characterId, (int)RecordType.Medical, "Broken arm", 0));
+            Assert.Null(await _lookup.IssueRecordAsync(medic, _characterId, (int)RecordType.Medical, "Broken arm, splinted", 0));
+            Assert.Null(await _lookup.IssueRecordAsync(Officer, _characterId, (int)RecordType.Warrant, "Failure to appear", 0));
+
+            var medical = RecordAccess.Filter((await _lookup.GetRecordAsync(_characterId)).Result!, Department.Fire).Record!;
+            Assert.Equal(RecordType.Medical, Assert.Single(medical.Records).Type);
+            Assert.Empty(medical.Licenses);
+            Assert.Empty(medical.Vehicles);
+            Assert.NotNull(medical.Caution);
+
+            var police = RecordAccess.Filter((await _lookup.GetRecordAsync(_characterId)).Result!, Department.Police).Record!;
+            Assert.Equal(RecordType.Warrant, Assert.Single(police.Records).Type);
+            Assert.Null(police.Caution);
         }
 
         [Fact]

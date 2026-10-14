@@ -2,12 +2,15 @@ using System;
 using System.Text;
 using CitizenFX.Core;
 using CitizenFX.Core.Native;
+using FivePRS.Core.Logging;
 using Newtonsoft.Json;
 
 namespace FivePRS.Client
 {
     public static class ClientEvents
     {
+        private static readonly Logger Log = Logger.For("Events");
+
         private const string RelayCommand = "fiveprs_relay";
 
         private static bool _useRelay;
@@ -31,7 +34,7 @@ namespace FivePRS.Client
                 catch (ArgumentException ex) when (ex.Message.Contains("expected a managed pointer"))
                 {
                     _useRelay = true;
-                    Debug.WriteLine("[FivePRS] This client build blocks C# event natives; routing events through the Lua relay.");
+                    Log.Debug("This client blocks C# event natives, using the Lua relay.");
                 }
             }
 

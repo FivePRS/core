@@ -33,9 +33,11 @@ namespace FivePRS.Client.Gear
 
         private DepartmentVehiclesConfig Vehicles => ConfigManager.VehiclesFor(_department);
 
+        private RankLadder Ranks => ConfigManager.RanksFor(_department);
+
         public LoadoutDefinition LoadoutForRank(int rank, string? agencyId)
         {
-            var tier   = DepartmentLoadoutsConfig.TierForRank(rank);
+            var tier   = Ranks.TierFor(rank);
             var outfit = ToOutfit(Loadouts.UniformFor(agencyId, tier));
 
             outfit.Name    = _tierName(tier);
@@ -44,7 +46,7 @@ namespace FivePRS.Client.Gear
         }
 
         public PatrolVehicleConfig VehicleForRank(int rank, string? agencyId) =>
-            ToConfig(Vehicles.TierFor(agencyId, DepartmentLoadoutsConfig.TierForRank(rank)));
+            ToConfig(Vehicles.TierFor(agencyId, Ranks.TierFor(rank)));
 
         public StationCatalog BuildCatalog(string? agencyId)
         {
@@ -60,7 +62,7 @@ namespace FivePRS.Client.Gear
             foreach (var tier in Tiers)
             {
                 var weapons = Loadouts.WeaponsFor(agencyId, tier).Weapons;
-                var minRank = DepartmentLoadoutsConfig.MinRankFor(tier);
+                var minRank = Ranks.MinRankFor(tier);
 
                 if (catalog.Kits.All(kit => kit.Name != _tierName(tier)))
                 {
@@ -97,7 +99,7 @@ namespace FivePRS.Client.Gear
                 catalog.Uniforms.Add(new GearUniform
                 {
                     Name    = "Command uniform",
-                    MinRank = DepartmentLoadoutsConfig.MinRankFor(LoadoutTier.Command),
+                    MinRank = Ranks.MinRankFor(LoadoutTier.Command),
                     Outfit  = ToOutfit(command),
                 });
             }
@@ -117,7 +119,7 @@ namespace FivePRS.Client.Gear
                     catalog.Vehicles.Add(new GearVehicle
                     {
                         Label   = VehicleLabel(model),
-                        MinRank = DepartmentLoadoutsConfig.MinRankFor(tier),
+                        MinRank = Ranks.MinRankFor(tier),
                         Config  = ToConfig(vehicles, model),
                     });
                 }

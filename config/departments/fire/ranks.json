@@ -1,0 +1,15 @@
+{
+    "ranks": [
+        { "name": "Recruit Firefighter",      "xp": 0,     "tier": "recruit" },
+        { "name": "Probationary Firefighter", "xp": 100,   "tier": "recruit" },
+        { "name": "Firefighter",              "xp": 500,   "tier": "officer" },
+        { "name": "Senior Firefighter",       "xp": 1400,  "tier": "officer" },
+        { "name": "Engineer",                 "xp": 3000,  "tier": "senior" },
+        { "name": "Lieutenant",               "xp": 5500,  "tier": "senior" },
+        { "name": "Captain",                  "xp": 9100,  "tier": "senior" },
+        { "name": "Battalion Chief",          "xp": 14000, "tier": "command" },
+        { "name": "Deputy Chief",             "xp": 20400, "tier": "command" },
+        { "name": "Fire Chief",               "xp": 28500, "tier": "command" }
+    ],
+    "agencies": {}
+}

@@ -6,6 +6,7 @@ using CitizenFX.Core.Native;
 using FivePRS.Client;
 using FivePRS.Client.Callouts;
 using FivePRS.Client.Tasks;
+using FivePRS.Core.Logging;
 using FivePRS.Core.Models;
 
 namespace FivePRS.Police.Callouts
@@ -92,7 +93,7 @@ namespace FivePRS.Police.Callouts
             var vehModel = new Model(_vehicleModel);
             if (!await vehModel.Request(7_000))
             {
-                Debug.WriteLine($"[TrafficStopCallout] Vehicle model '{_vehicleModel}' failed.");
+                Log.Warn($"Vehicle model '{_vehicleModel}' failed to load.");
                 CalloutFailed();
                 return;
             }
@@ -102,7 +103,7 @@ namespace FivePRS.Police.Callouts
 
             if (_suspectVehicle is null || !_suspectVehicle.Exists())
             {
-                Debug.WriteLine("[TrafficStopCallout] Vehicle creation failed.");
+                Log.Warn("Could not create the vehicle.");
                 CalloutFailed();
                 return;
             }
@@ -112,7 +113,7 @@ namespace FivePRS.Police.Callouts
             var pedModel = new Model(_driverModel);
             if (!await pedModel.Request(7_000))
             {
-                Debug.WriteLine($"[TrafficStopCallout] Driver model '{_driverModel}' failed.");
+                Log.Warn($"Driver model '{_driverModel}' failed to load.");
                 CalloutFailed();
                 return;
             }
@@ -122,7 +123,7 @@ namespace FivePRS.Police.Callouts
 
             if (_driver is null || !_driver.Exists())
             {
-                Debug.WriteLine("[TrafficStopCallout] Driver creation failed.");
+                Log.Warn("Could not create the driver.");
                 CalloutFailed();
                 return;
             }

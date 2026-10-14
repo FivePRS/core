@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Characters</title>
+  <link rel="stylesheet" href="../../theme.css">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <main class="page">
+    <aside class="rail">
+      <div class="rail-head">
+        <span class="eyebrow">Characters</span>
+        <span id="slots" class="eyebrow"></span>
+      </div>
+      <div id="characters" class="rail-list"></div>
+      <button id="new" type="button" class="new-character">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+        <span id="new-label">New character</span>
+      </button>
+    </aside>
+
+    <section class="main">
+      <p id="loading" class="empty">Loading characters…</p>
+
+      <form id="create" class="card create" hidden>
+        <div class="card-head">
+          <h2 class="heading">New character</h2>
+          <button id="cancel" type="button" class="button small">Cancel</button>
+        </div>
+        <div class="create-grid">
+          <label class="field">First name<input name="firstName" class="input" autocomplete="off" spellcheck="false" required></label>
+          <label class="field">Last name<input name="lastName" class="input" autocomplete="off" spellcheck="false" required></label>
+          <label class="field">Date of birth<input name="dateOfBirth" class="input mono" type="date" required></label>
+          <label class="field">Gender<select name="gender" class="input" required></select></label>
+        </div>
+        <div class="create-actions">
+          <span class="muted">You'll set up their appearance next.</span>
+          <button type="submit" class="button primary">Create character</button>
+        </div>
+      </form>
+
+      <p id="no-character" class="empty" hidden>Create your first character to get started.</p>
+
+      <div id="content" class="profile" hidden>
+        <div class="card identity">
+          <div class="photo-column">
+            <div id="photo" class="photo board identity-photo"></div>
+            <div class="photo-actions">
+              <button id="mugshot" type="button" class="button small accent">Take mugshot</button>
+              <button id="photo-url-toggle" type="button" class="button small">Image link</button>
+            </div>
+            <form id="photo-url" class="photo-url" hidden>
+              <input name="url" class="input" type="url" placeholder="https://…" autocomplete="off" spellcheck="false" aria-label="Image link">
+              <div class="photo-url-actions">
+                <button id="photo-remove" type="button" class="button small danger">Remove photo</button>
+                <button type="submit" class="button small primary">Use link</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="identity-info">
+            <div class="identity-head">
+              <div>
+                <p id="citizen" class="eyebrow"></p>
+                <h1 id="name" class="display identity-name"></h1>
+              </div>
+              <span id="record-pill" class="pill"></span>
+            </div>
+
+            <dl class="facts">
+              <div><dt class="eyebrow">Born</dt><dd id="dob" class="mono"></dd></div>
+              <div><dt class="eyebrow">Age</dt><dd id="age" class="mono"></dd></div>
+              <div><dt class="eyebrow">Sex</dt><dd id="sex"></dd></div>
+              <div><dt class="eyebrow">State ID</dt><dd id="state-id" class="mono"></dd></div>
+            </dl>
+
+            <div class="tiles">
+              <div class="tile"><span class="tile-icon amber"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="9" cy="12" r="2"></circle><path d="M14 10h4M14 14h3"></path></svg></span><span><span id="tile-licenses" class="tile-title"></span><span id="tile-licenses-detail" class="tile-detail"></span></span></div>
+              <div class="tile"><span class="tile-icon grey"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 16l1.5-5h11L19 16M4 16h16v3H4zM7 19v2M17 19v2"></path></svg></span><span><span id="tile-vehicles" class="tile-title"></span><span id="tile-vehicles-detail" class="tile-detail"></span></span></div>
+              <div class="tile"><span id="tile-record-icon" class="tile-icon green"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z M9 12l2 2 4-4"></path></svg></span><span><span id="tile-record" class="tile-title"></span><span id="tile-record-detail" class="tile-detail"></span></span></div>
+            </div>
+
+            <div class="identity-actions">
+              <button id="appearance" type="button" class="button">Edit appearance</button>
+              <span id="appearance-note" class="muted" hidden>Change your look at your station's locker, or go off duty.</span>
+              <button id="delete" type="button" class="button danger">Delete</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2 class="heading">My record</h2>
+            <span class="muted">What police see when they run your name</span>
+          </div>
+          <div id="records" class="timeline"></div>
+          <p id="records-empty" class="empty" hidden>No citations, arrests, warnings or warrants. Keep it that way.</p>
+        </div>
+      </div>
+    </section>
+
+    <div id="review" class="review" hidden>
+      <div class="card review-card">
+        <h2 class="heading">New mugshot</h2>
+        <div class="photo board review-photo"><img id="review-image" alt="Mugshot preview"></div>
+        <div class="review-actions">
+          <button id="review-cancel" type="button" class="button">Discard</button>
+          <button id="review-retake" type="button" class="button">Retake</button>
+          <button id="review-use" type="button" class="button primary">Use photo</button>
+        </div>
+      </div>
+    </div>
+  </main>
+  <p id="toast" class="toast" hidden></p>
+
+  <script src="../../kit.js"></script>
+  <script src="../../cards.js"></script>
+  <script src="../../app-sdk.js"></script>
+  <script src="../shared/civilian.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -3,15 +3,18 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using CitizenFX.Core;
 using CitizenFX.Core.Native;
 using FivePRS.Core.Config;
 using FivePRS.Core.Events;
+using FivePRS.Core.Logging;
 using FivePRS.Core.Models;
 using FivePRS.Server.Civilian;
 using FivePRS.Server.Database;
 using FivePRS.Server.Http;
+using FivePRS.Server.Logging;
 using FivePRS.Server.Dispatch;
 using FivePRS.Server.Permissions;
 using Newtonsoft.Json;
@@ -20,6 +23,8 @@ namespace FivePRS.Server
 {
     public partial class ServerBrain : BaseScript
     {
+        private static readonly Logger Log = Logger.For("Server");
+
         private const int SnapshotIntervalMs = 5_000;
         private const int MaxCalloutCatalogJson = 200_000;
 
@@ -34,15 +39,14 @@ namespace FivePRS.Server
         public ServerBrain()
         {
             Resource.Capture();
-            foreach (var name in RetiredFiles.Remove(Path.Combine(Resource.Path, "server"), warning => Debug.WriteLine($"[FivePRS] WARNING: {warning}")))
-                Debug.WriteLine($"[FivePRS] Removed server/{name}, left over from an older FivePRS version.");
+            ServerLogging.Start(Resource.Path);
+            foreach (var name in RetiredFiles.Remove(Path.Combine(Resource.Path, "server"), warning => Log.Warn(warning)))
+                Log.Info($"Removed server/{name}, left over from an older version.");
             API.SetConvarServerInfo("fiveprs_version", InstalledVersion().ToString());
             MainThread.Enable();
-            ConfigManager.Log = message => Debug.WriteLine(message);
             var resource = Resource.Name;
-            ConfigManager.LoadSettings(API.LoadResourceFile(resource, "config/settings.json"));
-            ConfigManager.LoadJurisdictions(API.LoadResourceFile(resource, "config/jurisdictions.json"));
-            ConfigManager.LoadLicenses(API.LoadResourceFile(resource, "config/licenses.json"));
+            ConfigLayout.Update(Resource.Path);
+            ConfigManager.LoadAll(path => API.LoadResourceFile(resource, path));
 
             _dispatch    = new DispatchService(
                 () => DateTime.UtcNow,
@@ -83,6 +87,7 @@ namespace FivePRS.Server
             RegisterUpdates();
             RegisterDiagnostics();
             RegisterStreetEvents();
+            RegisterReportEvents();
             RegisterDeathEvents();
 
             _ = ServerIcon.ApplyDefaultAsync(ConfigManager.Settings.Branding.ServerIcon);
@@ -105,31 +110,31 @@ namespace FivePRS.Server
                 var dbType = dbTypeRaw == "mysql" ? DatabaseType.MySQL : DatabaseType.SQLite;
                 _databaseType = dbType;
                 await _db.InitializeAsync(dbType, string.IsNullOrEmpty(connString) ? null : connString);
-                _civilians = new CivilianService(_db.Civilians, () => ConfigManager.Settings, () => ConfigManager.Licenses, () => DateTime.UtcNow);
-                _lookup    = new LookupService(_db.Civilians, () => ConfigManager.Settings, () => ConfigManager.Licenses);
+                _civilians = new CivilianService(_db.Civilians, _db.Photos, () => ConfigManager.Settings, () => ConfigManager.Licenses, () => DateTime.UtcNow);
+                _lookup    = new LookupService(_db.Civilians, _db.Photos, () => ConfigManager.Settings, () => ConfigManager.Licenses);
                 _street    = new StreetService(_db.Civilians, _lookup);
+                _reports   = new ReportService(_db.Reports, _db.Civilians, _street);
                 _appearances = new AppearanceService(_db.Civilians, _db.Appearances, () => ConfigManager.Settings.Creator);
                 _roster    = new RosterService(_db.Roster);
                 await _roster.LoadAsync();
 
                 LogStartup();
-                Debug.WriteLine("[FivePRS] ServerBrain online.");
             }
             catch (Exception ex) when (ex is NotSupportedException || ex is DatabaseSetupException)
             {
-                Debug.WriteLine($"[FivePRS] FATAL: {ex.Message}");
+                Log.Error($"FivePRS could not start: {ex.Message}");
             }
             catch (UnauthorizedAccessException ex)
             {
-                Debug.WriteLine($"[FivePRS] FATAL: {ex.Message} The server's user account needs write access to the fiveprs resource folder.");
+                Log.Error($"FivePRS could not start: {ex.Message} The server needs write access to the fiveprs folder.");
             }
             catch (DatabaseQueryException ex)
             {
-                Debug.WriteLine($"[FivePRS] FATAL: The database didn't start: {ex.Message}");
+                Log.Error($"The database didn't start: {ex.Message}");
             }
             catch (Exception ex)
             {
-                ServerLog.Error("FATAL: The database didn't start", ex);
+                Log.Error("The database didn't start", ex);
             }
         }
 
@@ -165,7 +170,7 @@ namespace FivePRS.Server
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[FivePRS] Error loading {playerName}: {ex.Message}");
+                Log.Error($"Could not load {playerName}", ex);
                 deferrals.done("Error loading your profile. Please try again.");
             }
         }
@@ -180,7 +185,11 @@ namespace FivePRS.Server
             if (license is null) return;
 
             if (_cache.TryRemove(license, out var data) && data.IsOnDuty)
-                _ = _db.UpdateDutyStatusAsync(license, false);
+            {
+                data.IsOnDuty = false;
+                EndShift(data);
+                _ = _db.SavePlayerAsync(data);
+            }
 
             _ = ForgetPositionAsync(license);
         }
@@ -209,7 +218,7 @@ namespace FivePRS.Server
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[FivePRS] Error sending profile to {player.Name}: {ex.Message}");
+                Log.Error($"Could not send {player.Name}'s profile", ex);
             }
         }
 
@@ -265,7 +274,7 @@ namespace FivePRS.Server
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[FivePRS] Error entering service for {player.Name}: {ex.Message}");
+                Log.Error($"Could not put {player.Name} into service", ex);
                 TriggerClientEvent(player, EventNames.ClientEntryRejected, "Something went wrong. Please try again.");
             }
         }
@@ -296,13 +305,14 @@ namespace FivePRS.Server
                     {
                         ["name"]   = data.Name,
                         ["rank"]   = data.Rank,
+                        ["rankName"] = data.Department == Department.None ? string.Empty : data.RankName(),
                         ["agency"] = agency,
                     },
                 });
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[FivePRS] Loading screen handover failed: {ex.Message}");
+                Log.Warn("Loading screen handover failed", ex);
             }
         }
 
@@ -327,7 +337,7 @@ namespace FivePRS.Server
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[FivePRS] Error toggling duty for {player.Name}: {ex.Message}");
+                Log.Error($"Could not change duty for {player.Name}", ex);
             }
         }
 
@@ -342,11 +352,11 @@ namespace FivePRS.Server
                 if (definitions is null) return;
 
                 if (_dispatch.RegisterCallouts(definitions, ReadMaxXp()) == 0) return;
-                Debug.WriteLine($"[FivePRS] Dispatch catalog has {_dispatch.CatalogCount} callout(s).");
+                Log.Debug($"Dispatch catalog has {_dispatch.CatalogCount} callouts.");
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[FivePRS] Invalid callout catalog from {player.Name}: {ex.Message}");
+                Log.Warn($"Invalid callout catalog from {player.Name}", ex);
             }
         }
 
@@ -381,18 +391,26 @@ namespace FivePRS.Server
             if (!Allow(player, "dispatch", l => l.Dispatch)) return;
             if (!Enum.IsDefined(typeof(UnitStatus), status)) return;
 
-            if (!_dispatch.SetStatus(ServerId(player), (UnitStatus)status))
-                Notify(player, "~r~Status unchanged.~w~ End your active callout first.");
+            var id = ServerId(player);
+            if (!_dispatch.UnitIds.Contains(id))
+                Notify(player, "~r~You must be on duty to set your status.");
+            else if (!_dispatch.SetStatus(id, (UnitStatus)status))
+                Notify(player, "~r~Status unchanged.~w~ End your active callout or answer your call offer first.");
         }
 
         private void OnAttachToCall([FromSource] Player player, string callId)
         {
             if (!Allow(player, "dispatch", l => l.Dispatch)) return;
-            if (!IsCallId(callId)) return;
-
-            if (!_dispatch.Attach(ServerId(player), callId))
+            var id = ServerId(player);
+            if (!_dispatch.UnitIds.Contains(id))
             {
-                Notify(player, $"~r~Unable to attach to call #{callId}.~w~ Check the ID and your status.");
+                Notify(player, "~r~You must be on duty to respond to calls.");
+                return;
+            }
+
+            if (!IsCallId(callId) || !_dispatch.Attach(id, callId))
+            {
+                Notify(player, $"~r~Unable to attach to call #{callId}.~w~ Check the call is active and you aren't already on a call.");
                 return;
             }
 
@@ -434,6 +452,7 @@ namespace FivePRS.Server
             if (player is null || !TryGetCached(player, out _, out var data)) return;
 
             var awardedXP = (int)Math.Min(Math.Max(baseAmount * ReadXpMultiplier(), 0), ReadMaxXp());
+            data.CallsCompleted++;
 
             try
             {
@@ -443,7 +462,7 @@ namespace FivePRS.Server
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[FivePRS] Error awarding XP for call #{callId}: {ex.Message}");
+                Log.Error($"Could not award XP for call #{callId}", ex);
             }
         }
 
@@ -452,14 +471,31 @@ namespace FivePRS.Server
             data.IsOnDuty = onDuty;
 
             if (onDuty)
+            {
                 _dispatch.SetOnDuty(ServerId(player), data.Name, data.Department, data.Rank, data.Agency, data.Callsign);
+                data.ShiftStartedAt = DateTime.UtcNow;
+            }
             else
+            {
                 _dispatch.SetOffDuty(ServerId(player));
+                EndShift(data);
+            }
 
             TriggerClientEvent(player, EventNames.ClientDutyStatusChanged, onDuty, (int)data.Department);
-            await _db.UpdateDutyStatusAsync(data.License, onDuty);
+            SendPlayerData(player, data);
+            await _db.SavePlayerAsync(data);
+            if (onDuty && ReportService.CanRead(data.Department)) await PushReportsAsync(data.License, null);
 
-            Debug.WriteLine($"[FivePRS] {data.Name} is now {(onDuty ? "ON" : "OFF")} duty.");
+            Log.Info($"{data.Name} is {(onDuty ? "on" : "off")} duty.");
+        }
+
+        private void EndShift(PlayerData data)
+        {
+            if (data.ShiftStartedAt is not { } started) return;
+
+            data.ShiftStartedAt = null;
+            var seconds = (long)data.DutySeconds + (long)Math.Max(0, (DateTime.UtcNow - started).TotalSeconds);
+            data.DutySeconds = (int)Math.Min(int.MaxValue, seconds);
         }
 
         private async Task ChangeDepartmentAsync(Player player, PlayerData data, Department department)
@@ -475,7 +511,7 @@ namespace FivePRS.Server
 
         private async Task GrantXpAsync(Player player, PlayerData data, int amount)
         {
-            var rankedUp = data.AddXP(amount);
+            var rankedUp = data.Ladder().AddXp(data, amount);
             await _db.SavePlayerAsync(data);
             SendPlayerData(player, data);
 
@@ -483,8 +519,8 @@ namespace FivePRS.Server
 
             _dispatch.UpdateRank(ServerId(player), data.Rank);
             TriggerClientEvent(player, EventNames.ClientRankedUp, data.Rank);
-            Audit(AuditActions.RankUp, player, data.License, $"rank {data.Rank}");
-            Debug.WriteLine($"[FivePRS] {data.Name} ranked up to Rank {data.Rank}.");
+            Audit(AuditActions.RankUp, player, data.License, $"rank {data.Rank} ({data.RankName()})");
+            Log.Success($"{data.Name} was promoted to {data.RankName()}.");
         }
 
         private void Audit(string action, Player? actor, string? targetLicense, string details)
@@ -511,7 +547,7 @@ namespace FivePRS.Server
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[FivePRS] Failed to write audit entry '{entry.Action}': {ex.Message}");
+                Log.Error($"Could not write audit entry '{entry.Action}'", ex);
             }
         }
 
@@ -521,7 +557,7 @@ namespace FivePRS.Server
             if (data is null)
             {
                 data = new PlayerData { License = license };
-                Debug.WriteLine($"[FivePRS] New player registered: {playerName} ({license})");
+                Log.Info($"New player: {playerName}.");
             }
 
             data.Name     = playerName;

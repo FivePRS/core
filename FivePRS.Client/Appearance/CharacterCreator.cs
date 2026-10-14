@@ -8,6 +8,7 @@ using FivePRS.Client.App;
 using FivePRS.Core.Civilian;
 using FivePRS.Core.Config;
 using FivePRS.Core.Events;
+using FivePRS.Core.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
@@ -15,6 +16,8 @@ namespace FivePRS.Client.Appearance
 {
     public class CharacterCreator : BaseScript
     {
+        private static readonly Logger Log = Logger.For("Creator");
+
         private const int CameraBlendMs = 500;
 
         private static readonly JsonSerializerSettings JsonSettings = new()
@@ -413,7 +416,7 @@ namespace FivePRS.Client.Appearance
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"[CharacterCreator] NUI callback '{name}' failed: {ex.Message}");
+                    Log.Error($"Creator action '{name}' failed", ex);
                 }
 
                 callback("ok");

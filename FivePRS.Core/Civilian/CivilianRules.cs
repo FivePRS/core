@@ -11,6 +11,9 @@ namespace FivePRS.Core.Civilian
         public const int MaxDescriptionLength = 500;
         public const int MinSearchLength = 2;
         public const int MaxEmergencyLength = 300;
+        public const int MaxPhotoDataLength = 120_000;
+        public const int MaxPhotoUrlLength = 500;
+        public const string PhotoDataPrefix = "data:image/jpeg;base64,";
 
         public static readonly string[] Genders = { "Male", "Female", "Other" };
 
@@ -74,6 +77,44 @@ namespace FivePRS.Core.Civilian
             }
 
             return true;
+        }
+
+        public static string StateId(string abbreviation, int characterId) =>
+            $"{abbreviation}-{10000 + characterId}";
+
+        public static string LicenseNumber(string type, int characterId)
+        {
+            var hash = 0;
+            foreach (var c in type.ToLowerInvariant())
+                hash = (hash * 31 + c) % 9973;
+
+            var prefix = type.Length > 0 ? char.ToUpperInvariant(type[0]) : 'L';
+            return $"{prefix}{(characterId * 7919L + hash * 104729L) % 10000000:0000000}";
+        }
+
+        public static bool TryNormalizePhoto(string? input, out string photo)
+        {
+            photo = (input ?? string.Empty).Trim();
+            if (photo.Length == 0) return true;
+
+            if (photo.StartsWith(PhotoDataPrefix, StringComparison.Ordinal))
+            {
+                if (photo.Length > MaxPhotoDataLength) return false;
+
+                for (var i = PhotoDataPrefix.Length; i < photo.Length; i++)
+                {
+                    var c = photo[i];
+                    var valid = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '+' || c == '/' || c == '=';
+                    if (!valid) return false;
+                }
+
+                return true;
+            }
+
+            return photo.Length <= MaxPhotoUrlLength &&
+                   Uri.TryCreate(photo, UriKind.Absolute, out var uri) &&
+                   uri.Scheme == "https" &&
+                   photo.IndexOfAny(new[] { '"', '\'', '<', '>', '(', ')', ' ', '\\' }) < 0;
         }
 
         public static bool TryNormalizePlate(string? input, out string plate)

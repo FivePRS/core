@@ -51,6 +51,8 @@ namespace FivePRS.EMS
 
         public Ped Patient => _patient;
 
+        public string? HospitalName => _hospital?.Name;
+
         public string? Prompt()
         {
             if (!_patient.Exists() || (Game.PlayerPed.IsInVehicle() && Stage != PatientStage.Loaded)) return null;

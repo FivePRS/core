@@ -3,6 +3,8 @@ using System.Threading.Tasks;
 using CitizenFX.Core;
 using FivePRS.Core.Civilian;
 using FivePRS.Core.Events;
+using FivePRS.Core.Models;
+using FivePRS.Core.Police;
 using FivePRS.Server.Civilian;
 using Newtonsoft.Json;
 
@@ -19,7 +21,19 @@ namespace FivePRS.Server
         {
             EventHandlers[EventNames.ServerStopIdentify] += new Action<Player, int, bool>(OnStopIdentify);
             EventHandlers[EventNames.ServerStopPlate]    += new Action<Player, string, string, int, bool>(OnStopPlate);
+            EventHandlers[EventNames.ServerRunPlate]     += new Action<Player, string, string, int, bool, bool>(OnRunPlate);
+            EventHandlers[EventNames.ServerRunPerson]    += new Action<Player, int, bool>(OnRunPerson);
         }
+
+        private void OnRunPlate([FromSource] Player player, string plate, string model, int driverSeed, bool driverFemale, bool hasDriver) =>
+            RunLookup(player, Lookups, (_, __) => _street is null
+                ? Task.FromResult<(LookupResult?, string?)>((null, "Records are not available yet."))
+                : _street.PlateAsync(plate, model, hasDriver ? StreetProfiles.Person(driverSeed, driverFemale) : null));
+
+        private void OnRunPerson([FromSource] Player player, int seed, bool female) =>
+            RunLookup(player, Lookups, (_, __) => _street is null
+                ? Task.FromResult<(LookupResult?, string?)>((null, "Records are not available yet."))
+                : _street.IdentifyAsync(seed, female));
 
         private void OnStopIdentify([FromSource] Player player, int seed, bool female) =>
             RunStop(player, StopPerson, street => street.IdentifyAsync(seed, female));
@@ -40,14 +54,14 @@ namespace FivePRS.Server
             try
             {
                 var (result, error) = await action(_street);
-                var json = result is null ? string.Empty : JsonConvert.SerializeObject(result);
+                var json = result is null ? string.Empty : JsonConvert.SerializeObject(RecordAccess.Filter(result, Department.Police));
 
                 if (result is not null) TriggerClientEvent(player, EventNames.ClientLookupResult, json);
                 TriggerClientEvent(player, EventNames.ClientStopResult, kind, json, error ?? string.Empty);
             }
             catch (Exception ex)
             {
-                ServerLog.Error($"Traffic stop check failed for {player.Name}", ex);
+                Log.Error($"Traffic stop check failed for {player.Name}", ex);
                 TriggerClientEvent(player, EventNames.ClientStopResult, kind, string.Empty, "Something went wrong. Please try again.");
             }
         }

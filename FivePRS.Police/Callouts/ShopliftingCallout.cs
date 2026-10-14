@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using CitizenFX.Core;
 using FivePRS.Client;
 using FivePRS.Client.Callouts;
+using FivePRS.Core.Logging;
 using FivePRS.Core.Models;
 
 namespace FivePRS.Police.Callouts
@@ -73,7 +74,7 @@ namespace FivePRS.Police.Callouts
             var model = new Model(_suspectModelName);
             if (!await model.Request(7_000))
             {
-                Debug.WriteLine($"[ShopliftingCallout] Model '{_suspectModelName}' failed to load.");
+                Log.Warn($"Model '{_suspectModelName}' failed to load.");
                 CalloutFailed();
                 return;
             }
@@ -84,7 +85,7 @@ namespace FivePRS.Police.Callouts
 
             if (_suspect is null || !_suspect.Exists())
             {
-                Debug.WriteLine("[ShopliftingCallout] Ped creation failed.");
+                Log.Warn("Could not create the suspect.");
                 CalloutFailed();
                 return;
             }

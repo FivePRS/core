@@ -62,8 +62,8 @@ namespace FivePRS.Tests
         [Fact]
         public void BundledStations_AreValidAndMatchAgencies()
         {
-            var stations      = Load<StationsConfig>("stations.json");
-            var jurisdictions = Load<JurisdictionConfig>("jurisdictions.json");
+            var stations      = Load<StationsConfig>("world/stations.json");
+            var jurisdictions = Load<JurisdictionConfig>("world/jurisdictions.json");
             var agencies      = jurisdictions.Agencies.ToDictionary(a => a.Id, StringComparer.OrdinalIgnoreCase);
 
             Assert.NotEmpty(stations.Stations);

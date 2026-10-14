@@ -8,17 +8,6 @@ namespace FivePRS.Tests
 {
     public class LoadoutConfigTests
     {
-        [Theory]
-        [InlineData(1, LoadoutTier.Recruit)]
-        [InlineData(3, LoadoutTier.Officer)]
-        [InlineData(5, LoadoutTier.Senior)]
-        [InlineData(8, LoadoutTier.Command)]
-        [InlineData(20, LoadoutTier.Command)]
-        public void TierForRank_MapsRankBands(int rank, LoadoutTier expected)
-        {
-            Assert.Equal(expected, DepartmentLoadoutsConfig.TierForRank(rank));
-        }
-
         [Fact]
         public void Vehicles_Bcso_UsesSheriffModels()
         {
@@ -86,8 +75,8 @@ namespace FivePRS.Tests
         }
 
         [Theory]
-        [InlineData("police_loadouts.json", typeof(DepartmentLoadoutsConfig))]
-        [InlineData("police_vehicles.json", typeof(DepartmentVehiclesConfig))]
+        [InlineData("departments/police/loadouts.json", typeof(DepartmentLoadoutsConfig))]
+        [InlineData("departments/police/vehicles.json", typeof(DepartmentVehiclesConfig))]
         [InlineData("settings.json", typeof(ResourceSettings))]
         public void BundledConfigFile_MatchesBuiltInDefaults(string file, Type type)
         {
@@ -95,6 +84,14 @@ namespace FivePRS.Tests
             var fromFile = JsonConvert.DeserializeObject(json, type);
 
             Assert.Equal(JsonConvert.SerializeObject(Activator.CreateInstance(type)), JsonConvert.SerializeObject(fromFile));
+        }
+
+        [Fact]
+        public void Licenses_FileReplacesTheDefaultTypes()
+        {
+            var config = JsonConvert.DeserializeObject<LicensesConfig>("{ \"types\": [ { \"id\": \"driver\", \"name\": \"Driver\" } ] }")!;
+
+            Assert.Single(config.Types);
         }
 
         private static string RepoRoot()

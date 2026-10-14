@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Licenses</title>
+  <link rel="stylesheet" href="../../theme.css">
+  <link rel="stylesheet" href="../../cards.css">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <main class="page">
+    <p id="loading" class="empty">Loading licenses…</p>
+    <p id="no-character" class="empty" hidden>Create a character in the Characters app to apply for licenses.</p>
+
+    <div id="content" class="wallet" hidden>
+      <section class="showcase">
+        <div id="card-slot"></div>
+        <p id="card-empty" class="empty card-empty" hidden>You don't hold any licenses yet. Apply for one from the list.</p>
+        <div id="card-actions" class="card-actions">
+          <button id="show" type="button" class="button">Show to nearby person</button>
+          <span id="card-note" class="muted"></span>
+        </div>
+      </section>
+
+      <section class="list">
+        <h2 class="heading">All licenses</h2>
+        <div id="licenses" class="license-grid"></div>
+        <p class="muted list-note">Card art, colours and issuers come from licenses.json, so each server can match its own state or city.</p>
+      </section>
+    </div>
+  </main>
+  <p id="toast" class="toast" hidden></p>
+
+  <script src="../../kit.js"></script>
+  <script src="../../cards.js"></script>
+  <script src="../../app-sdk.js"></script>
+  <script src="../shared/civilian.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -5,10 +5,12 @@ using System.Threading.Tasks;
 using CitizenFX.Core;
 using CitizenFX.Core.Native;
 using FivePRS.Client.Agency;
+using FivePRS.Client.App;
 using FivePRS.Client.Arrest;
 using FivePRS.Client.Callouts;
 using FivePRS.Core.Config;
 using FivePRS.Core.Events;
+using FivePRS.Core.Logging;
 using FivePRS.Core.Models;
 using FivePRS.Core.Text;
 using Newtonsoft.Json;
@@ -17,24 +19,18 @@ namespace FivePRS.Client
 {
     public class ClientBrain : BaseScript
     {
+        private static readonly Logger Log = Logger.For("Client");
+
         public static PlayerData LocalPlayerData { get; private set; } = new();
 
         public ClientBrain()
         {
-            ConfigManager.Log = message => Debug.WriteLine(message);
+            Logger.DebugEnabled = string.Equals(API.GetConvar("fiveprs_debug", "false"), "true", StringComparison.OrdinalIgnoreCase);
+            Logger.ClearSinks();
+            Logger.AddSink(new ConsoleSink(message => Debug.WriteLine(message), "Add setr fiveprs_debug true to server.cfg for full error details."));
 
             var res = API.GetCurrentResourceName();
-            ConfigManager.LoadSettings(      API.LoadResourceFile(res, "config/settings.json"));
-            foreach (var department in ConfigManager.Departments)
-            {
-                var name = ConfigManager.ConfigName(department);
-                ConfigManager.LoadDepartment(department,
-                    API.LoadResourceFile(res, $"config/{name}_loadouts.json"),
-                    API.LoadResourceFile(res, $"config/{name}_vehicles.json"));
-            }
-            ConfigManager.LoadJurisdictions(  API.LoadResourceFile(res, "config/jurisdictions.json"));
-            ConfigManager.LoadStations(       API.LoadResourceFile(res, "config/stations.json"));
-            ConfigManager.LoadCitations(      API.LoadResourceFile(res, "config/citations.json"));
+            ConfigManager.LoadAll(path => API.LoadResourceFile(res, path));
 
             EventHandlers[EventNames.ClientReceivePlayerData] += new Action<string>(OnReceivePlayerData);
             EventHandlers[EventNames.ClientDutyStatusChanged] += new Action<bool, int>(OnDutyStatusChanged);
@@ -76,10 +72,17 @@ namespace FivePRS.Client
             }), false);
             API.RegisterCommand("er_profile", new Action<int, List<object>, string>((_, __, ___) =>
             {
+                if (!DutyPanel.IsLoaded)
+                {
+                    ShowNotification("~r~Your profile hasn't loaded yet. Try again in a moment.");
+                    return;
+                }
+
                 var d = LocalPlayerData;
                 var agency = ConfigManager.Territories.FindAgency(d.Agency)?.Name ?? d.Department.ToString();
                 ShowNotification(
-                    $"~b~{d.Name}~w~ | {agency} | Rank {d.Rank}~n~~g~XP: {d.XP} / {d.XPToNextRank}");
+                    $"~b~{d.Name}~w~ | {agency} | {d.RankName()}~n~~g~" +
+                    (d.Ladder().IsTop(d.Rank) ? "Top rank" : $"XP: {d.XP} / {d.Ladder().XpToNext(d.Rank)}"));
             }), false);
             API.RegisterCommand("er_help", new Action<int, List<object>, string>((_, __, ___) =>
             {
@@ -94,10 +97,11 @@ namespace FivePRS.Client
                     "~b~/er_attach [id]~w~ — Respond as backup~n~" +
                     "~b~/backup [2|3] [npc|players]~w~ — Request backup; /backup cancel to stand down~n~" +
                     "~b~/er_status [available|busy]~w~ — Set unit status~n~" +
+                    "~b~/er_aicallouts~w~ — Turn AI callouts on or off~n~" +
                     "~b~/er_cuff~w~ — Cuff nearest suspect~n~" +
                     "~b~/er_uncuff~w~ — Release cuffed suspect~n~" +
                     "~b~/er_escort~w~ — Place suspect in your vehicle~n~" +
-                    "~b~/fprs_coords~w~ — Copy your position for stations.json");
+                    "~b~/fprs_coords [armory|locker|garage|parking]~w~ — Copy your position for stations.json");
             }), false);
 
             API.RegisterKeyMapping(KeyCommands.Accept,  "FivePRS: Accept callout",            "keyboard", "Y");
@@ -135,14 +139,11 @@ namespace FivePRS.Client
                 if (data is null) return;
 
                 LocalPlayerData = data;
-                Debug.WriteLine($"[FivePRS] Profile loaded: {data.Name} | Rank {data.Rank} | {data.Department}");
-
-                if (!data.IsOnDuty)
-                    ShowHelp($"~y~Welcome to FivePRS!~w~ Press {Binds.Menu} to open the FivePRS menu.", 10_000);
+                Log.Debug($"Profile loaded: {data.Name}, {data.RankName()}, {data.Department}.");
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[FivePRS] Failed to parse player data: {ex.Message}");
+                Log.Error("Could not read player data", ex);
             }
         }
 
@@ -157,7 +158,7 @@ namespace FivePRS.Client
         private void OnRankedUp(int newRank)
         {
             LocalPlayerData.Rank = newRank;
-            ShowNotification($"~g~RANK UP!~w~ You are now Rank {newRank}. Keep it up!");
+            ShowNotification($"~g~Promoted!~w~ You are now {LocalPlayerData.RankName()}.");
         }
 
         private void OnCalloutOffered(string calloutJson)
@@ -171,7 +172,7 @@ namespace FivePRS.Client
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[FivePRS] Malformed callout payload discarded: {ex.Message}");
+                Log.Warn("Discarded a malformed callout payload", ex);
             }
         }
 
@@ -186,7 +187,7 @@ namespace FivePRS.Client
             {
                 if (API.GetGameTimer() > until)
                 {
-                    Debug.WriteLine($"[FivePRS] The notification logo page did not load from {url}.");
+                    Log.Warn($"The notification logo didn't load from {url}.");
                     return;
                 }
 
@@ -197,7 +198,7 @@ namespace FivePRS.Client
             var txd = API.CreateRuntimeTxd(name);
             API.CreateRuntimeTextureFromDuiHandle(txd, name, API.GetDuiHandle(_logoDui));
             _logoTxd = name;
-            Debug.WriteLine("[FivePRS] Notification logo ready.");
+            Log.Debug("Notification logo ready.");
         }
 
         private void OnResourceStop(string resourceName)

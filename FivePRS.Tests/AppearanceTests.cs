@@ -71,7 +71,7 @@ namespace FivePRS.Tests
         public async Task InitializeAsync()
         {
             _database  = await TestDatabase.CreateAsync();
-            _civilians = new CivilianService(_database.Store, () => new ResourceSettings(), () => new LicensesConfig(), () => new DateTime(2026, 10, 9));
+            _civilians = new CivilianService(_database.Store, _database.Photos, () => new ResourceSettings(), () => new LicensesConfig(), () => new DateTime(2026, 10, 9));
             _service   = new AppearanceService(_database.Store, _database.Appearances, () => new CreatorSettings());
             await _civilians.CreateCharacterAsync(Owner, "Jane", "Doe", "1990-01-01", "female");
         }

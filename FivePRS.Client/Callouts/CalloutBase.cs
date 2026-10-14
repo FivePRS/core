@@ -9,12 +9,17 @@ using FivePRS.Client.Arrest;
 using FivePRS.Client.Tasks;
 using FivePRS.Core.Config;
 using FivePRS.Core.Jurisdiction;
+using FivePRS.Core.Logging;
 using FivePRS.Core.Models;
 
 namespace FivePRS.Client.Callouts
 {
     public abstract class CalloutBase
     {
+        private Logger? _log;
+
+        protected Logger Log => _log ??= Logger.For(GetType().Name);
+
         public CalloutData Data { get; internal set; } = new();
 
         public CalloutState State { get; private set; } = CalloutState.Idle;
@@ -182,7 +187,7 @@ namespace FivePRS.Client.Callouts
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[CalloutBase] Scene cleanup failed: {ex.Message}");
+                Log.Warn("Scene cleanup failed", ex);
             }
 
             foreach (var entity in _trackedEntities)
@@ -209,7 +214,7 @@ namespace FivePRS.Client.Callouts
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"[CalloutBase] Entity cleanup failed: {ex.Message}");
+                    Log.Warn("Entity cleanup failed", ex);
                 }
             }
             _trackedEntities.Clear();
@@ -217,7 +222,7 @@ namespace FivePRS.Client.Callouts
             foreach (var blip in _trackedBlips)
             {
                 try { blip.Delete(); }
-                catch (Exception ex) { Debug.WriteLine($"[CalloutBase] Blip cleanup failed: {ex.Message}"); }
+                catch (Exception ex) { Log.Warn("Blip cleanup failed", ex); }
             }
             _trackedBlips.Clear();
         }

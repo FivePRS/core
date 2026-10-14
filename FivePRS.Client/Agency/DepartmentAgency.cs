@@ -6,6 +6,7 @@ using FivePRS.Client.Loadout;
 using FivePRS.Client.Stations;
 using FivePRS.Client.VehicleSpawner;
 using FivePRS.Core.Config;
+using FivePRS.Core.Logging;
 using FivePRS.Core.Models;
 
 namespace FivePRS.Client.Agency
@@ -37,7 +38,7 @@ namespace FivePRS.Client.Agency
             await base.OnDuty(player);
 
             _registry.DiscoverAll();
-            Debug.WriteLine($"[{AgencyName}] {_registry.Count} callout(s) registered.");
+            Log.Debug($"{_registry.Count} callouts registered.");
             _dispatcher.Start();
 
             var mode    = StationService.TakePendingStart(out var station);
@@ -164,7 +165,7 @@ namespace FivePRS.Client.Agency
             else if (result == CalloutResult.Failed)
                 Notify("~r~CALLOUT FAILED~w~ | No XP awarded.");
 
-            Debug.WriteLine($"[{AgencyName}] Callout '{callout.Data.Name}' ended: {result}");
+            Log.Debug($"Callout '{callout.Data.Name}' ended: {result}.");
         }
     }
 }

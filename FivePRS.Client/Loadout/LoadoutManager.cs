@@ -4,11 +4,14 @@ using System.Threading.Tasks;
 using CitizenFX.Core;
 using CitizenFX.Core.Native;
 using FivePRS.Client.Appearance;
+using FivePRS.Core.Logging;
 
 namespace FivePRS.Client.Loadout
 {
     public static class LoadoutManager
     {
+        private static readonly Logger Log = Logger.For("Loadout");
+
         private const int ComponentSlots = 12;
         private static readonly int[] PropSlots = { 0, 1, 2, 6, 7 };
 
@@ -33,7 +36,7 @@ namespace FivePRS.Client.Loadout
             await GiveWeaponsAsync(loadout.Weapons, true);
 
             Current = loadout;
-            Debug.WriteLine($"[LoadoutManager] Applied loadout '{loadout.Name}'.");
+            Log.Debug($"Applied loadout '{loadout.Name}'.");
         }
 
         public static async Task WearAsync(LoadoutDefinition outfit)
@@ -166,7 +169,7 @@ namespace FivePRS.Client.Loadout
             await RestoreClothingAsync();
 
             Current = null;
-            Debug.WriteLine("[LoadoutManager] Loadout stripped.");
+            Log.Debug("Loadout removed.");
         }
 
         private static bool IsFreemode(int model) =>
@@ -190,7 +193,7 @@ namespace FivePRS.Client.Loadout
         {
             if (!model.IsValid || !model.IsPed)
             {
-                Debug.WriteLine($"[LoadoutManager] Ped model {model.Hash} is not a valid ped.");
+                Log.Warn($"Model {model.Hash} is not a valid ped.");
                 return false;
             }
 
@@ -198,7 +201,7 @@ namespace FivePRS.Client.Loadout
             model.MarkAsNoLongerNeeded();
 
             if (!changed)
-                Debug.WriteLine($"[LoadoutManager] Failed to change player model to {model.Hash}.");
+                Log.Warn($"Could not change the player model to {model.Hash}.");
             return changed;
         }
 

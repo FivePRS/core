@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>911</title>
+  <link rel="stylesheet" href="../../theme.css">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <main class="page">
+    <form id="form" class="card call-form">
+      <div>
+        <h1 class="display call-title">What's your emergency?</h1>
+        <p class="muted call-location">Your location is sent with the call: <span id="location" class="call-place"></span></p>
+      </div>
+
+      <div id="services" class="services"></div>
+
+      <label class="field">Tell dispatch what's happening
+        <textarea name="description" class="input call-description" rows="4" required></textarea>
+      </label>
+
+      <div class="call-actions">
+        <label class="anonymous"><input name="anonymous" type="checkbox">Call anonymously</label>
+        <span id="counter" class="mono muted"></span>
+        <button id="submit" type="submit" class="button call-button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"></path></svg>
+          <span id="submit-label">Call 911</span>
+        </button>
+      </div>
+    </form>
+
+    <aside class="card side">
+      <div id="idle">
+        <h2 class="heading">How 911 works</h2>
+        <ol class="steps">
+          <li>Pick the service you need and describe what's happening.</li>
+          <li>Your call goes to every on-duty unit in that department.</li>
+          <li>You'll be told when units are responding and when the call is closed.</li>
+        </ol>
+        <p class="muted side-note">Misusing 911 can be reported to staff.</p>
+      </div>
+
+      <div id="active" hidden>
+        <div class="card-head">
+          <h2 class="heading">Your call</h2>
+          <span id="call-id" class="mono muted"></span>
+        </div>
+        <p id="call-description" class="call-quote"></p>
+        <ol id="timeline" class="timeline"></ol>
+        <button id="cancel" type="button" class="button danger cancel">Cancel call</button>
+      </div>
+    </aside>
+  </main>
+  <p id="toast" class="toast" hidden></p>
+
+  <script src="../../kit.js"></script>
+  <script src="../../app-sdk.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

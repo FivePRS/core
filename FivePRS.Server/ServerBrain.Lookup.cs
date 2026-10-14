@@ -16,6 +16,7 @@ namespace FivePRS.Server
     {
         private const bool Lookups = true;
         private const bool Records = false;
+        private const bool PoliceOnly = true;
 
         private LookupService? _lookup;
 
@@ -45,14 +46,20 @@ namespace FivePRS.Server
                 var error = await lookup.IssueRecordAsync(officer, characterId, type, description, fine);
                 if (error is not null) return (null, error);
 
-                var label = ((RecordType)type).ToString().ToLowerInvariant();
+                var label = type == (int)RecordType.Medical ? "medical report" : ((RecordType)type).ToString().ToLowerInvariant();
+                if (type == (int)RecordType.Arrest && TryGetCached(player, out _, out var arresting))
+                {
+                    arresting.Arrests++;
+                    await _db.SavePlayerAsync(arresting);
+                }
+
                 Audit(AuditActions.RecordIssued, player, await OwnerLicenseAsync(characterId), $"{label} character {characterId}");
                 await NotifyCharacterOwnerAsync(characterId, $"~o~Records update~w~ | A {label} was added to your record by {officer.Callsign}.");
                 return await lookup.GetRecordAsync(characterId);
             });
 
         private void OnRecordResolve([FromSource] Player player, int recordId, bool served) =>
-            RunLookup(player, Records, async (lookup, officer) =>
+            RunLookup(player, Records, PoliceOnly, async (lookup, officer) =>
             {
                 var (characterId, error) = await lookup.ResolveWarrantAsync(officer, recordId, served);
                 if (error is not null || characterId is null) return (null, error ?? "Warrant not found.");
@@ -63,7 +70,7 @@ namespace FivePRS.Server
             });
 
         private void OnLicenseSetStatus([FromSource] Player player, int characterId, string type, int status) =>
-            RunLookup(player, Records, async (lookup, officer) =>
+            RunLookup(player, Records, PoliceOnly, async (lookup, officer) =>
             {
                 var error = await lookup.SetLicenseStatusAsync(characterId, type, status);
                 if (error is not null) return (null, error);
@@ -76,7 +83,7 @@ namespace FivePRS.Server
             });
 
         private void OnVehicleFlag([FromSource] Player player, int vehicleId, bool stolen) =>
-            RunLookup(player, Records, async (lookup, officer) =>
+            RunLookup(player, Records, PoliceOnly, async (lookup, officer) =>
             {
                 var (characterId, error) = await lookup.SetVehicleStolenAsync(vehicleId, stolen);
                 if (error is not null || characterId is null) return (null, error ?? "Vehicle not found.");
@@ -86,7 +93,10 @@ namespace FivePRS.Server
                 return await lookup.GetRecordAsync(characterId.Value);
             });
 
-        private async void RunLookup(Player player, bool lookups, Func<LookupService, OfficerInfo, Task<(LookupResult? Result, string? Error)>> action)
+        private void RunLookup(Player player, bool lookups, Func<LookupService, OfficerInfo, Task<(LookupResult? Result, string? Error)>> action) =>
+            RunLookup(player, lookups, false, action);
+
+        private async void RunLookup(Player player, bool lookups, bool policeOnly, Func<LookupService, OfficerInfo, Task<(LookupResult? Result, string? Error)>> action)
         {
             if (lookups ? !Allow(player, "lookups", l => l.Lookups) : !Allow(player, "records", l => l.Records))
             {
@@ -94,9 +104,15 @@ namespace FivePRS.Server
                 return;
             }
 
-            if (!TryGetOfficer(player, out var officer))
+            if (!TryGetResponder(player, out var officer))
             {
-                TriggerClientEvent(player, EventNames.ClientLookupError, "Records are only available to on-duty police.");
+                TriggerClientEvent(player, EventNames.ClientLookupError, "Records are only available on duty.");
+                return;
+            }
+
+            if (policeOnly && officer.Department != Department.Police)
+            {
+                TriggerClientEvent(player, EventNames.ClientLookupError, "Only police can change that.");
                 return;
             }
 
@@ -112,26 +128,30 @@ namespace FivePRS.Server
                 if (error is not null)
                     TriggerClientEvent(player, EventNames.ClientLookupError, error);
                 else if (result is not null)
-                    TriggerClientEvent(player, EventNames.ClientLookupResult, JsonConvert.SerializeObject(result));
+                    TriggerClientEvent(player, EventNames.ClientLookupResult, JsonConvert.SerializeObject(RecordAccess.Filter(result, officer.Department)));
             }
             catch (Exception ex)
             {
-                ServerLog.Error($"Records action failed for {player.Name}", ex);
+                Log.Error($"Records action failed for {player.Name}", ex);
                 TriggerClientEvent(player, EventNames.ClientLookupError, "Something went wrong. Please try again.");
             }
         }
 
-        private bool TryGetOfficer(Player player, out OfficerInfo officer)
+        private bool TryGetOfficer(Player player, out OfficerInfo officer) =>
+            TryGetResponder(player, out officer) && officer.Department == Department.Police;
+
+        private bool TryGetResponder(Player player, out OfficerInfo officer)
         {
             officer = null!;
             if (!TryGetCached(player, out var license, out var data)) return false;
-            if (!data.IsOnDuty || data.Department != Department.Police) return false;
+            if (!data.IsOnDuty || !RecordAccess.CanView(data.Department)) return false;
 
             officer = new OfficerInfo
             {
-                License  = license,
-                Name     = data.Name,
-                Callsign = _dispatch.GetUnit(ServerId(player))?.Callsign ?? data.Callsign,
+                License    = license,
+                Name       = data.Name,
+                Callsign   = _dispatch.GetUnit(ServerId(player))?.Callsign ?? data.Callsign,
+                Department = data.Department,
             };
             return true;
         }

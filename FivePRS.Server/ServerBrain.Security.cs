@@ -15,7 +15,7 @@ namespace FivePRS.Server
         {
             var result = _rateLimiter.Check(player.Handle, bucket, limit(ConfigManager.Settings.RateLimits));
             if (result == RateLimitResult.LimitedFirst)
-                Debug.WriteLine($"[FivePRS] {player.Name} ({player.Handle}) is sending too many {bucket} requests; ignoring them for now.");
+                Log.Warn($"{player.Name} ({player.Handle}) is sending too many {bucket} requests. Ignoring them for now.");
             return result == RateLimitResult.Allowed;
         }
 

@@ -4,23 +4,37 @@ using System.Globalization;
 using System.Linq;
 using CitizenFX.Core;
 using CitizenFX.Core.Native;
+using FivePRS.Core.Logging;
 using Newtonsoft.Json;
 
 namespace FivePRS.Client
 {
     public class CoordsCommand : BaseScript
     {
+        private static readonly Logger Log = Logger.For("Coords");
+
         private static readonly string[] PointNames = { "Armory", "Locker", "Garage", "Parking" };
 
         public CoordsCommand()
         {
-            API.RegisterCommand("fprs_coords", new Action<int, List<object>, string>((_, args, __) =>
-                Capture(args.Count > 0 ? args[0]?.ToString() : null)), false);
+            API.RegisterCommand("fprs_coords", new Action<int, List<object>, string>((_, args, __) => OnCommand(args)), false);
         }
 
-        private static void Capture(string? point)
+        private static void OnCommand(List<object> args)
         {
+            var point     = args.Count == 1 ? args[0]?.ToString()?.Trim() : null;
             var pointName = PointNames.FirstOrDefault(p => string.Equals(p, point, StringComparison.OrdinalIgnoreCase));
+            if (args.Count > 1 || (point is not null && pointName is null))
+            {
+                ClientBrain.ShowNotification($"~r~Usage: ~w~/fprs_coords [{string.Join("|", PointNames).ToLowerInvariant()}]");
+                return;
+            }
+
+            Capture(pointName);
+        }
+
+        private static void Capture(string? pointName)
+        {
 
             var ped       = Game.PlayerPed;
             var vehicle   = ped.CurrentVehicle;
@@ -49,7 +63,7 @@ namespace FivePRS.Client
                 text  = $"\"dutyPoint\": [{x}, {y}, {z}], \"heading\": {h}";
             }
 
-            Debug.WriteLine($"[FivePRS] {label}: {text}");
+            Log.Info($"{label}: {text}");
             API.SendNuiMessage(JsonConvert.SerializeObject(new { screen = "clipboard", type = "copy", payload = text }));
             ClientBrain.ShowNotification($"~b~{label}~w~ copied to clipboard~n~{x}, {y}, {z}~n~Heading {h}", "Coordinates");
         }

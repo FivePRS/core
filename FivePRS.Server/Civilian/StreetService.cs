@@ -11,6 +11,8 @@ namespace FivePRS.Server.Civilian
         private const int MaxModelLength = 40;
         private const string DispatchName = "Dispatch";
         private const string DispatchCallsign = "DISPATCH";
+        private const string HospitalName = "Pillbox Hill Medical Center";
+        private const string HospitalCallsign = "PILLBOX";
 
         private readonly CivilianStore _store;
         private readonly LookupService _lookup;
@@ -27,7 +29,10 @@ namespace FivePRS.Server.Civilian
             return await _lookup.GetRecordAsync(id);
         }
 
-        public async Task<(LookupResult? Result, string? Error)> PlateAsync(string? plate, string? model, int driverSeed, bool driverFemale)
+        public Task<(LookupResult? Result, string? Error)> PlateAsync(string? plate, string? model, int driverSeed, bool driverFemale) =>
+            PlateAsync(plate, model, StreetProfiles.Person(driverSeed, driverFemale));
+
+        public async Task<(LookupResult? Result, string? Error)> PlateAsync(string? plate, string? model, StreetPerson? driver)
         {
             if (!CivilianRules.TryNormalizePlate(plate, out var normalized)) return (null, "That plate can't be read.");
 
@@ -36,8 +41,8 @@ namespace FivePRS.Server.Civilian
                 var vehicle = StreetProfiles.Vehicle(normalized);
                 if (!vehicle.Registered) return (null, $"No registration found for {normalized}.");
 
-                var owner = vehicle.DriverIsOwner
-                    ? StreetProfiles.Person(driverSeed, driverFemale)
+                var owner = vehicle.DriverIsOwner && driver is not null
+                    ? driver
                     : StreetProfiles.Person(vehicle.OwnerSeed, vehicle.OwnerFemale);
 
                 await _store.AddVehicleAsync(new VehicleInfo
@@ -80,6 +85,18 @@ namespace FivePRS.Server.Civilian
                     OfficerName     = DispatchName,
                     OfficerCallsign = DispatchCallsign,
                     Active          = true,
+                }, StreetProfiles.NpcOwner);
+            }
+
+            if (person.Medical is not null)
+            {
+                await _store.AddRecordAsync(new RecordInfo
+                {
+                    CharacterId     = id,
+                    Type            = RecordType.Medical,
+                    Description     = person.Medical,
+                    OfficerName     = HospitalName,
+                    OfficerCallsign = HospitalCallsign,
                 }, StreetProfiles.NpcOwner);
             }
 
