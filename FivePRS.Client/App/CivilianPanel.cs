@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using CitizenFX.Core;
 using CitizenFX.Core.Native;
-using FivePRS.Client.Appearance;
 using FivePRS.Client.Terminal;
 using FivePRS.Core.Civilian;
 using FivePRS.Core.Config;
@@ -169,7 +168,6 @@ namespace FivePRS.Client.App
                 CurrentVehicle = vehicle,
                 Icons          = ConfigManager.Settings.Branding.Departments,
                 StateInfo      = ConfigManager.Licenses.State,
-                CanMugshot     = Mugshot.IsAvailable,
                 Mugshot        = _mugshot,
             };
         }

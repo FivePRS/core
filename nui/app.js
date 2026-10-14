@@ -57,8 +57,13 @@ function renderHomeApps(state) {
 }
 
 function formatShift(startedAt) {
-  const minutes = Math.max(0, Math.floor((Date.now() - startedAt) / 60000));
-  return `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, "0")}`;
+  const seconds = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
+  const minutes = Math.floor(seconds / 60);
+  return `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
+function tickShift() {
+  if (appState?.unit && appState.home?.shiftStartedAt) setText("home-shift-time", formatShift(appState.home.shiftStartedAt));
 }
 
 function formatDistance(meters) {
@@ -94,7 +99,7 @@ function renderHomeWidgets(state) {
   if (state.unit) {
     setText("home-units", homeState.units ?? 0);
     setText("home-calls", homeState.calls ?? 0);
-    setText("home-shift-time", homeState.shiftStartedAt ? formatShift(homeState.shiftStartedAt) : "0:00");
+    setText("home-shift-time", homeState.shiftStartedAt ? formatShift(homeState.shiftStartedAt) : "0:00:00");
   }
 }
 
@@ -195,7 +200,6 @@ function tickClock() {
   const hours = hour12 ? now.getHours() % 12 || 12 : now.getHours();
   setText("home-time", `${hour12 ? hours : String(hours).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`);
   setText("home-date", [now.toLocaleDateString([], { weekday: "long", day: "numeric", month: "long" }), appState?.home?.location].filter(Boolean).join(" · "));
-  if (appState?.unit && appState.home?.shiftStartedAt) setText("home-shift-time", formatShift(appState.home.shiftStartedAt));
 }
 
 function showCard(card) {
@@ -271,3 +275,4 @@ document.addEventListener("keydown", (event) => {
 });
 
 setInterval(tickClock, 15000);
+setInterval(tickShift, 1000);

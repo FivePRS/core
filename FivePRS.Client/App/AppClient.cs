@@ -261,12 +261,6 @@ namespace FivePRS.Client.App
 
         private async void TakeMugshot(int characterId)
         {
-            if (!Mugshot.IsAvailable)
-            {
-                CivilianPanel.ShowError("Mugshots need the screenshot-basic resource on this server. Use an image link instead.");
-                return;
-            }
-
             if (Game.PlayerPed.IsInVehicle())
             {
                 CivilianPanel.ShowError("Step out of your vehicle to take a mugshot.");
@@ -279,7 +273,7 @@ namespace FivePRS.Client.App
             var photo = await Mugshot.CaptureAsync();
             if (photo is null)
             {
-                ClientBrain.ShowNotification("~r~The mugshot couldn't be taken.~w~ Try again, or use an image link.", "Characters");
+                ClientBrain.ShowNotification("~r~The mugshot couldn't be taken.~w~ Try again, or use an image link instead.", "Characters");
                 return;
             }
 

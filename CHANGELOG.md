@@ -6,16 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.9.0-ptb.5] - 2026-10-14
+
 ### Added
 - A redesigned terminal: new home screen with the time, your location, an incoming call you can accept from home, and unit, call and shift counts. Every app has a new layout, with bundled fonts so it looks the same offline
-- Character photos: take an in-game mugshot (needs the `screenshot-basic` resource) or use an https image link. Photos show on the character, on license cards and in police Records
+- Character photos: take an in-game mugshot, with no extra resource needed, or use an https image link. Photos show on the character, on license cards and in police Records
 - Licenses are shown as ID cards with the photo, a license number, class, issue and expiry dates and a status stamp. Show a card to the person next to you from the Licenses app. Each license type's card title, issuer, colours and background art are set in `licenses.json`, along with the state name used on cards, plates and state IDs
 - Records has a warrant banner, the person's photo and quick flags, and an offence picker that fills in the fine from `citations.json`
+- Records for police in the field: a Current stop card to run the stopped vehicle's plate and open the driver's record, Vehicle ahead to run the plate in front of you, and Person ahead to identify the person you're facing. Searching the plate of a nearby car finds its owner even if nobody has run it before
+- Records for Fire and EMS: identity, photo and medical history, with a caution banner when the person has an active warrant. They add medical entries; licenses, vehicles and the criminal record stay with police. Some people on the street now have medical conditions on file
+- Patient care and incident reports: handing a patient over at the hospital, or closing a fire call, drafts a report with the address and the people or plate involved. Everyone on the call can edit and file it from the Reports tab in Records, and drafts nobody files are filed after 30 minutes. Filing a patient report adds it to the patient's medical history. Filed reports can be searched by address, call number, plate and date
 - Dispatch can request backup from your active call, and shows distances to calls
 - 911 shows your call's progress: received, units responding, on scene
 - Duty shows your next rank and your calls, arrests and hours on duty, which are now tracked
 - Admin has sections for players, the roster, active calls, the audit log and server info, with set rank, grant XP, set department, revive, teleport and force off duty for each player
-- Settings has text size, a 24-hour clock, reduced motion, sound volumes, the AI callouts switch and your current key bindings
+- Settings has text size, a 24-hour clock, reduced motion, the AI callouts switch and your current key bindings
 - Named ranks for each department in `config/departments/<department>/ranks.json`: set each rank's title, the XP to reach it and the tier of weapons, uniforms and vehicles it unlocks. Agencies can give ranks their own titles (BCSO ships with Deputy and Sheriff). The defaults keep the existing progression, and ranks are shown by name in the terminal, the station menu, notifications and the loading screen
 - Errors are saved in full to `data/logs`, one file per day, kept for 14 days. The console shows one line with the cause
 - Callouts and plugins can log through FivePRS: `Log` in callouts, `Logger.For(name)` anywhere else
@@ -25,10 +30,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The console says "Created a new database" when it starts on an empty database, instead of listing the first migration
 - Console messages are shorter and coloured by type: green for success, yellow for warnings, red for errors. Debug messages only show with `fiveprs_debug` on, which now also works on clients when set with `setr`
 - Every built-in terminal app (Duty, Dispatch, Records, Characters, Licenses, Vehicles, 911 and Admin) is now a page app on the same framework addons use, so they all open, update and badge the same way
+- Mugshots no longer need the `screenshot-basic` resource
+- The shift timer on the home screen counts seconds and keeps counting through a terminal reload
+- Database schema 3 adds the reports table. SQLite databases are backed up before updating
 
 ### Fixed
 - Your character's look is applied as you spawn, whichever spawn script you use, instead of leaving you as the map's ped
 - Joining spawns you at your last location as your character even when the client is slow to start, instead of spawning at the map's spawn point and teleporting
+- Joining after the loading screen closes early no longer spawns you at the map's spawn point instead of your last location
+- The welcome message shows once after you spawn, instead of during the loading screen and again when switching characters
 - The FivePRS server icon no longer reports that it failed when `load_server_icon` is just slow to apply
 - Admin commands show success in green and problems in red, in game and in the console, and reject missing or extra arguments with their usage
 - `fprs_setrank` only accepts ranks that exist in the player's department, and `fprs_addxp` up to 1,000,000 XP at a time

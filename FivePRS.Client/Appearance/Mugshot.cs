@@ -1,14 +1,15 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using CitizenFX.Core;
 using CitizenFX.Core.Native;
-using FivePRS.Core.Events;
+using Newtonsoft.Json;
 
 namespace FivePRS.Client.Appearance
 {
     public class Mugshot : BaseScript
     {
-        private const string ScreenshotResource = "screenshot-basic";
+        private const string CapturedCallback = "fiveprsCaptured";
         private const int HeadBone = 31086;
         private const int SettleFrames = 12;
         private const int TimeoutMs = 8_000;
@@ -16,17 +17,25 @@ namespace FivePRS.Client.Appearance
         private const float FieldOfView = 30f;
 
         private static TaskCompletionSource<string>? _pending;
+        private static int _requestId;
 
         public Mugshot()
         {
-            EventHandlers[EventNames.LocalScreenshotTaken] += new Action<string>(data => _pending?.TrySetResult(data ?? string.Empty));
+            API.RegisterNuiCallbackType(CapturedCallback);
+            EventHandlers[$"__cfx_nui:{CapturedCallback}"] += new Action<IDictionary<string, object>, CallbackDelegate>(OnCaptured);
         }
 
-        public static bool IsAvailable => API.GetResourceState(ScreenshotResource) == "started";
+        private static void OnCaptured(IDictionary<string, object> data, CallbackDelegate callback)
+        {
+            if (data.TryGetValue("id", out var rawId) && Convert.ToInt32(rawId) == _requestId)
+                _pending?.TrySetResult(data.TryGetValue("data", out var image) ? image?.ToString() ?? string.Empty : string.Empty);
+
+            callback(new { });
+        }
 
         public static async Task<string?> CaptureAsync()
         {
-            if (!IsAvailable || _pending is not null) return null;
+            if (_pending is not null) return null;
 
             var ped  = Game.PlayerPed;
             var head = API.GetPedBoneCoords(ped.Handle, HeadBone, 0f, 0f, 0f);
@@ -49,7 +58,7 @@ namespace FivePRS.Client.Appearance
                     await Delay(0);
                 }
 
-                ClientEvents.TriggerLocal(EventNames.LocalCaptureScreenshot);
+                API.SendNuiMessage(JsonConvert.SerializeObject(new { fiveprsCapture = ++_requestId }));
 
                 var deadline = API.GetGameTimer() + TimeoutMs;
                 while (!pending.Task.IsCompleted && API.GetGameTimer() < deadline)

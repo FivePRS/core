@@ -1,10 +1,12 @@
 local REQUEST_INTERVAL = 5000
 local TARGET_TIMEOUT = 60000
+local SPAWNED_KEY = 'fiveprsSpawned'
 
 local registered = false
 local ownsFirstSpawn = false
 local firstPending = false
 local usedTarget = false
+local spawning = false
 local target = nil
 
 local function debug(message)
@@ -37,14 +39,22 @@ end
 
 RegisterNetEvent('FivePRS:Client:LastPosition', setTarget)
 
+AddEventHandler('playerSpawned', function()
+    if firstPending and not spawning then
+        debug('another script spawned the player first')
+        firstPending = false
+    end
+    LocalPlayer.state:set(SPAWNED_KEY, true, false)
+end)
+
 CreateThread(function()
     if GetResourceState('spawnmanager') ~= 'started' then
         debug('spawnmanager is not running, leaving spawning to another script')
         return
     end
 
-    ownsFirstSpawn = GetIsLoadingScreenActive()
-    debug(ownsFirstSpawn and 'handling the first spawn' or 'joined mid-session, not handling the first spawn')
+    ownsFirstSpawn = not LocalPlayer.state[SPAWNED_KEY]
+    debug(ownsFirstSpawn and 'handling the first spawn' or 'already spawned this session, not handling the spawn')
     firstPending = ownsFirstSpawn
     exports.spawnmanager:setAutoSpawnCallback(function()
         if not firstPending then
@@ -52,6 +62,7 @@ CreateThread(function()
             return
         end
 
+        spawning = true
         local deadline = GetGameTimer() + TARGET_TIMEOUT
         local nextRequest = 0
         while target == nil and GetGameTimer() < deadline do
@@ -64,6 +75,7 @@ CreateThread(function()
 
         spawn(target)
         firstPending = false
+        spawning = false
     end)
     registered = true
 end)

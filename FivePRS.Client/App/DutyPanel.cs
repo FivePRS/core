@@ -29,14 +29,19 @@ namespace FivePRS.Client.App
                 .Select(id => (Department)id)
                 .ToList();
 
-        public static double? ShiftStartedAt { get; private set; }
+        private static double? _localShiftStart;
+
+        public static double? ShiftStartedAt =>
+            _profile?.IsOnDuty != true ? null
+            : _profile.ShiftStartedAt is { } started ? (started - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds
+            : _localShiftStart;
 
         public static void SetOnDuty(bool isOnDuty)
         {
             if (_profile is not null)
                 _profile.IsOnDuty = isOnDuty;
 
-            ShiftStartedAt = isOnDuty ? DispatchPanel.UnixNowMs() : (double?)null;
+            _localShiftStart = isOnDuty ? DispatchPanel.UnixNowMs() : (double?)null;
         }
 
         public static string? Enter(IDictionary<string, object> data)

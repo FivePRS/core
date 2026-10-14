@@ -44,8 +44,6 @@ add_ace resource.fiveprs command.load_server_icon allow   # lets FivePRS set the
 ensure fiveprs
 ```
 
-For in-game mugshots of characters, also run [screenshot-basic](https://github.com/citizenfx/screenshot-basic) before FivePRS. Without it, players can still use an image link for their character photo.
-
 ### MySQL and MariaDB
 FivePRS connects to MySQL 8 and MariaDB 10.6+ through [oxmysql](https://github.com/overextended/oxmysql/releases). Install it, then set its connection string and start it before FivePRS:
 

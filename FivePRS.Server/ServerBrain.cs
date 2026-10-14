@@ -29,7 +29,6 @@ namespace FivePRS.Server
         private const int MaxCalloutCatalogJson = 200_000;
 
         private readonly ConcurrentDictionary<string, PlayerData> _cache = new();
-        private readonly Dictionary<string, DateTime> _shiftStarted = new();
         private readonly DatabaseManager _db = new();
         private readonly DispatchService _dispatch;
         private readonly PermissionService _permissions;
@@ -474,7 +473,7 @@ namespace FivePRS.Server
             if (onDuty)
             {
                 _dispatch.SetOnDuty(ServerId(player), data.Name, data.Department, data.Rank, data.Agency, data.Callsign);
-                _shiftStarted[data.License] = DateTime.UtcNow;
+                data.ShiftStartedAt = DateTime.UtcNow;
             }
             else
             {
@@ -483,6 +482,7 @@ namespace FivePRS.Server
             }
 
             TriggerClientEvent(player, EventNames.ClientDutyStatusChanged, onDuty, (int)data.Department);
+            SendPlayerData(player, data);
             await _db.SavePlayerAsync(data);
             if (onDuty && ReportService.CanRead(data.Department)) await PushReportsAsync(data.License, null);
 
@@ -491,9 +491,9 @@ namespace FivePRS.Server
 
         private void EndShift(PlayerData data)
         {
-            if (!_shiftStarted.TryGetValue(data.License, out var started)) return;
+            if (data.ShiftStartedAt is not { } started) return;
 
-            _shiftStarted.Remove(data.License);
+            data.ShiftStartedAt = null;
             var seconds = (long)data.DutySeconds + (long)Math.Max(0, (DateTime.UtcNow - started).TotalSeconds);
             data.DutySeconds = (int)Math.Min(int.MaxValue, seconds);
         }

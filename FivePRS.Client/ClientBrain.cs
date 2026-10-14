@@ -140,9 +140,6 @@ namespace FivePRS.Client
 
                 LocalPlayerData = data;
                 Log.Debug($"Profile loaded: {data.Name}, {data.RankName()}, {data.Department}.");
-
-                if (!data.IsOnDuty)
-                    ShowHelp($"~y~Welcome to FivePRS!~w~ Press {Binds.Menu} to open the FivePRS menu.", 10_000);
             }
             catch (Exception ex)
             {

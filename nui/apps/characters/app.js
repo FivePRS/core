@@ -161,9 +161,6 @@ function render(next) {
   setText("state-id", stateId(next, active.id));
   document.getElementById("photo").replaceWith(Object.assign(photoFrame(active.photo, "photo board identity-photo"), { id: "photo" }));
 
-  const mugshot = document.getElementById("mugshot");
-  mugshot.disabled = !next.canMugshot;
-  mugshot.title = next.canMugshot ? "" : "This server doesn't have screenshot-basic. Use an image link instead.";
   document.getElementById("photo-remove").hidden = !active.photo;
 
   const appearance = document.getElementById("appearance");

@@ -88,8 +88,6 @@ namespace FivePRS.Core.Events
         public const string LocalHttpRequest        = "FivePRS:Local:HttpRequest";
         public const string LocalSpawnTarget        = "FivePRS:Local:SpawnTarget";
         public const string LocalSpawnHandled       = "FivePRS:Local:SpawnHandled";
-        public const string LocalCaptureScreenshot  = "FivePRS:Local:CaptureScreenshot";
-        public const string LocalScreenshotTaken    = "FivePRS:Local:ScreenshotTaken";
         public const string LocalHttpResponse       = "FivePRS:Local:HttpResponse";
         public const string LocalDbRequest          = "FivePRS:Local:DbRequest";
         public const string LocalDbResponse         = "FivePRS:Local:DbResponse";

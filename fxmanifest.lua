@@ -42,6 +42,7 @@ files {
     'nui/dui-image.html',
     'nui/kit.js',
     'nui/common.js',
+    'nui/capture.js',
     'nui/appview.js',
     'nui/app-sdk.js',
     'nui/menu.js',

@@ -15,6 +15,7 @@ namespace FivePRS.Core.Models
         public int        CallsCompleted { get; set; }
         public int        Arrests        { get; set; }
         public int        DutySeconds    { get; set; }
+        public DateTime?  ShiftStartedAt { get; set; }
         public DateTime   LastSeen       { get; set; } = DateTime.UtcNow;
     }
 }
