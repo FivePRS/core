@@ -35,7 +35,7 @@ function characterButton(character, selected) {
   return button;
 }
 
-const recordDots = ["", "bad", "warn", "bad"];
+const recordDots = ["", "bad", "warn", "bad", "info"];
 
 function recordEntry(entry) {
   const activeWarrant = entry.type === 3 && entry.active;

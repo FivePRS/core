@@ -23,6 +23,7 @@ namespace FivePRS.Core.Police
         public string? Warrant { get; set; }
         public string? Contraband { get; set; }
         public bool WillFlee { get; set; }
+        public string? Medical { get; set; }
 
         public string FullName => $"{FirstName} {LastName}";
     }
@@ -71,6 +72,13 @@ namespace FivePRS.Core.Police
             "Simple assault", "Possession of a controlled substance", "Driving while suspended",
         };
 
+        private static readonly string[] Conditions =
+        {
+            "Type 1 diabetes, insulin dependent", "Severe penicillin allergy", "Asthma, carries an inhaler",
+            "Epilepsy, history of seizures", "Heart condition, takes blood thinners", "Severe peanut allergy, carries an EpiPen",
+            "High blood pressure", "COPD", "Previous heart attack", "Hemophilia",
+        };
+
         private static readonly string[] Contraband =
         {
             "A small bag of cannabis", "An open container of alcohol", "Drug paraphernalia",
@@ -104,6 +112,7 @@ namespace FivePRS.Core.Police
             if (rng.Next(100) < 7) person.Warrant = Warrants[rng.Next(Warrants.Length)];
             if (rng.Next(100) < 15) person.Contraband = Contraband[rng.Next(Contraband.Length)];
             person.WillFlee = person.Warrant is not null && rng.Next(100) < 35;
+            if (rng.Next(100) < 20) person.Medical = Conditions[rng.Next(Conditions.Length)];
 
             return person;
         }

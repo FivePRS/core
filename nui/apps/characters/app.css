@@ -281,6 +281,10 @@ body {
   background: var(--accent);
 }
 
+.entry-dot.info {
+  background: var(--accent);
+}
+
 .entry-dot.bad {
   background: var(--red);
 }

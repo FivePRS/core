@@ -57,6 +57,7 @@ namespace FivePRS.Server.Civilian
         public async Task<string?> IssueRecordAsync(OfficerInfo officer, int characterId, int type, string? description, int fine)
         {
             if (!Enum.IsDefined(typeof(RecordType), type)) return "Unknown record type.";
+            if (!RecordAccess.CanIssue(officer.Department, (RecordType)type)) return "Your department can't add that kind of entry.";
             if (await _store.GetCharacterAsync(characterId) is null) return "Person not found.";
 
             if (!CivilianRules.TryNormalizeDescription(description, out var text))

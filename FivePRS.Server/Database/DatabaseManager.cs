@@ -31,6 +31,7 @@ namespace FivePRS.Server.Database
         public PreferencesStore Preferences { get; private set; } = null!;
 
         public PhotoStore Photos { get; private set; } = null!;
+        public ReportStore Reports { get; private set; } = null!;
 
         public PositionStore Positions { get; private set; } = null!;
 
@@ -91,6 +92,7 @@ namespace FivePRS.Server.Database
             Appearances = new AppearanceStore(_provider);
             Preferences = new PreferencesStore(_provider);
             Photos      = new PhotoStore(_provider);
+            Reports     = new ReportStore(_provider);
             Positions   = new PositionStore(_provider);
 
             IsReady = true;

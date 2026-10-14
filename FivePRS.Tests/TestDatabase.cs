@@ -27,6 +27,8 @@ namespace FivePRS.Tests
 
         public PhotoStore Photos { get; private set; } = null!;
 
+        public ReportStore Reports { get; private set; } = null!;
+
         public IDatabaseProvider Provider { get; private set; } = null!;
 
         public static async Task<TestDatabase> CreateAsync()
@@ -55,6 +57,7 @@ namespace FivePRS.Tests
             database.Preferences = new PreferencesStore(provider);
             database.Positions = new PositionStore(provider);
             database.Photos = new PhotoStore(provider);
+            database.Reports = new ReportStore(provider);
             return database;
         }
 

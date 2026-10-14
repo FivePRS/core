@@ -31,6 +31,8 @@ namespace FivePRS.EMS.Callouts
 
         protected override string BlipName => "Traffic collision";
 
+        protected override string Findings => "Patient found beside one of two damaged vehicles, conscious with injuries from the collision.";
+
         protected override async Task<Ped?> SetupSceneAsync(CancellationToken ct)
         {
             var heading = (float)Rng.Next(360);

@@ -2,6 +2,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using CitizenFX.Core;
 using CitizenFX.Core.Native;
+using FivePRS.Client;
 using FivePRS.Client.Arrest;
 using FivePRS.Core.Civilian;
 using FivePRS.Core.Police;
@@ -39,8 +40,8 @@ namespace FivePRS.Police.TrafficStops
 
             if (vehicle is not null)
             {
-                Plate = API.GetVehicleNumberPlateText(vehicle.Handle).Trim();
-                Model = VehicleName(vehicle);
+                Plate = StreetIdentity.PlateOf(vehicle);
+                Model = StreetIdentity.VehicleName(vehicle);
                 API.SetEntityAsMissionEntity(vehicle.Handle, true, true);
             }
             else
@@ -191,13 +192,6 @@ namespace FivePRS.Police.TrafficStops
 
             if (Driver.Exists() && DriverInVehicle)
                 API.TaskVehicleDriveWander(Driver.Handle, Vehicle.Handle, 15f, NormalDrivingStyle);
-        }
-
-        private static string VehicleName(Vehicle vehicle)
-        {
-            var display = API.GetDisplayNameFromVehicleModel((uint)vehicle.Model.Hash);
-            var label   = API.GetLabelText(display);
-            return string.IsNullOrEmpty(label) || label == "NULL" ? display : label;
         }
     }
 }

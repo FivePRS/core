@@ -284,6 +284,15 @@ namespace FivePRS.Server.Dispatch
             return awards;
         }
 
+        public IReadOnlyList<int> CrewOf(string callId, int unitId)
+        {
+            if (!_calls.TryGetValue(callId, out var call) || call.Status != CallStatus.Active) return new int[0];
+
+            var crew = new List<int> { call.PrimaryUnit };
+            crew.AddRange(call.Attached.Where(id => _units.ContainsKey(id) && id != call.PrimaryUnit));
+            return crew.Contains(unitId) ? crew : new int[0];
+        }
+
         public int? ForceClose(string callId)
         {
             if (!_calls.TryGetValue(callId, out var call) || call.Status != CallStatus.Active) return null;

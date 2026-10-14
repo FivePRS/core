@@ -37,6 +37,8 @@ namespace FivePRS.EMS.Callouts
 
         protected override string BlipName => "Medical emergency";
 
+        protected override string Findings => "Patient found on the sidewalk, conscious and in distress.";
+
         protected override Task<Ped?> SetupSceneAsync(CancellationToken ct) =>
             SpawnPatientAsync(World.GetNextPositionOnSidewalk(_location), Rng.Next(360));
 

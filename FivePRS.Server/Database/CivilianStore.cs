@@ -59,6 +59,7 @@ namespace FivePRS.Server.Database
 
         public Task DeleteCharacterAsync(int id) =>
             BatchAsync(
+                new SqlStatement("UPDATE fiveprs_reports SET character_id = NULL WHERE character_id = @id", ("@id", id)),
                 new SqlStatement("DELETE FROM fiveprs_records WHERE character_id = @id", ("@id", id)),
                 new SqlStatement("DELETE FROM fiveprs_licenses WHERE character_id = @id", ("@id", id)),
                 new SqlStatement("DELETE FROM fiveprs_vehicles WHERE character_id = @id", ("@id", id)),

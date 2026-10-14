@@ -160,8 +160,11 @@ body {
 
 .about-nameplate {
   display: block;
+  align-self: flex-start;
   height: 3.429rem;
   width: auto;
+  max-width: 100%;
+  object-fit: contain;
   margin-bottom: 0.571rem;
 }
 

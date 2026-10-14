@@ -8,17 +8,76 @@
 </head>
 <body>
   <main class="page">
-    <form id="search" class="search">
-      <div class="segmented">
-        <button type="button" class="active" data-mode="name">Person</button>
-        <button type="button" data-mode="plate">Plate</button>
+    <div class="toolbar">
+      <div id="tabs" class="segmented medical-only">
+        <button type="button" class="active" data-tab="records">Records</button>
+        <button type="button" data-tab="reports">Reports <span id="draft-count" class="tab-count"></span></button>
       </div>
-      <input id="term" class="input mono search-input" autocomplete="off" spellcheck="false" aria-label="Search">
-      <button type="submit" class="button primary">Run</button>
-    </form>
+      <form id="search" class="search">
+        <div class="segmented">
+          <button type="button" class="active" data-mode="name">Person</button>
+          <button type="button" data-mode="plate">Plate</button>
+        </div>
+        <input id="term" class="input mono search-input" autocomplete="off" spellcheck="false" aria-label="Search">
+        <button type="submit" class="button primary">Run</button>
+      </form>
+    </div>
 
-    <div class="columns">
+    <div id="reports-view" class="reports" hidden>
+      <aside class="report-list">
+        <p class="eyebrow">Drafts</p>
+        <div id="drafts" class="result-list"></div>
+        <p id="drafts-empty" class="empty">No drafts. A report is drafted when your crew closes a call.</p>
+
+        <form id="report-search" class="report-search">
+          <p class="eyebrow">Filed reports</p>
+          <input id="report-term" class="input" maxlength="60" placeholder="Address, call number or plate" autocomplete="off" spellcheck="false" aria-label="Search filed reports">
+          <div class="report-search-row">
+            <input id="report-date" class="input mono" type="date" aria-label="Date">
+            <button type="submit" class="button primary">Search</button>
+          </div>
+        </form>
+        <div id="filed" class="result-list"></div>
+        <p id="filed-empty" class="empty" hidden>No filed reports match.</p>
+      </aside>
+
+      <section class="report-detail">
+        <p id="report-placeholder" class="empty placeholder">Pick a draft to review it, or search filed reports.</p>
+        <div id="report" class="card report" hidden>
+          <div class="report-head">
+            <div>
+              <p id="report-kind" class="eyebrow"></p>
+              <h1 id="report-title" class="display report-title"></h1>
+              <p id="report-meta" class="mono muted"></p>
+            </div>
+            <span id="report-status" class="pill"></span>
+          </div>
+          <dl id="report-facts" class="report-facts"></dl>
+          <label id="report-editor" class="field">Narrative
+            <textarea id="report-narrative" class="input report-narrative" rows="12"></textarea>
+          </label>
+          <p id="report-text" class="report-text" hidden></p>
+          <div id="report-actions" class="report-actions">
+            <button id="report-save" type="button" class="button">Save draft</button>
+            <button id="report-file" type="button" class="button primary">File report</button>
+          </div>
+          <p id="report-note" class="muted report-note"></p>
+        </div>
+      </section>
+    </div>
+
+    <div id="records-view" class="columns">
       <aside class="results">
+        <div id="stop" class="card stop" hidden>
+          <p class="eyebrow">Current stop</p>
+          <p id="stop-title" class="stop-title"></p>
+          <p id="stop-sub" class="muted stop-sub"></p>
+          <div id="stop-actions" class="stop-actions"></div>
+        </div>
+        <div class="field-actions">
+          <button type="button" class="button small police-only" data-field="vehicleAhead">Vehicle ahead</button>
+          <button type="button" class="button small" data-field="personAhead">Person ahead</button>
+        </div>
         <p id="results-title" class="eyebrow" hidden></p>
         <div id="results" class="result-list"></div>
         <p id="results-empty" class="empty" hidden>No matches.</p>
@@ -30,7 +89,7 @@
         <div id="record" class="record" hidden>
           <div id="warrant" class="banner bad" hidden>
             <svg class="banner-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l10 18H2z M12 10v5 M12 18v.5"></path></svg>
-            <strong>ACTIVE WARRANT</strong>
+            <strong id="warrant-title">ACTIVE WARRANT</strong>
             <span id="warrant-detail"></span>
           </div>
 
@@ -49,28 +108,28 @@
             </div>
           </div>
 
-          <div class="card">
+          <div class="card police-only">
             <div class="card-head"><h2 class="heading">Licenses</h2></div>
             <div id="licenses" class="license-list"></div>
           </div>
 
-          <div class="card">
+          <div class="card police-only">
             <div class="card-head"><h2 class="heading">Vehicles</h2></div>
             <div id="vehicles" class="vehicle-list"></div>
             <p id="vehicles-empty" class="empty" hidden>No registered vehicles.</p>
           </div>
 
           <div class="card">
-            <div class="card-head"><h2 class="heading">History</h2></div>
+            <div class="card-head"><h2 id="history-title" class="heading">History</h2></div>
             <div id="history" class="timeline"></div>
-            <p id="history-empty" class="empty" hidden>Nothing on file.</p>
+            <p id="history-empty" class="empty" hidden></p>
           </div>
         </div>
       </section>
 
       <form id="entry" class="card entry-form">
-        <h2 class="heading">New entry</h2>
-        <div id="types" class="type-grid">
+        <h2 id="entry-title" class="heading">New entry</h2>
+        <div id="types" class="type-grid police-only">
           <button type="button" class="button active" data-type="0">Citation</button>
           <button type="button" class="button" data-type="2">Warning</button>
           <button type="button" class="button" data-type="1">Arrest</button>
@@ -82,7 +141,7 @@
         <label id="fine-field" class="field">Fine
           <input id="fine" class="input mono" type="number" min="0" step="1" value="0">
         </label>
-        <label class="field">Charges and notes
+        <label id="notes-label" class="field"><span id="notes-text">Charges and notes</span>
           <textarea id="notes" class="input notes" rows="5" required></textarea>
         </label>
         <button id="submit" type="submit" class="button primary entry-submit">Add to record</button>

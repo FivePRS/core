@@ -19,6 +19,8 @@ namespace FivePRS.Client.Terminal.Apps
 
         public override int Order => 20;
 
+        public override string? Badge => RecordsPanel.DraftCount > 0 ? RecordsPanel.DraftCount.ToString() : null;
+
         public override string? Page => "nui/apps/records/index.html";
 
         internal static void ShowError(string message) => TerminalApps.SendToApp(AppId, "error", message);
@@ -37,6 +39,34 @@ namespace FivePRS.Client.Terminal.Apps
 
                 case "searchPlate":
                     RecordsPanel.SearchPlate(data);
+                    break;
+
+                case "vehicleAhead":
+                    RecordsPanel.RunVehicleAhead();
+                    break;
+
+                case "personAhead":
+                    RecordsPanel.IdentifyPerson();
+                    break;
+
+                case "stopPlate":
+                    RecordsPanel.RunStopPlate();
+                    break;
+
+                case "reports":
+                    RecordsPanel.RequestReports();
+                    break;
+
+                case "reportSave":
+                    RecordsPanel.SaveReport(data);
+                    break;
+
+                case "reportFile":
+                    RecordsPanel.FileReport(data);
+                    break;
+
+                case "reportSearch":
+                    RecordsPanel.SearchReports(data);
                     break;
 
                 case "open":

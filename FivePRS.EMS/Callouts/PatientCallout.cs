@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using CitizenFX.Core;
 using FivePRS.Client;
 using FivePRS.Client.Callouts;
+using FivePRS.Core.Civilian;
 
 namespace FivePRS.EMS.Callouts
 {
@@ -48,7 +49,8 @@ namespace FivePRS.EMS.Callouts
                 return;
             }
 
-            blip.Position  = patient.Position;
+            var foundAt    = patient.Position;
+            blip.Position  = foundAt;
             blip.ShowRoute = false;
             _care = new PatientCare(patient);
             ClientBrain.ShowNotification($"~b~{Data.Name}~w~ | Patient located. Treat them, then transport them to hospital.");
@@ -66,6 +68,7 @@ namespace FivePRS.EMS.Callouts
 
                 if (_care.Update())
                 {
+                    DraftReport(patient, foundAt);
                     CalloutCompleted();
                     return;
                 }
@@ -82,6 +85,23 @@ namespace FivePRS.EMS.Callouts
                 var prompt = _care.Prompt();
                 if (prompt is not null) ClientBrain.ShowHelp(prompt, 500);
             }
+        }
+
+        protected virtual string Findings => "Patient found conscious and in distress.";
+
+        private void DraftReport(Ped patient, Vector3 foundAt)
+        {
+            var hospital = _care?.HospitalName ?? "hospital";
+            Reports.Draft(new ReportDraft
+            {
+                Kind          = ReportKind.Patient,
+                CallId        = Data.Id,
+                Title         = Data.Name,
+                Location      = Reports.Describe(foundAt),
+                Narrative     = $"Dispatched: {Data.Description}\n\n{Findings} Treated on scene, stabilized and loaded for transport.\n\nTransported to {hospital} and handed over to hospital staff.",
+                PatientSeed   = StreetIdentity.SeedFor(patient),
+                PatientFemale = StreetIdentity.IsFemale(patient),
+            });
         }
 
         protected async Task<Ped?> SpawnPatientAsync(Vector3 position, float heading)

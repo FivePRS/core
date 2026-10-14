@@ -88,6 +88,7 @@ namespace FivePRS.Server
             RegisterUpdates();
             RegisterDiagnostics();
             RegisterStreetEvents();
+            RegisterReportEvents();
             RegisterDeathEvents();
 
             _ = ServerIcon.ApplyDefaultAsync(ConfigManager.Settings.Branding.ServerIcon);
@@ -113,6 +114,7 @@ namespace FivePRS.Server
                 _civilians = new CivilianService(_db.Civilians, _db.Photos, () => ConfigManager.Settings, () => ConfigManager.Licenses, () => DateTime.UtcNow);
                 _lookup    = new LookupService(_db.Civilians, _db.Photos, () => ConfigManager.Settings, () => ConfigManager.Licenses);
                 _street    = new StreetService(_db.Civilians, _lookup);
+                _reports   = new ReportService(_db.Reports, _db.Civilians, _street);
                 _appearances = new AppearanceService(_db.Civilians, _db.Appearances, () => ConfigManager.Settings.Creator);
                 _roster    = new RosterService(_db.Roster);
                 await _roster.LoadAsync();
@@ -482,6 +484,7 @@ namespace FivePRS.Server
 
             TriggerClientEvent(player, EventNames.ClientDutyStatusChanged, onDuty, (int)data.Department);
             await _db.SavePlayerAsync(data);
+            if (onDuty && ReportService.CanRead(data.Department)) await PushReportsAsync(data.License, null);
 
             Log.Info($"{data.Name} is {(onDuty ? "on" : "off")} duty.");
         }

@@ -43,6 +43,7 @@ namespace FivePRS.Client.App
             EventHandlers[EventNames.ClientCivilianError]     += new Action<string>(OnCivilianError);
             EventHandlers[EventNames.ClientLookupResult]      += new Action<string>(OnLookupResult);
             EventHandlers[EventNames.ClientLookupError]       += new Action<string>(OnLookupError);
+            EventHandlers[EventNames.ClientReports]           += new Action<string>(OnReports);
             EventHandlers[EventNames.ClientEmergencyStatus]   += new Action<string>(OnEmergencyStatus);
             EventHandlers[EventNames.ClientEmergencyError]    += new Action<string>(OnEmergencyError);
             EventHandlers[EventNames.ClientAdminState]        += new Action<string>(OnAdminState);
@@ -153,6 +154,21 @@ namespace FivePRS.Client.App
             catch (Exception ex)
             {
                 Log.Error("Could not read a lookup result", ex);
+                return;
+            }
+
+            Refresh();
+        }
+
+        private void OnReports(string json)
+        {
+            try
+            {
+                RecordsPanel.SetReports(json);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Could not read reports", ex);
                 return;
             }
 

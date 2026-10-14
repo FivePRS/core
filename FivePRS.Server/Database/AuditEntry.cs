@@ -22,6 +22,7 @@ namespace FivePRS.Server.Database
         public const string VehicleRegistered = "civ.vehicle.register";
         public const string VehicleRemoved   = "civ.vehicle.remove";
         public const string RecordIssued     = "records.issue";
+        public const string ReportFiled      = "records.report.file";
         public const string WarrantResolved  = "records.warrant.resolve";
         public const string LicenseStatusSet = "records.license";
         public const string VehicleFlagged   = "records.vehicle";

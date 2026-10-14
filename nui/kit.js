@@ -36,7 +36,7 @@ function setDepartmentIcon(id, department) {
   document.getElementById(id).replaceChildren(...(icon ? [icon] : []));
 }
 
-const recordTypes = ["Citation", "Arrest", "Warning", "Warrant"];
+const recordTypes = ["Citation", "Arrest", "Warning", "Warrant", "Medical"];
 const recordTones = ["enroute", "revoked", "busy", "revoked"];
 const licenseLabels = ["Valid", "Suspended", "Revoked"];
 const licenseTones = ["available", "enroute", "revoked"];
