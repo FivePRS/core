@@ -7,8 +7,11 @@ using FivePRS.Client.Appearance;
 using FivePRS.Client.Callouts;
 using FivePRS.Client.Dispatch;
 using FivePRS.Client.Terminal;
+using FivePRS.Client.Terminal.Apps;
+using FivePRS.Core.Civilian;
 using FivePRS.Core.Config;
 using FivePRS.Core.Events;
+using FivePRS.Core.Logging;
 using FivePRS.Core.Models;
 using FivePRS.Core.Text;
 using Newtonsoft.Json;
@@ -18,12 +21,15 @@ namespace FivePRS.Client.App
 {
     public class AppClient : BaseScript
     {
+        private static readonly Logger Log = Logger.For("Terminal");
+
         private static readonly JsonSerializerSettings JsonSettings = new()
         {
             ContractResolver = new CamelCasePropertyNamesContractResolver(),
         };
 
         private const int CreatorAfterDutyMs = 2_000;
+        private const int MugshotSettleMs = 250;
 
         private bool _open;
         private int? _creatorPending;
@@ -42,48 +48,23 @@ namespace FivePRS.Client.App
             EventHandlers[EventNames.ClientAdminState]        += new Action<string>(OnAdminState);
             EventHandlers[EventNames.LocalDutyChanged]        += new Action<bool, int>(OnDutyChanged);
             EventHandlers[EventNames.LocalOpenMenu]           += new Action<string>(OnOpenRequested);
-            EventHandlers[EventNames.ClientPreferences]       += new Action<string>(OnPreferences);
+            EventHandlers[EventNames.ClientPreferences]       += new Action<string, string>(OnPreferences);
+            EventHandlers[EventNames.ClientAdminTeleport]     += new Action<float, float, float>(OnAdminTeleport);
+            EventHandlers[EventNames.ClientShowCard]          += new Action<string>(OnShowCard);
             EventHandlers["onClientResourceStop"]             += new Action<string>(OnResourceStop);
 
             DispatchClient.SnapshotUpdated += Refresh;
             TerminalApps.Changed           += Refresh;
             CalloutDispatcher.StateChanged += Refresh;
+            CivilianPanel.AppearanceRequested += OpenCreator;
+            CivilianPanel.MugshotRequested    += TakeMugshot;
 
             API.RegisterCommand(KeyCommands.Menu, new Action<int, List<object>, string>((_, __, ___) => Toggle()), false);
             API.RegisterKeyMapping(KeyCommands.Menu, "FivePRS: Open menu", "keyboard", "F5");
 
             RegisterCallback("appClose",     _    => Close());
-            RegisterCallback("dutyEnter",    data => OnDutyEnter(data));
-            RegisterCallback("dutyOff",      _    => DutyPanel.GoOffDuty());
-            RegisterCallback("setStatus",    data => DispatchPanel.SetStatus(data));
-            RegisterCallback("attach",       data => DispatchPanel.Attach(data));
-            RegisterCallback("waypoint",     data => DispatchPanel.Waypoint(data));
-            RegisterCallback("offerAccept",  _    => CalloutDispatcher.AcceptOffer());
-            RegisterCallback("offerDecline", _    => CalloutDispatcher.DeclineOffer());
-            RegisterCallback("endCall",      _    => CalloutDispatcher.EndActiveCall());
-            RegisterCallback("civCreateCharacter", data => CivilianPanel.CreateCharacter(data));
-            RegisterCallback("civSelectCharacter", data => CivilianPanel.SelectCharacter(data));
-            RegisterCallback("civDeleteCharacter", data => CivilianPanel.DeleteCharacter(data));
-            RegisterCallback("civApplyLicense",    data => CivilianPanel.ApplyLicense(data));
-            RegisterCallback("civRegisterVehicle", _    => OnRegisterVehicle());
-            RegisterCallback("civRemoveVehicle",   data => CivilianPanel.RemoveVehicle(data));
-            RegisterCallback("civAppearance",      _    => OpenCreator());
-            RegisterCallback("appOpen",            data => OnAppOpen(data));
-            RegisterCallback("appAction",          data => OnAppAction(data));
-            RegisterCallback("civSetVehicleStolen", data => CivilianPanel.SetVehicleStolen(data));
-            RegisterCallback("recSearchName",   data => RecordsPanel.SearchName(data));
-            RegisterCallback("recSearchPlate",  data => RecordsPanel.SearchPlate(data));
-            RegisterCallback("recOpen",         data => RecordsPanel.Open(data));
-            RegisterCallback("recBack",         _    => { RecordsPanel.CloseRecord(); Refresh(); });
-            RegisterCallback("recIssue",        data => RecordsPanel.Issue(data));
-            RegisterCallback("recResolve",      data => RecordsPanel.Resolve(data));
-            RegisterCallback("recSetLicense",   data => RecordsPanel.SetLicense(data));
-            RegisterCallback("recFlagVehicle",  data => RecordsPanel.FlagVehicle(data));
-            RegisterCallback("emCall",          data => EmergencyPanel.Call(data));
-            RegisterCallback("emCancel",        _    => EmergencyPanel.Cancel());
-            RegisterCallback("callClear",       data => EmergencyPanel.ClearCall(data));
-            RegisterCallback("adminSearch",     data => AdminPanel.Search(data));
-            RegisterCallback("adminRoster",     data => AdminPanel.SetRoster(data));
+            RegisterCallback("appOpen",      data => OnAppOpen(data));
+            RegisterCallback("appAction",    data => OnAppAction(data));
         }
 
         private void OnPlayerData(string json)
@@ -96,7 +77,7 @@ namespace FivePRS.Client.App
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[AppClient] Failed to parse player data: {ex.Message}");
+                Log.Error("Could not read player data", ex);
                 return;
             }
 
@@ -111,7 +92,7 @@ namespace FivePRS.Client.App
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[AppClient] Failed to parse entry options: {ex.Message}");
+                Log.Error("Could not read entry options", ex);
                 return;
             }
 
@@ -121,7 +102,7 @@ namespace FivePRS.Client.App
         private void OnRejected(string message)
         {
             if (_open)
-                Send("rejected", message);
+                DutyApp.ShowError(message);
             else
                 ClientBrain.ShowNotification($"~r~{message}");
         }
@@ -135,7 +116,7 @@ namespace FivePRS.Client.App
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[AppClient] Failed to parse civilian state: {ex.Message}");
+                Log.Error("Could not read civilian state", ex);
                 return;
             }
 
@@ -158,7 +139,7 @@ namespace FivePRS.Client.App
         private void OnCivilianError(string message)
         {
             if (_open)
-                Send("civilianError", message);
+                CivilianPanel.ShowError(message);
             else
                 ClientBrain.ShowNotification($"~r~{message}");
         }
@@ -171,7 +152,7 @@ namespace FivePRS.Client.App
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[AppClient] Failed to parse lookup result: {ex.Message}");
+                Log.Error("Could not read a lookup result", ex);
                 return;
             }
 
@@ -181,7 +162,7 @@ namespace FivePRS.Client.App
         private void OnLookupError(string message)
         {
             if (_open)
-                Send("recordsError", message);
+                RecordsApp.ShowError(message);
             else
                 ClientBrain.ShowNotification($"~r~{message}");
         }
@@ -190,11 +171,11 @@ namespace FivePRS.Client.App
         {
             try
             {
-                EmergencyPanel.SetStatus(json);
+                EmergencyApp.SetStatus(json);
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[AppClient] Failed to parse 911 status: {ex.Message}");
+                Log.Error("Could not read 911 status", ex);
                 return;
             }
 
@@ -204,7 +185,7 @@ namespace FivePRS.Client.App
         private void OnEmergencyError(string message)
         {
             if (_open)
-                Send("emergencyError", message);
+                EmergencyApp.ShowError(message);
             else
                 ClientBrain.ShowNotification($"~r~{message}");
         }
@@ -217,7 +198,7 @@ namespace FivePRS.Client.App
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[AppClient] Failed to parse admin state: {ex.Message}");
+                Log.Error("Could not read admin state", ex);
                 return;
             }
 
@@ -240,10 +221,54 @@ namespace FivePRS.Client.App
             Refresh();
         }
 
-        private void OnPreferences(string wallpaper)
+        private void OnPreferences(string wallpaper, string settings)
         {
-            TerminalPanel.SetWallpaper(wallpaper);
+            TerminalPanel.SetPreferences(wallpaper, settings);
             Refresh();
+        }
+
+        private static void OnShowCard(string json)
+        {
+            try
+            {
+                var card = JsonConvert.DeserializeObject<LicenseCard>(json);
+                if (card is not null) SendTo("card", "show", card);
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("Discarded a malformed license card", ex);
+            }
+        }
+
+        private static async void OnAdminTeleport(float x, float y, float z) =>
+            await Teleporter.ToAsync(new Vector3(x, y, z), Game.PlayerPed.Heading);
+
+        private async void TakeMugshot(int characterId)
+        {
+            if (!Mugshot.IsAvailable)
+            {
+                CivilianPanel.ShowError("Mugshots need the screenshot-basic resource on this server. Use an image link instead.");
+                return;
+            }
+
+            if (Game.PlayerPed.IsInVehicle())
+            {
+                CivilianPanel.ShowError("Step out of your vehicle to take a mugshot.");
+                return;
+            }
+
+            Close();
+            await Delay(MugshotSettleMs);
+
+            var photo = await Mugshot.CaptureAsync();
+            if (photo is null)
+            {
+                ClientBrain.ShowNotification("~r~The mugshot couldn't be taken.~w~ Try again, or use an image link.", "Characters");
+                return;
+            }
+
+            CivilianPanel.SetMugshot(characterId, photo);
+            OpenWhenLoaded("characters");
         }
 
         private void OpenCreator()
@@ -253,13 +278,6 @@ namespace FivePRS.Client.App
 
             Close();
             CharacterCreator.Open(active.Id, active.FullName);
-        }
-
-        private void OnRegisterVehicle()
-        {
-            var error = CivilianPanel.RegisterVehicle();
-            if (error is not null)
-                Send("civilianError", error);
         }
 
         private async void OnDutyChanged(bool isOnDuty, int departmentId)
@@ -278,13 +296,6 @@ namespace FivePRS.Client.App
             if (AppearanceManager.Current is null || AppearanceManager.CharacterId != active.Id) OpenCreator();
         }
 
-        private void OnDutyEnter(IDictionary<string, object> data)
-        {
-            var error = DutyPanel.Enter(data);
-            if (error is not null)
-                Send("rejected", error);
-        }
-
         private void Toggle()
         {
             if (_open)
@@ -296,12 +307,12 @@ namespace FivePRS.Client.App
             OpenWhenLoaded(null);
         }
 
-        private void OnOpenRequested(string tab)
+        private void OnOpenRequested(string app)
         {
-            if (!_open) OpenWhenLoaded(tab);
+            if (!_open) OpenWhenLoaded(app);
         }
 
-        private void OpenWhenLoaded(string? tab)
+        private void OpenWhenLoaded(string? app)
         {
             if (!DutyPanel.IsLoaded)
             {
@@ -309,19 +320,19 @@ namespace FivePRS.Client.App
                 return;
             }
 
-            Open(tab);
+            Open(app);
         }
 
-        private void Open(string? tab)
+        private void Open(string? app)
         {
             if (!_open)
                 Tick += HoldFocusAsync;
 
             _open = true;
             NuiFocus.Take();
-            Send("open", BuildState(tab));
+            Send("open", BuildState(app));
             CivilianPanel.RequestState();
-            EmergencyPanel.RequestStatus();
+            EmergencyApp.RequestStatus();
             AdminPanel.Request();
         }
 
@@ -337,8 +348,10 @@ namespace FivePRS.Client.App
 
         private void Refresh()
         {
-            if (_open)
-                Send("update", BuildState(null));
+            if (!_open) return;
+
+            Send("update", BuildState(null));
+            TerminalApps.PushOpenState();
         }
 
         private async Task HoldFocusAsync()
@@ -355,41 +368,27 @@ namespace FivePRS.Client.App
                 NuiFocus.Release();
         }
 
-        private static object BuildState(string? requestedTab)
+        private static object BuildState(string? requestedApp)
         {
-            var dispatch = DispatchPanel.BuildView();
-            var tabs     = new List<string> { "duty" };
-            var records  = RecordsPanel.BuildView();
-            if (dispatch is not null) tabs.Add("dispatch");
-            if (records is not null) tabs.Add("records");
-            tabs.Add("civilian");
-            tabs.Add("emergency");
-            var admin = AdminPanel.BuildView();
-            if (admin is not null) tabs.Add("admin");
-
-            var defaultTab = requestedTab is not null && tabs.Contains(requestedTab) ? requestedTab : null;
-
             return new
             {
-                Tabs       = tabs,
                 Nameplate  = ConfigManager.Settings.Branding.Nameplate,
                 Icons      = ConfigManager.Settings.Branding.Departments,
                 Terminal   = TerminalPanel.BuildView(),
                 Apps       = TerminalApps.BuildList(),
                 AppView    = TerminalApps.BuildOpenView(),
                 Context    = PublicState.Build(),
-                DefaultTab = defaultTab,
-                Duty       = DutyPanel.BuildView(),
-                Dispatch   = dispatch,
-                Records    = records,
-                Civilian   = CivilianPanel.BuildView(),
-                Emergency  = EmergencyPanel.BuildView(),
-                Admin      = admin,
+                DefaultApp = requestedApp is not null && TerminalApps.IsAvailable(requestedApp) ? requestedApp : null,
+                Identity   = CivilianPanel.ActiveCharacter?.FullName ?? ClientBrain.LocalPlayerData.Name,
+                Unit       = DispatchPanel.BuildStatus(),
+                Home       = HomePanel.BuildView(),
             };
         }
 
-        private static void Send(string type, object? payload) =>
-            API.SendNuiMessage(JsonConvert.SerializeObject(new { screen = "app", type, payload }, JsonSettings));
+        private static void Send(string type, object? payload) => SendTo("app", type, payload);
+
+        private static void SendTo(string screen, string type, object? payload) =>
+            API.SendNuiMessage(JsonConvert.SerializeObject(new { screen, type, payload }, JsonSettings));
 
         private void RegisterCallback(string name, Action<IDictionary<string, object>> handler)
         {
@@ -402,7 +401,7 @@ namespace FivePRS.Client.App
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"[AppClient] NUI callback '{name}' failed: {ex.Message}");
+                    Log.Error($"Terminal action '{name}' failed", ex);
                 }
 
                 callback("ok");

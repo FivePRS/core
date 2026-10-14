@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using CitizenFX.Core;
 using CitizenFX.Core.Native;
+using FivePRS.Core.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
@@ -33,6 +34,8 @@ namespace FivePRS.Client.Menu
 
     public class CompactMenu : BaseScript
     {
+        private static readonly Logger Log = Logger.For("Menu");
+
         private const int ControlUp = 172;
         private const int ControlDown = 173;
         private const int ControlSelect = 191;
@@ -198,7 +201,7 @@ namespace FivePRS.Client.Menu
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[CompactMenu] '{item.Label}' failed: {ex}");
+                Log.Error($"Menu item '{item.Label}' failed", ex);
             }
             finally
             {

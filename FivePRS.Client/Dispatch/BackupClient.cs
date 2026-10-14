@@ -199,10 +199,18 @@ namespace FivePRS.Client.Dispatch
 
         private static void OnCommand(List<object> args)
         {
-            var words = args.Select(arg => arg?.ToString()?.ToLowerInvariant() ?? string.Empty).ToList();
-            if (words.Contains("cancel"))
+            var words = args.Select(arg => arg?.ToString()?.Trim().ToLowerInvariant() ?? string.Empty).Where(word => word.Length > 0).ToList();
+            if (words.Count == 1 && words[0] == "cancel")
             {
                 Cancel();
+                return;
+            }
+
+            var codes = words.Count(word => word == "2" || word == "3");
+            var modes = words.Count(word => word == "npc" || word == "players");
+            if (codes > 1 || modes > 1 || codes + modes != words.Count)
+            {
+                ClientBrain.ShowNotification("~r~Usage: ~w~/backup [2|3] [npc|players], or /backup cancel");
                 return;
             }
 

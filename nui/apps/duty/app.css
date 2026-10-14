@@ -1,0 +1,262 @@
+body {
+  background: var(--bg);
+}
+
+.page {
+  display: grid;
+  grid-template-columns: 24.286rem minmax(0, 1fr);
+  gap: 1.286rem;
+  height: 100%;
+  padding: 1.286rem;
+  overflow-y: auto;
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.profile {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.429rem;
+}
+
+.rank {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.insignia {
+  display: grid;
+  place-items: center;
+  width: 4.571rem;
+  height: 4.571rem;
+  flex: none;
+  border-radius: 1rem;
+  background: #101a30;
+  border: 1px solid #22355c;
+  color: #f2c94c;
+}
+
+.insignia svg {
+  width: 2.714rem;
+  height: 2.714rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.rank-name {
+  font-size: 2.143rem;
+}
+
+.xp-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.857rem;
+  color: var(--muted);
+}
+
+.xp-track {
+  height: 0.571rem;
+  margin-top: 0.429rem;
+  border-radius: 0.571rem;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.xp-bar {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width calc(var(--speed) * 3);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.571rem;
+  padding-top: 0.857rem;
+  border-top: 1px solid #172033;
+}
+
+.stat {
+  margin-top: 0.143rem;
+  font-family: var(--font-mono);
+  font-size: 1.286rem;
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 1.286rem;
+  padding: 1.429rem;
+}
+
+.step-label {
+  display: block;
+  margin-bottom: 0.571rem;
+}
+
+.choice-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 0.714rem;
+}
+
+.choice-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.714rem;
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 0.857rem;
+  min-height: 3.714rem;
+  padding: 0.571rem 1rem;
+  border-radius: 0.786rem;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--text-2);
+  text-align: left;
+}
+
+.choice:hover {
+  border-color: var(--line-strong);
+}
+
+.choice.selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.choice .dept-icon {
+  width: 2.286rem;
+  height: 2.286rem;
+}
+
+.choice-title {
+  display: block;
+  font-size: 1.071rem;
+  font-weight: 600;
+}
+
+.choice-detail {
+  display: block;
+  font-size: 0.857rem;
+  color: var(--muted);
+}
+
+.choice.selected .choice-detail {
+  color: var(--accent-text);
+}
+
+.step-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 16rem;
+  gap: 1.143rem;
+}
+
+.callsign-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.callsign {
+  height: 3.714rem;
+  font-size: 1.286rem;
+  text-transform: uppercase;
+}
+
+.hint {
+  margin-top: 0.429rem;
+  font-size: 0.786rem;
+}
+
+.station-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.571rem;
+  margin-top: 0.714rem;
+  max-height: 12rem;
+  overflow-y: auto;
+}
+
+.station {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.571rem;
+  height: 2.857rem;
+  padding: 0 0.857rem;
+  border-radius: 0.643rem;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-weight: 600;
+}
+
+.station.selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.station-distance {
+  font-family: var(--font-mono);
+  font-size: 0.857rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.submit {
+  display: flex;
+  align-items: center;
+  gap: 0.857rem;
+  margin-top: auto;
+}
+
+.submit-button {
+  margin-left: auto;
+  height: 3.286rem;
+  padding: 0 2rem;
+  font-size: 1.143rem;
+}
+
+.on-duty {
+  display: flex;
+  flex-direction: column;
+  gap: 1.143rem;
+  padding: 1.714rem;
+}
+
+.unit {
+  display: flex;
+  align-items: center;
+  gap: 1.143rem;
+}
+
+.unit-callsign {
+  font-family: var(--font-mono);
+  font-size: 2.286rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.on-duty-note {
+  line-height: 1.5;
+}
+
+.off-button {
+  align-self: flex-start;
+  margin-top: auto;
+}

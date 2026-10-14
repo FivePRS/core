@@ -1,3 +1,5 @@
+using System;
+
 namespace FivePRS.Server.Database
 {
     public static class AuditActions
@@ -29,6 +31,8 @@ namespace FivePRS.Server.Database
         public const string RosterRevoked    = "roster.revoke";
         public const string PlayerRevived    = "player.revive";
         public const string BackupRequested  = "backup.request";
+        public const string AdminTeleport    = "admin.teleport";
+        public const string PhotoSet         = "civ.photo.set";
     }
 
     public sealed class AuditEntry
@@ -38,5 +42,15 @@ namespace FivePRS.Server.Database
         public string  ActorName     { get; set; } = string.Empty;
         public string? TargetLicense { get; set; }
         public string  Details       { get; set; } = string.Empty;
+    }
+
+    public sealed class AuditRecord
+    {
+        public long     Id            { get; set; }
+        public DateTime CreatedAt     { get; set; }
+        public string   Action        { get; set; } = string.Empty;
+        public string   ActorName     { get; set; } = string.Empty;
+        public string?  TargetLicense { get; set; }
+        public string   Details       { get; set; } = string.Empty;
     }
 }

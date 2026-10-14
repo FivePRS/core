@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using FivePRS.Core.Config;
 
 namespace FivePRS.Core.Civilian
 {
@@ -26,6 +27,7 @@ namespace FivePRS.Core.Civilian
         public string   Gender       { get; set; } = string.Empty;
         public DateTime CreatedAt    { get; set; }
         public DateTime LastUsedAt   { get; set; }
+        public string?  Photo        { get; set; }
 
         public string FullName => $"{FirstName} {LastName}";
     }
@@ -59,11 +61,28 @@ namespace FivePRS.Core.Civilian
         public int                    MaxVehicles       { get; set; }
     }
 
+    public sealed class LicenseCard
+    {
+        public string      FirstName   { get; set; } = string.Empty;
+        public string      LastName    { get; set; } = string.Empty;
+        public string      DateOfBirth { get; set; } = string.Empty;
+        public string      Gender      { get; set; } = string.Empty;
+        public string      StateId     { get; set; } = string.Empty;
+        public string?     Photo       { get; set; }
+        public StateDef    State       { get; set; } = new();
+        public LicenseView License     { get; set; } = new();
+    }
+
     public sealed class LicenseView
     {
         public string         Type        { get; set; } = string.Empty;
         public string         Name        { get; set; } = string.Empty;
         public bool           SelfService { get; set; }
         public LicenseStatus? Status      { get; set; }
+        public string         Number      { get; set; } = string.Empty;
+        public string         Class       { get; set; } = string.Empty;
+        public DateTime?      IssuedAt    { get; set; }
+        public DateTime?      ExpiresAt   { get; set; }
+        public LicenseCardDef Card        { get; set; } = new();
     }
 }

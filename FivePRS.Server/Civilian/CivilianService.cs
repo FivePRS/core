@@ -12,13 +12,16 @@ namespace FivePRS.Server.Civilian
         private const int MaxModelLength = 40;
 
         private readonly CivilianStore _store;
+        private readonly PhotoStore _photos;
         private readonly Func<ResourceSettings> _settings;
         private readonly Func<LicensesConfig> _licenses;
         private readonly Func<DateTime> _clock;
 
-        public CivilianService(CivilianStore store, Func<ResourceSettings> settings, Func<LicensesConfig> licenses, Func<DateTime> clock)
+        public CivilianService(CivilianStore store, PhotoStore photos, Func<ResourceSettings> settings, Func<LicensesConfig> licenses,
+            Func<DateTime> clock)
         {
             _store    = store;
+            _photos   = photos;
             _settings = settings;
             _licenses = licenses;
             _clock    = clock;
@@ -38,13 +41,11 @@ namespace FivePRS.Server.Civilian
             };
 
             var held = active is null ? null : await _store.GetLicensesAsync(active.Id);
-            state.Licenses = _licenses().Types.Select(type => new LicenseView
-            {
-                Type        = type.Id,
-                Name        = type.Name,
-                SelfService = type.SelfService,
-                Status      = held?.FirstOrDefault(l => string.Equals(l.Type, type.Id, StringComparison.OrdinalIgnoreCase))?.Status,
-            }).ToList();
+            state.Licenses = LicenseViews.Build(active?.Id ?? 0, _licenses(), held);
+
+            var photos = await _photos.GetManyAsync(characters.Select(c => c.Id));
+            foreach (var character in characters)
+                character.Photo = photos.TryGetValue(character.Id, out var photo) ? photo : null;
 
             if (active is not null)
             {
@@ -103,6 +104,44 @@ namespace FivePRS.Server.Civilian
             if (summary?.HasActiveWarrant == true) return "A character with an active warrant can't be deleted.";
 
             await _store.DeleteCharacterAsync(characterId);
+            await _photos.DeleteAsync(characterId);
+            return null;
+        }
+
+        public async Task<LicenseCard?> GetLicenseCardAsync(string owner, string? type)
+        {
+            var character = await GetActiveCharacterAsync(owner);
+            var config    = _licenses();
+            var definition = config.Find(type);
+            if (character is null || definition is null) return null;
+
+            var held = await _store.GetLicensesAsync(character.Id);
+            var view = LicenseViews.Build(character.Id, config, held).FirstOrDefault(l => l.Type == definition.Id);
+            if (view?.Status is null) return null;
+
+            return new LicenseCard
+            {
+                FirstName   = character.FirstName,
+                LastName    = character.LastName,
+                DateOfBirth = character.DateOfBirth,
+                Gender      = character.Gender,
+                StateId     = CivilianRules.StateId(config.State.Abbreviation, character.Id),
+                Photo       = await _photos.GetAsync(character.Id),
+                State       = config.State,
+                License     = view,
+            };
+        }
+
+        public async Task<string?> SetPhotoAsync(string owner, int characterId, string? photo)
+        {
+            if (await GetOwnedCharacterAsync(owner, characterId) is null) return "Character not found.";
+            if (!CivilianRules.TryNormalizePhoto(photo, out var normalized))
+                return "That photo can't be used. Take a mugshot, or use an https image link.";
+
+            if (normalized.Length == 0)
+                await _photos.DeleteAsync(characterId);
+            else
+                await _photos.SetAsync(characterId, normalized);
             return null;
         }
 

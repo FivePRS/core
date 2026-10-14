@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dispatch</title>
+  <link rel="stylesheet" href="../../theme.css">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <main class="page">
+    <section class="main">
+      <div class="toolbar">
+        <div class="me">
+          <span id="me-icon" class="dept-slot"></span>
+          <div>
+            <p id="me-callsign" class="me-callsign"></p>
+            <p id="me-detail" class="muted"></p>
+          </div>
+        </div>
+        <div class="status-control">
+          <span id="status-hint" class="muted"></span>
+          <div class="segmented">
+            <button type="button" data-status="Available">Available</button>
+            <button type="button" data-status="Busy">Busy</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="offer" class="card offer" hidden>
+        <div class="call-main">
+          <div class="call-tags">
+            <span id="offer-code" class="code"></span>
+            <span class="eyebrow">Incoming call</span>
+            <span id="offer-countdown" class="mono countdown"></span>
+          </div>
+          <p id="offer-title" class="display call-name"></p>
+          <p id="offer-description" class="call-text"></p>
+          <div class="offer-track" aria-hidden="true"><div id="offer-bar" class="offer-bar"></div></div>
+        </div>
+        <div class="call-buttons">
+          <button type="button" class="button primary" data-action="offer-accept">Accept</button>
+          <button type="button" class="button" data-action="offer-decline">Decline</button>
+        </div>
+      </div>
+
+      <div id="active" class="card active" hidden>
+        <div class="call-main">
+          <div class="call-tags">
+            <span id="active-code" class="code"></span>
+            <span id="active-tag" class="eyebrow active-tag"></span>
+          </div>
+          <p id="active-title" class="display call-name"></p>
+          <p id="active-description" class="call-text"></p>
+          <div id="active-units" class="chips"></div>
+        </div>
+        <div class="call-buttons">
+          <button type="button" class="button" data-action="backup">Request backup</button>
+          <button type="button" class="button alert" data-action="end-call">End call</button>
+        </div>
+      </div>
+
+      <div class="card calls">
+        <div class="card-head">
+          <h2 class="heading">Active calls</h2>
+          <span id="call-count" class="eyebrow"></span>
+        </div>
+        <div id="calls" class="call-list"></div>
+        <p id="calls-empty" class="empty" hidden>No active calls. Stay available and calls will come to you.</p>
+      </div>
+    </section>
+
+    <aside class="card units">
+      <div class="card-head">
+        <h2 class="heading">Units</h2>
+        <span id="unit-count" class="eyebrow"></span>
+      </div>
+      <div id="units" class="unit-groups"></div>
+    </aside>
+  </main>
+
+  <script src="../../kit.js"></script>
+  <script src="../../app-sdk.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

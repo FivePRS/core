@@ -53,7 +53,7 @@ namespace FivePRS.Server
             var response = await HttpBridge.GetAsync(ReleaseFeed.ReleasesUrl(settings.Repository), accept: GitHubAccept);
             if (!response.Ok)
             {
-                Debug.WriteLine($"[FivePRS] Could not check for updates: {response.Error}");
+                Log.Warn($"Could not check for updates: {response.Error}");
                 return;
             }
 
@@ -62,7 +62,7 @@ namespace FivePRS.Server
 
             if (_availableUpdate is null)
             {
-                if (first) Debug.WriteLine($"[FivePRS] FivePRS {installed} is up to date.");
+                if (first) Log.Info("No updates available.");
                 return;
             }
 
@@ -70,10 +70,10 @@ namespace FivePRS.Server
             if (_announcedVersion == version) return;
             _announcedVersion = version;
 
-            Debug.WriteLine($"[FivePRS] FivePRS {version} is available. You have {installed}. Release notes: {_availableUpdate.Url}");
+            Log.Warn($"FivePRS {version} is available (you have {installed}). Run fiveprs_update to install it.");
             foreach (var line in ReleaseFeed.Summary(_availableUpdate.Notes).Split('\n').Where(line => line.Length > 0))
-                Debug.WriteLine($"[FivePRS]   {line}");
-            Debug.WriteLine("[FivePRS] Run fiveprs_update in the server console to download it.");
+                Log.Info($"  {line}");
+            Log.Info($"Release notes: {_availableUpdate.Url}");
 
             foreach (var player in Players.Where(player => _permissions.IsAdmin(player.Handle)))
                 NotifyUpdate(player);
@@ -85,9 +85,9 @@ namespace FivePRS.Server
             Notify(player, $"Update | ~g~FivePRS {_availableUpdate.Version} is available.~w~ Run fiveprs_update in the server console.");
         }
 
-        private async Task<string> DownloadUpdateAsync(Player? caller, string[] args)
+        private async Task<CommandResult> DownloadUpdateAsync(Player? caller, string[] args)
         {
-            if (_downloadingUpdate) return "An update is already downloading.";
+            if (_downloadingUpdate) return CommandResult.Failed("An update is already downloading.");
 
             _downloadingUpdate = true;
             try
@@ -95,9 +95,9 @@ namespace FivePRS.Server
                 await CheckForUpdateAsync();
 
                 var release = _availableUpdate;
-                if (release is null) return $"FivePRS {InstalledVersion()} is up to date.";
+                if (release is null) return CommandResult.Done($"FivePRS {InstalledVersion()} is up to date.");
                 if (release.AssetUrl is null)
-                    return $"FivePRS {release.Version} has no {ConfigManager.Settings.Updates.AssetName} to download. Get it from {release.Url}";
+                    return CommandResult.Failed($"FivePRS {release.Version} has no {ConfigManager.Settings.Updates.AssetName} to download. Get it from {release.Url}");
 
                 var version      = release.Version.ToString();
                 var resourcePath = Resource.Path;
@@ -108,18 +108,18 @@ namespace FivePRS.Server
 
                 Reply(caller, $"Downloading FivePRS {version}...");
                 var download = await HttpBridge.GetAsync(release.AssetUrl, zipRelative, check: "zip", timeoutMs: DownloadTimeoutMs);
-                if (!download.Ok) return $"The download failed: {download.Error}";
+                if (!download.Ok) return CommandResult.Failed($"The download failed: {download.Error}");
 
                 try
                 {
                     var extracted = ExtractRelease(zipPath, target);
-                    return $"FivePRS {version} is ready in {extracted}. Stop the server, copy everything in that folder over resources/fiveprs, and start it again. " +
-                           $"Your config/ and data/ folders are not included, so your settings and database are kept. Release notes: {release.Url}";
+                    return CommandResult.Done($"FivePRS {version} is ready in {extracted}. Stop the server, copy everything in that folder over resources/fiveprs, and start it again. " +
+                                              $"Your config/ and data/ folders are not included, so your settings and database are kept. Release notes: {release.Url}");
                 }
                 catch (Exception ex)
                 {
-                    return $"FivePRS {version} was downloaded to {zipPath}, but it could not be unpacked ({ex.Message}). " +
-                           "Unpack it yourself and copy it over resources/fiveprs without its config/ and data/ folders.";
+                    return CommandResult.Failed($"FivePRS {version} was downloaded to {zipPath}, but it could not be unpacked ({ex.Message}). " +
+                                                "Unpack it yourself and copy it over resources/fiveprs without its config/ and data/ folders.");
                 }
             }
             finally

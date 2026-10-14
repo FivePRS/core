@@ -82,7 +82,7 @@ namespace FivePRS.Tests
         [Fact]
         public void BundledConfigFile_MatchesBuiltInDefaults()
         {
-            var path = System.IO.Path.Combine(RepoRoot(), "config", "jurisdictions.json");
+            var path = System.IO.Path.Combine(RepoRoot(), "config", "world", "jurisdictions.json");
             var fromFile = JsonConvert.DeserializeObject<JurisdictionConfig>(System.IO.File.ReadAllText(path))!;
 
             Assert.Equal(JsonConvert.SerializeObject(new JurisdictionConfig()), JsonConvert.SerializeObject(fromFile));

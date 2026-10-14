@@ -4,34 +4,18 @@ const appGrid = document.getElementById("app-grid");
 const appWindow = document.getElementById("app-window");
 const wallpaper = document.getElementById("wallpaper");
 const extFrame = document.getElementById("ext-frame");
+const cardOverlay = document.getElementById("card-overlay");
 
-const appIcons = {
-  duty: "M12 2l8 3v6c0 5.2-3.4 9.4-8 11-4.6-1.6-8-5.8-8-11V5z M12 8l1.2 2.6 2.8.3-2.1 1.9.6 2.8L12 14.2l-2.5 1.4.6-2.8-2.1-1.9 2.8-.3z",
-  dispatch: "M12 10a2 2 0 1 1 0 4 2 2 0 0 1 0-4z M7.8 7.8a6 6 0 0 0 0 8.4 M16.2 7.8a6 6 0 0 1 0 8.4 M4.9 4.9a10 10 0 0 0 0 14.2 M19.1 4.9a10 10 0 0 1 0 14.2",
-  records: "M3 6a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z M14.5 14.5l2.5 2.5 M13 15a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z",
-  characters: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4 21a8 8 0 0 1 16 0",
-  licenses: "M3 6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M8.5 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z M5.5 17a3 3 0 0 1 6 0 M14 10h4 M14 14h3",
-  vehicles: "M5 17H3v-4l2-5h14l2 5v4h-2 M3 13h18 M7.5 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4z M16.5 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4z",
-  emergency: "M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z",
-  admin: "M4 21v-7 M4 10V3 M12 21v-9 M12 8V3 M20 21v-5 M20 12V3 M1 14h6 M9 8h6 M17 16h6",
-};
-
-const appCatalog = [
-  { id: "duty", tab: "duty", label: "Duty", color: "#335cff" },
-  { id: "dispatch", tab: "dispatch", label: "Dispatch", color: "#e81010" },
-  { id: "records", tab: "records", label: "Records", color: "#4f46e5" },
-  { id: "characters", tab: "civilian", mode: "characters", label: "Characters", color: "#0d9488" },
-  { id: "licenses", tab: "civilian", mode: "licenses", label: "Licenses", color: "#d97706" },
-  { id: "vehicles", tab: "civilian", mode: "vehicles", label: "Vehicles", color: "#475569" },
-  { id: "emergency", tab: "emergency", label: "911", color: "#b91c1c" },
-  { id: "admin", tab: "admin", label: "Admin", color: "#7c3aed" },
-].map((entry, index) => ({ ...entry, order: index * 10 }));
+const cardShowMs = 12000;
 
 let appState = null;
 let activeApp = null;
+let offerTimer = null;
+let cardTimer = null;
+const appStates = {};
 
 function iconFor(entry) {
-  const icon = entry.external ? entry.icon ?? "" : appIcons[entry.id] ?? "";
+  const icon = entry.icon ?? "";
   if (/^(https?|nui):\/\//.test(icon)) return iconImage(icon, "app-image");
 
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -44,30 +28,27 @@ function iconFor(entry) {
 }
 
 function availableApps(state) {
-  const builtIn = appCatalog.filter((entry) => state.tabs.includes(entry.tab));
-  const external = (state.apps ?? []).map((entry) => ({ ...entry, tab: "ext", external: true }));
-  return [...builtIn, ...external].sort((a, b) => a.order - b.order);
+  return [...(state.apps ?? [])].sort((a, b) => a.order - b.order);
 }
 
 function findApp(id) {
   return appState ? availableApps(appState).find((entry) => entry.id === id) ?? null : null;
 }
 
-function badgeFor(entry, state) {
-  if (entry.external) return entry.badge ?? null;
-  if (entry.id === "dispatch" && state.dispatch?.offer) return "!";
-  if (entry.id === "dispatch" && state.dispatch?.activeCall) return "1";
-  if (entry.id === "emergency" && state.emergency?.status) return "•";
-  return null;
+function preferences() {
+  return appState?.terminal?.preferences ?? {};
 }
 
-function renderHome(state) {
+function applyPreferences(prefs) {
+  document.documentElement.dataset.textSize = prefs.textSize ?? "m";
+  document.documentElement.dataset.reduceMotion = String(Boolean(prefs.reduceMotion));
+}
+
+function renderHomeApps(state) {
   appGrid.replaceChildren(...availableApps(state).map((entry) => {
-    const badge = badgeFor(entry, state);
     const tile = el("button", { className: "app-tile", dataset: { app: entry.id } }, [
-      el("span", { className: "app-icon" }, [iconFor(entry)]),
+      el("span", { className: "app-icon" }, [iconFor(entry), entry.badge ? el("span", { className: "app-badge", text: entry.badge }) : null]),
       el("span", { className: "app-label", text: entry.label }),
-      badge ? el("span", { className: "app-badge", text: badge }) : null,
     ]);
     tile.type = "button";
     tile.querySelector(".app-icon").style.setProperty("--tile", entry.color);
@@ -75,14 +56,54 @@ function renderHome(state) {
   }));
 }
 
-function renderStatusBar(state) {
-  const unit = state.dispatch?.self;
-  const civilian = state.civilian?.state;
-  const character = civilian?.characters?.find((entry) => entry.id === civilian.activeCharacterId);
+function formatShift(startedAt) {
+  const minutes = Math.max(0, Math.floor((Date.now() - startedAt) / 60000));
+  return `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, "0")}`;
+}
 
-  setText("sb-identity", unit
-    ? `${unit.callsign} · ${unit.agency}`
-    : character ? `${character.firstName} ${character.lastName}` : state.duty?.name ?? "");
+function formatDistance(meters) {
+  if (meters === null || meters === undefined) return "";
+  const miles = meters / 1609.34;
+  return miles < 0.1 ? "Nearby" : `${miles.toFixed(1)} mi`;
+}
+
+function tickOffer() {
+  const offer = appState?.home?.offer;
+  if (!offer) return;
+  const remaining = Math.max(0, offer.expiresAt - Date.now());
+  setText("home-offer-countdown", `${Math.ceil(remaining / 1000)}s`);
+  document.getElementById("home-offer-bar").style.width = `${((remaining / Math.max(1, offer.windowMs)) * 100).toFixed(1)}%`;
+}
+
+function renderHomeWidgets(state) {
+  const homeState = state.home ?? {};
+  const offer = homeState.offer;
+
+  document.getElementById("home-offer").hidden = !offer;
+  clearInterval(offerTimer);
+  offerTimer = null;
+  if (offer) {
+    setText("home-offer-title", `#${offer.id} ${offer.name} · Code ${offer.code}`);
+    setText("home-offer-detail", [offer.description, formatDistance(offer.distanceM)].filter(Boolean).join(" · "));
+    for (const button of document.querySelectorAll("[data-home]")) button.disabled = false;
+    tickOffer();
+    offerTimer = setInterval(tickOffer, 250);
+  }
+
+  document.getElementById("home-shift").hidden = !state.unit;
+  if (state.unit) {
+    setText("home-units", homeState.units ?? 0);
+    setText("home-calls", homeState.calls ?? 0);
+    setText("home-shift-time", homeState.shiftStartedAt ? formatShift(homeState.shiftStartedAt) : "0:00");
+  }
+}
+
+function renderStatusBar(state) {
+  const unit = state.unit;
+  const identity = document.getElementById("sb-identity");
+  identity.replaceChildren(...(unit
+    ? [el("span", { className: "sb-callsign", text: unit.callsign }), el("span", { className: "sb-agency", text: unit.agency })]
+    : [document.createTextNode(state.identity ?? "")]));
 
   const status = document.getElementById("sb-status");
   status.hidden = !unit;
@@ -99,10 +120,6 @@ function renderWallpaper(terminal) {
   if (url) wallpaper.src = url;
 }
 
-function selectTab(tab) {
-  for (const panel of app.querySelectorAll(".tab")) panel.hidden = panel.id !== `tab-${tab}`;
-}
-
 function pageUrl(entry) {
   return `${entry.page}${entry.page.includes("?") ? "&" : "?"}app=${encodeURIComponent(entry.id)}`;
 }
@@ -111,8 +128,8 @@ function sendToFrame(type, payload) {
   extFrame.contentWindow?.postMessage({ fiveprs: true, kind: "event", type, payload }, "*");
 }
 
-function leaveExternalApp() {
-  if (!findApp(activeApp)?.external && !extFrame.getAttribute("src")) return;
+function leaveApp() {
+  if (!activeApp && !extFrame.getAttribute("src")) return;
   extFrame.removeAttribute("src");
   extFrame.hidden = true;
   extView.replaceChildren();
@@ -123,7 +140,7 @@ function openApp(id) {
   const entry = findApp(id);
   if (!entry) return;
 
-  leaveExternalApp();
+  leaveApp();
   activeApp = entry.id;
   home.hidden = true;
   appWindow.hidden = false;
@@ -133,11 +150,6 @@ function openApp(id) {
   icon.replaceChildren(iconFor(entry));
   icon.style.setProperty("--tile", entry.color);
 
-  document.getElementById("tab-civilian").dataset.mode = entry.mode ?? "";
-  selectTab(entry.tab);
-
-  if (!entry.external) return;
-
   extView.hidden = Boolean(entry.page);
   extFrame.hidden = !entry.page;
   if (entry.page) extFrame.src = pageUrl(entry);
@@ -145,7 +157,7 @@ function openApp(id) {
 }
 
 function goHome() {
-  leaveExternalApp();
+  leaveApp();
   activeApp = null;
   appWindow.hidden = true;
   home.hidden = false;
@@ -153,75 +165,81 @@ function goHome() {
 
 function renderApp(state, opening) {
   appState = state;
+  applyPreferences(preferences());
   const logo = document.getElementById("brand-logo");
   if (state.nameplate && logo.getAttribute("src") !== state.nameplate) logo.src = state.nameplate;
   setDepartmentIcons(state.icons);
   renderWallpaper(state.terminal);
   renderStatusBar(state);
-  renderHome(state);
+  renderHomeApps(state);
+  renderHomeWidgets(state);
+  tickClock();
 
   if (opening) {
-    const requested = appCatalog.find((entry) => entry.tab === state.defaultTab);
+    const requested = findApp(state.defaultApp);
     if (requested) openApp(requested.id);
     else goHome();
   } else if (activeApp && !availableApps(state).some((entry) => entry.id === activeApp)) {
     goHome();
   }
 
-  renderDuty(state.duty, opening);
-  renderDispatch(state.dispatch);
-  renderRecords(state.records, opening);
-  renderCivilian(state.civilian, opening);
-  renderEmergency(state.emergency, opening);
-  renderAdmin(state.admin, opening);
-
   const active = findApp(activeApp);
-  if (active?.external && !active.page && state.appView?.app === active.id) renderAppView(state.appView);
-  if (active?.external && active.page) sendToFrame("context", state.context);
+  if (active && !active.page && state.appView?.app === active.id) renderAppView(state.appView);
+  if (active?.page) sendToFrame("context", state.context);
 }
 
 function tickClock() {
-  document.getElementById("clock").textContent = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const now = new Date();
+  const hour12 = !preferences().clock24;
+  document.getElementById("clock").textContent = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12 });
+  const hours = hour12 ? now.getHours() % 12 || 12 : now.getHours();
+  setText("home-time", `${hour12 ? hours : String(hours).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`);
+  setText("home-date", [now.toLocaleDateString([], { weekday: "long", day: "numeric", month: "long" }), appState?.home?.location].filter(Boolean).join(" · "));
+  if (appState?.unit && appState.home?.shiftStartedAt) setText("home-shift-time", formatShift(appState.home.shiftStartedAt));
+}
+
+function showCard(card) {
+  clearTimeout(cardTimer);
+  setText("card-caption", `${card.firstName} ${card.lastName} shows you their ${card.license.name}`);
+  document.getElementById("card-slot").replaceChildren(licenseCard(card, { small: true }));
+  cardOverlay.hidden = false;
+  cardTimer = setTimeout(() => {
+    cardOverlay.hidden = true;
+  }, cardShowMs);
 }
 
 screens.app = {
   open(state) {
     app.hidden = false;
-    tickClock();
     renderApp(state, true);
   },
   update(state) {
     if (!app.hidden) renderApp(state, false);
   },
-  rejected(message) {
-    showDutyError(message);
-  },
-  recordsError(message) {
-    showRecordsError(message);
-    if (recordsView) renderRecords(recordsView, false);
-  },
-  emergencyError(message) {
-    showEmergencyError(message);
-  },
-  civilianError(message) {
-    showCivilianError(message);
-    if (civilianView) renderCivilian(civilianView, false);
-  },
   appMessage(message) {
+    if (message.type === "state") appStates[message.app] = message.payload;
     if (message.app === activeApp) sendToFrame(message.type, message.payload);
   },
   close() {
-    leaveExternalApp();
+    leaveApp();
+    clearInterval(offerTimer);
+    offerTimer = null;
     app.hidden = true;
-    stopOfferTimer();
   },
+};
+
+screens.card = {
+  show: showCard,
 };
 
 window.addEventListener("message", (event) => {
   const message = event.data;
   if (event.source !== extFrame.contentWindow || !message || message.fiveprs !== true) return;
 
-  if (message.kind === "ready") sendToFrame("context", appState?.context ?? null);
+  if (message.kind === "ready") {
+    sendToFrame("context", appState?.context ?? null);
+    if (activeApp in appStates) sendToFrame("state", appStates[activeApp]);
+  }
   else if (message.kind === "home") goHome();
   else if (message.kind === "action") appAction(activeApp, message.action, message.data);
 });
@@ -233,6 +251,13 @@ wallpaper.addEventListener("error", () => {
 appGrid.addEventListener("click", (event) => {
   const tile = event.target.closest("[data-app]");
   if (tile) openApp(tile.dataset.app);
+});
+
+document.getElementById("home-offer").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-home]");
+  if (!button || button.disabled) return;
+  for (const node of document.querySelectorAll("[data-home]")) node.disabled = true;
+  appAction("dispatch", button.dataset.home);
 });
 
 document.getElementById("home-button").addEventListener("click", goHome);

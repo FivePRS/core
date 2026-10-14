@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Duty</title>
+  <link rel="stylesheet" href="../../theme.css">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <main class="page">
+    <aside class="side">
+      <div class="card profile">
+        <p id="greeting" class="eyebrow"></p>
+        <div class="rank">
+          <span class="insignia"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9l7-4 7 4M5 14l7-4 7 4M5 19l7-4 7 4"></path></svg></span>
+          <div>
+            <p id="rank-name" class="display rank-name"></p>
+            <p id="rank-detail" class="muted"></p>
+          </div>
+        </div>
+        <div>
+          <div class="xp-head"><span id="next-rank"></span><span id="xp" class="mono"></span></div>
+          <div class="xp-track" aria-hidden="true"><div id="xp-bar" class="xp-bar"></div></div>
+        </div>
+        <div class="stats">
+          <div><p class="eyebrow">Calls</p><p id="stat-calls" class="stat"></p></div>
+          <div><p class="eyebrow">Arrests</p><p id="stat-arrests" class="stat"></p></div>
+          <div><p class="eyebrow">Hours</p><p id="stat-hours" class="stat"></p></div>
+        </div>
+      </div>
+    </aside>
+
+    <section id="off-duty" class="card steps">
+      <div>
+        <p class="eyebrow step-label">1 · Department</p>
+        <div id="departments" class="choice-row"></div>
+        <p id="no-departments" class="empty" hidden>No departments are available to you on this server.</p>
+      </div>
+
+      <div class="step-pair">
+        <div id="agency-step">
+          <p class="eyebrow step-label">2 · Agency</p>
+          <div id="agencies" class="choice-grid"></div>
+        </div>
+        <label class="callsign-field">
+          <span class="eyebrow step-label">3 · Callsign</span>
+          <input id="callsign" class="input mono callsign" type="text" autocomplete="off" spellcheck="false">
+          <span class="muted hint">Letters, numbers and hyphens. Blank uses your agency's default.</span>
+        </label>
+      </div>
+
+      <div id="start-step">
+        <p class="eyebrow step-label">4 · Start at</p>
+        <div id="starts" class="choice-row"></div>
+        <div id="stations" class="station-grid"></div>
+      </div>
+
+      <div class="submit">
+        <span id="summary" class="muted"></span>
+        <button id="enter" type="button" class="button primary submit-button">Go on duty</button>
+      </div>
+    </section>
+
+    <section id="on-duty" class="card on-duty" hidden>
+      <p class="eyebrow">On duty</p>
+      <div class="unit">
+        <span id="unit-icon" class="dept-slot"></span>
+        <div>
+          <p id="unit-callsign" class="display unit-callsign"></p>
+          <p id="unit-agency" class="muted"></p>
+        </div>
+      </div>
+      <p class="muted on-duty-note">Calls are offered through Dispatch. Use the station locker or armory to change your gear.</p>
+      <button id="off" type="button" class="button danger off-button">Go off duty</button>
+    </section>
+  </main>
+  <p id="toast" class="toast" hidden></p>
+
+  <script src="../../kit.js"></script>
+  <script src="../../app-sdk.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

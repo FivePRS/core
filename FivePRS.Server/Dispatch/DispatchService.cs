@@ -505,6 +505,9 @@ namespace FivePRS.Server.Dispatch
                 Department  = call.Definition.Department,
                 Description = call.Description,
                 Responding  = call.Attached.Count(_units.ContainsKey),
+                OnScene     = call.Attached.Any(id => _units.TryGetValue(id, out var unit) && unit.Info.Status == UnitStatus.OnScene),
+                ReceivedAt  = call.OfferedUtc,
+                Units       = call.Attached.Where(_units.ContainsKey).Select(id => _units[id].Info.Callsign).ToList(),
             };
         }
 

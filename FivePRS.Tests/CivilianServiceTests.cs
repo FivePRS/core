@@ -24,7 +24,7 @@ namespace FivePRS.Tests
         {
             _database = await TestDatabase.CreateAsync();
             _store = _database.Store;
-            _service = new CivilianService(_store, () => _settings, () => new LicensesConfig(), () => new DateTime(2026, 10, 9));
+            _service = new CivilianService(_store, _database.Photos, () => _settings, () => new LicensesConfig(), () => new DateTime(2026, 10, 9));
         }
 
         public Task DisposeAsync()

@@ -27,8 +27,8 @@ namespace FivePRS.Tests
         {
             _database  = await TestDatabase.CreateAsync();
             _store     = _database.Store;
-            _civilians = new CivilianService(_store, () => _settings, () => new LicensesConfig(), () => new DateTime(2026, 10, 9));
-            _lookup    = new LookupService(_store, () => _settings, () => new LicensesConfig());
+            _civilians = new CivilianService(_store, _database.Photos, () => _settings, () => new LicensesConfig(), () => new DateTime(2026, 10, 9));
+            _lookup    = new LookupService(_store, _database.Photos, () => _settings, () => new LicensesConfig());
 
             await _civilians.CreateCharacterAsync(Owner, "Trevor", "Philips", "1967-01-01", "Male");
             await _civilians.RegisterVehicleAsync(Owner, "TP 1", "Bodhi");

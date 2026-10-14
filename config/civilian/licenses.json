@@ -1,0 +1,33 @@
+{
+    "state": { "name": "San Andreas", "abbreviation": "SA" },
+    "types": [
+        {
+            "id": "driver", "name": "Driver's License", "selfService": true, "class": "C", "validDays": 1825,
+            "card": { "title": "DRIVER LICENSE", "issuer": "Department of Motor Vehicles", "color": "#1d3a6e", "accent": "#f2c94c", "image": "" }
+        },
+        {
+            "id": "motorcycle", "name": "Motorcycle License", "selfService": true, "class": "M", "validDays": 1825,
+            "card": { "title": "MOTORCYCLE LICENSE", "issuer": "Department of Motor Vehicles", "color": "#1d3a6e", "accent": "#f2c94c", "image": "" }
+        },
+        {
+            "id": "commercial", "name": "Commercial Driver's License", "selfService": false, "class": "A", "validDays": 1460,
+            "card": { "title": "COMMERCIAL DRIVER LICENSE", "issuer": "Department of Motor Vehicles", "color": "#3b2a6e", "accent": "#f2c94c", "image": "" }
+        },
+        {
+            "id": "weapon", "name": "Weapon Permit", "selfService": false, "class": "", "validDays": 1095,
+            "card": { "title": "WEAPON PERMIT", "issuer": "Department of Justice", "color": "#7f1d1d", "accent": "#f8d7a8", "image": "" }
+        },
+        {
+            "id": "pilot", "name": "Pilot License", "selfService": false, "class": "", "validDays": 1825,
+            "card": { "title": "PILOT CERTIFICATE", "issuer": "Aviation Administration", "color": "#0f4c5c", "accent": "#9be7f0", "image": "" }
+        },
+        {
+            "id": "boat", "name": "Boating License", "selfService": true, "class": "", "validDays": 1825,
+            "card": { "title": "BOATING LICENSE", "issuer": "Fish and Wildlife", "color": "#0e5a8a", "accent": "#bfe3ff", "image": "" }
+        },
+        {
+            "id": "hunting", "name": "Hunting License", "selfService": true, "class": "", "validDays": 365,
+            "card": { "title": "HUNTING LICENSE", "issuer": "Fish and Wildlife", "color": "#3f6b2a", "accent": "#e9f5c9", "image": "" }
+        }
+    ]
+}

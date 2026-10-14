@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using CitizenFX.Core;
+using FivePRS.Core.Logging;
 using FivePRS.Core.Models;
 
 namespace FivePRS.Client.Callouts
@@ -21,6 +22,8 @@ namespace FivePRS.Client.Callouts
 
     public sealed class CalloutRegistry
     {
+        private static readonly Logger Log = Logger.For("Callouts");
+
         private readonly List<RegisteredCallout> _entries = new();
         private readonly object _lock = new();
 
@@ -58,7 +61,7 @@ namespace FivePRS.Client.Callouts
                 try { Discover(asm); }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"[CalloutRegistry] Skipped {name}: {ex.Message}");
+                    Log.Warn($"Skipped {name}", ex);
                 }
             }
         }
@@ -82,9 +85,7 @@ namespace FivePRS.Client.Callouts
                 if (_entries.Any(e => e.Type == type)) return;
 
                 _entries.Add(new RegisteredCallout(type, attr));
-                Debug.WriteLine(
-                    $"[CalloutRegistry] {attr.Name,-25} dept={attr.Department,-7} " +
-                    $"w={attr.Weight,-4} cd={attr.CooldownSeconds}s");
+                Log.Debug($"Registered {attr.Name} ({attr.Department}, weight {attr.Weight}, cooldown {attr.CooldownSeconds}s).");
             }
         }
 

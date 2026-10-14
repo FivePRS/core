@@ -77,18 +77,19 @@ namespace FivePRS.Server
                 }
                 catch (Exception ex)
                 {
-                    ServerLog.Error($"Revive XP failed for {medic.Name}", ex);
+                    Log.Error($"Revive XP failed for {medic.Name}", ex);
                 }
             }
         }
 
-        private Task<string> AdminReviveAsync(Player? caller, string[] args)
+        private Task<CommandResult> AdminReviveAsync(Player? caller, string[] args)
         {
             if (!int.TryParse(args[0], out var id) || !TryGetPlayer(id, out var target)) return Task.FromResult(TargetNotFound(args[0]));
+            if (!_downed.Contains(id)) return Task.FromResult(CommandResult.Failed($"{target.Name} is not down."));
 
             Revive(target, "an administrator");
             Audit(AuditActions.PlayerRevived, caller, GetLicense(target), $"admin revive {target.Name}");
-            return Task.FromResult($"{target.Name} revived.");
+            return Task.FromResult(CommandResult.Done($"{target.Name} revived."));
         }
 
         private void Revive(Player target, string by)
@@ -118,7 +119,7 @@ namespace FivePRS.Server
                 }
                 catch (Exception ex)
                 {
-                    ServerLog.Error($"Looking up {player.Name}'s character failed", ex);
+                    Log.Error($"Looking up {player.Name}'s character failed", ex);
                 }
             }
 

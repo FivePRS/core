@@ -29,6 +29,8 @@ namespace FivePRS.Client.Terminal
 
         public virtual AppScreen? BuildScreen() => null;
 
+        public virtual object? BuildState() => null;
+
         public virtual void OnAction(string action, IDictionary<string, object> data)
         {
         }

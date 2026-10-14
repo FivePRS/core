@@ -47,7 +47,7 @@ namespace FivePRS.Server
             }
             catch (Exception ex)
             {
-                ServerLog.Error($"Traffic stop check failed for {player.Name}", ex);
+                Log.Error($"Traffic stop check failed for {player.Name}", ex);
                 TriggerClientEvent(player, EventNames.ClientStopResult, kind, string.Empty, "Something went wrong. Please try again.");
             }
         }

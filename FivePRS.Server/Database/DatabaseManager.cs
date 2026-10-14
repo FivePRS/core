@@ -1,8 +1,7 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
-using CitizenFX.Core;
-using CitizenFX.Core.Native;
+using FivePRS.Core.Logging;
 using FivePRS.Core.Models;
 
 namespace FivePRS.Server.Database
@@ -15,6 +14,8 @@ namespace FivePRS.Server.Database
 
     public sealed class DatabaseManager
     {
+        private static readonly Logger Log = Logger.For("Database");
+
         private IDatabaseProvider _provider = null!;
 
         public bool IsReady { get; private set; }
@@ -28,6 +29,8 @@ namespace FivePRS.Server.Database
         public AppearanceStore Appearances { get; private set; } = null!;
 
         public PreferencesStore Preferences { get; private set; } = null!;
+
+        public PhotoStore Photos { get; private set; } = null!;
 
         public PositionStore Positions { get; private set; } = null!;
 
@@ -43,7 +46,7 @@ namespace FivePRS.Server.Database
             if (dbType == DatabaseType.MySQL)
             {
                 if (connectionString is not null && !string.IsNullOrWhiteSpace(connectionString))
-                    Debug.WriteLine("[FivePRS] WARNING: fiveprs_db_connection is ignored with MySQL. FivePRS now connects through oxmysql, which reads mysql_connection_string. Set it as mysql://user:password@host:port/database.");
+                    Log.Warn("fiveprs_db_connection is ignored with MySQL. Set mysql_connection_string for oxmysql instead.");
                 _provider = new OxMySqlProvider(new OxMySqlBridge());
             }
             else
@@ -55,7 +58,7 @@ namespace FivePRS.Server.Database
 
                 var resourcePath = Resource.Path;
                 var nativePath = SqliteNativeLoader.Load(Path.Combine(resourcePath, "server"));
-                Debug.WriteLine($"[FivePRS] Native SQLite loaded from {nativePath}.");
+                Log.Debug($"Native SQLite loaded from {nativePath}.");
 
                 var dbPath = connectionString ?? Path.Combine(resourcePath, "data", "fiveprs.db");
                 var sqlite = new SQLiteProvider(dbPath);
@@ -68,10 +71,18 @@ namespace FivePRS.Server.Database
             await _provider.InitializeAsync();
 
             var result = await new Migrator(_provider).MigrateAsync(backup);
-            foreach (var migration in result.Applied)
-                Debug.WriteLine($"[FivePRS] Applied database migration {migration.Version}: {migration.Name}.");
+            if (result.FromVersion == 0 && result.Applied.Count > 0)
+            {
+                Log.Info($"Created a new database (schema {result.ToVersion}).");
+            }
+            else
+            {
+                foreach (var migration in result.Applied)
+                    Log.Info($"Database updated to schema {migration.Version} ({migration.Name}).");
+            }
+
             if (result.DatabaseIsNewer)
-                Debug.WriteLine($"[FivePRS] WARNING: The database is at schema version {result.FromVersion}, but this FivePRS build only knows up to {result.LatestVersion}. Update FivePRS, or restore the database backup taken before you downgraded.");
+                Log.Warn($"The database is at schema {result.FromVersion}, newer than this build supports ({result.LatestVersion}). Update FivePRS or restore your backup.");
             SchemaVersion = result.ToVersion;
 
             Players     = new PlayerStore(_provider);
@@ -79,11 +90,12 @@ namespace FivePRS.Server.Database
             Roster      = new RosterStore(_provider);
             Appearances = new AppearanceStore(_provider);
             Preferences = new PreferencesStore(_provider);
+            Photos      = new PhotoStore(_provider);
             Positions   = new PositionStore(_provider);
 
             IsReady = true;
 
-            Debug.WriteLine($"[FivePRS] Database ({dbType}) ready.");
+            Log.Debug($"Database ({dbType}) ready.");
         }
 
         private static async Task BackupAsync(SQLiteProvider sqlite, string dbPath, int version)
@@ -91,7 +103,7 @@ namespace FivePRS.Server.Database
             var directory = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(dbPath)) ?? ".", "backups");
             var path = Path.Combine(directory, $"{Path.GetFileNameWithoutExtension(dbPath)}-schema{version}-{DateTime.UtcNow:yyyyMMdd-HHmmss}.db");
             await sqlite.BackupAsync(path);
-            Debug.WriteLine($"[FivePRS] Backed up the database to {path} before updating it.");
+            Log.Info($"Database backed up to backups/{Path.GetFileName(path)}.");
         }
 
         public Task<PlayerData?> GetPlayerAsync(string license) => Players.GetAsync(license);

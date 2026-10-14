@@ -1,0 +1,135 @@
+body {
+  background: var(--bg);
+}
+
+.page {
+  height: 100%;
+  padding: 1.429rem 1.286rem;
+  overflow-y: auto;
+}
+
+.wallet {
+  display: grid;
+  grid-template-columns: 40rem minmax(0, 1fr);
+  gap: 1.571rem;
+  align-items: start;
+}
+
+.showcase {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.card-empty {
+  aspect-ratio: 85.6 / 54;
+  display: grid;
+  place-items: center;
+}
+
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.714rem;
+}
+
+.card-actions .muted {
+  margin-left: auto;
+  font-size: 0.857rem;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.857rem;
+  min-width: 0;
+}
+
+.license-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.714rem;
+}
+
+.license {
+  display: flex;
+  align-items: center;
+  gap: 0.857rem;
+  padding: 0.714rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  text-align: left;
+}
+
+button.license:hover {
+  border-color: var(--line-strong);
+}
+
+.license.selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.mini {
+  display: grid;
+  place-items: center;
+  width: 4.571rem;
+  height: 2.857rem;
+  flex: none;
+  border-radius: 0.357rem;
+  background: #e5ebf3;
+  border-top: 0.571rem solid var(--card-color, #1d3a6e);
+}
+
+.mini.faded {
+  opacity: 0.55;
+}
+
+.mini.empty-slot {
+  background: transparent;
+  border: 1px dashed #33435e;
+}
+
+.mini svg {
+  width: 1.143rem;
+  height: 1.143rem;
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 2;
+}
+
+.license-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.214rem;
+  min-width: 0;
+}
+
+.license-name {
+  font-weight: 600;
+}
+
+.license-status {
+  font-size: 0.857rem;
+  color: var(--muted);
+}
+
+.license-status.good {
+  color: var(--green);
+}
+
+.license-status.warn {
+  color: var(--amber);
+}
+
+.license-status.bad {
+  color: var(--red-text);
+}
+
+.list-note {
+  margin-top: 0.429rem;
+  font-size: 0.857rem;
+  line-height: 1.5;
+}

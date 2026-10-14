@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Records</title>
+  <link rel="stylesheet" href="../../theme.css">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <main class="page">
+    <form id="search" class="search">
+      <div class="segmented">
+        <button type="button" class="active" data-mode="name">Person</button>
+        <button type="button" data-mode="plate">Plate</button>
+      </div>
+      <input id="term" class="input mono search-input" autocomplete="off" spellcheck="false" aria-label="Search">
+      <button type="submit" class="button primary">Run</button>
+    </form>
+
+    <div class="columns">
+      <aside class="results">
+        <p id="results-title" class="eyebrow" hidden></p>
+        <div id="results" class="result-list"></div>
+        <p id="results-empty" class="empty" hidden>No matches.</p>
+      </aside>
+
+      <section class="file">
+        <p id="placeholder" class="empty placeholder">Run a name or a plate to pull up a record.</p>
+
+        <div id="record" class="record" hidden>
+          <div id="warrant" class="banner bad" hidden>
+            <svg class="banner-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l10 18H2z M12 10v5 M12 18v.5"></path></svg>
+            <strong>ACTIVE WARRANT</strong>
+            <span id="warrant-detail"></span>
+          </div>
+
+          <div class="card person">
+            <div id="photo" class="photo board person-photo"></div>
+            <div class="person-info">
+              <div class="person-head">
+                <div>
+                  <h1 id="name" class="display person-name"></h1>
+                  <p id="details" class="mono muted"></p>
+                  <p id="plate-match" class="plate-match" hidden></p>
+                </div>
+                <button id="back" type="button" class="button small">Back to results</button>
+              </div>
+              <div id="flags" class="flags"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><h2 class="heading">Licenses</h2></div>
+            <div id="licenses" class="license-list"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><h2 class="heading">Vehicles</h2></div>
+            <div id="vehicles" class="vehicle-list"></div>
+            <p id="vehicles-empty" class="empty" hidden>No registered vehicles.</p>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><h2 class="heading">History</h2></div>
+            <div id="history" class="timeline"></div>
+            <p id="history-empty" class="empty" hidden>Nothing on file.</p>
+          </div>
+        </div>
+      </section>
+
+      <form id="entry" class="card entry-form">
+        <h2 class="heading">New entry</h2>
+        <div id="types" class="type-grid">
+          <button type="button" class="button active" data-type="0">Citation</button>
+          <button type="button" class="button" data-type="2">Warning</button>
+          <button type="button" class="button" data-type="1">Arrest</button>
+          <button type="button" class="button" data-type="3">Warrant</button>
+        </div>
+        <label id="offence-field" class="field">Offence
+          <select id="offence" class="input"></select>
+        </label>
+        <label id="fine-field" class="field">Fine
+          <input id="fine" class="input mono" type="number" min="0" step="1" value="0">
+        </label>
+        <label class="field">Charges and notes
+          <textarea id="notes" class="input notes" rows="5" required></textarea>
+        </label>
+        <button id="submit" type="submit" class="button primary entry-submit">Add to record</button>
+        <p id="entry-hint" class="muted entry-hint">Pull up a person to add to their record.</p>
+      </form>
+    </div>
+  </main>
+  <p id="toast" class="toast" hidden></p>
+
+  <script src="../../kit.js"></script>
+  <script src="../../cards.js"></script>
+  <script src="../../app-sdk.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+{
+    "ranks": [
+        { "name": "Cadet",                "xp": 0,     "tier": "recruit" },
+        { "name": "Probationary Officer", "xp": 100,   "tier": "recruit" },
+        { "name": "Officer",              "xp": 500,   "tier": "officer" },
+        { "name": "Senior Officer",       "xp": 1400,  "tier": "officer" },
+        { "name": "Corporal",             "xp": 3000,  "tier": "senior" },
+        { "name": "Sergeant",             "xp": 5500,  "tier": "senior" },
+        { "name": "Staff Sergeant",       "xp": 9100,  "tier": "senior" },
+        { "name": "Lieutenant",           "xp": 14000, "tier": "command" },
+        { "name": "Captain",              "xp": 20400, "tier": "command" },
+        { "name": "Chief of Police",      "xp": 28500, "tier": "command" }
+    ],
+    "agencies": {
+        "bcso": [
+            "Deputy Trainee",
+            "Probationary Deputy",
+            "Deputy",
+            "Senior Deputy",
+            "Corporal",
+            "Sergeant",
+            "Staff Sergeant",
+            "Lieutenant",
+            "Captain",
+            "Sheriff"
+        ]
+    }
+}

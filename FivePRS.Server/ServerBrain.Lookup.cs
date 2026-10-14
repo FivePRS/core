@@ -46,6 +46,12 @@ namespace FivePRS.Server
                 if (error is not null) return (null, error);
 
                 var label = ((RecordType)type).ToString().ToLowerInvariant();
+                if (type == (int)RecordType.Arrest && TryGetCached(player, out _, out var arresting))
+                {
+                    arresting.Arrests++;
+                    await _db.SavePlayerAsync(arresting);
+                }
+
                 Audit(AuditActions.RecordIssued, player, await OwnerLicenseAsync(characterId), $"{label} character {characterId}");
                 await NotifyCharacterOwnerAsync(characterId, $"~o~Records update~w~ | A {label} was added to your record by {officer.Callsign}.");
                 return await lookup.GetRecordAsync(characterId);
@@ -116,7 +122,7 @@ namespace FivePRS.Server
             }
             catch (Exception ex)
             {
-                ServerLog.Error($"Records action failed for {player.Name}", ex);
+                Log.Error($"Records action failed for {player.Name}", ex);
                 TriggerClientEvent(player, EventNames.ClientLookupError, "Something went wrong. Please try again.");
             }
         }

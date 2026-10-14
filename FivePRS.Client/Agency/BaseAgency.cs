@@ -8,6 +8,7 @@ using FivePRS.Client.VehicleSpawner;
 using FivePRS.Core.Config;
 using FivePRS.Core.Events;
 using FivePRS.Core.Interfaces;
+using FivePRS.Core.Logging;
 using FivePRS.Core.Models;
 using Newtonsoft.Json;
 
@@ -15,6 +16,10 @@ namespace FivePRS.Client.Agency
 {
     public abstract class BaseAgency : BaseScript, IAgency
     {
+        private Logger? _log;
+
+        protected Logger Log => _log ??= Logger.For(AgencyName);
+
         private static readonly HashSet<Department> LoadedDepartments = new();
 
         public abstract Department Department { get; }
@@ -46,13 +51,13 @@ namespace FivePRS.Client.Agency
 
         public virtual Task OnDuty(PlayerData player)
         {
-            Debug.WriteLine($"[{AgencyName}] {player.Name} is ON DUTY.");
+            Log.Debug($"{player.Name} is on duty.");
             return Task.FromResult(0);
         }
 
         public virtual Task OffDuty(PlayerData player)
         {
-            Debug.WriteLine($"[{AgencyName}] {player.Name} is OFF DUTY.");
+            Log.Debug($"{player.Name} is off duty.");
             return Task.FromResult(0);
         }
 
@@ -75,7 +80,7 @@ namespace FivePRS.Client.Agency
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[{AgencyName}] Duty transition failed: {ex}");
+                Log.Error("Duty change failed", ex);
             }
         }
 
@@ -91,7 +96,7 @@ namespace FivePRS.Client.Agency
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[{AgencyName}] Callout handling failed: {ex}");
+                Log.Error("Callout handling failed", ex);
             }
         }
 
@@ -102,7 +107,7 @@ namespace FivePRS.Client.Agency
             IsActive = false;
             if (Active == this) Active = null;
             try { _ = OffDuty(CurrentPlayer); }
-            catch (Exception ex) { Debug.WriteLine($"[{AgencyName}] Cleanup on stop failed: {ex.Message}"); }
+            catch (Exception ex) { Log.Warn("Cleanup on stop failed", ex); }
         }
 
         protected static void Notify(string message) => ClientBrain.ShowNotification(message);

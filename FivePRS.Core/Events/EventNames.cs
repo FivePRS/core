@@ -26,6 +26,8 @@ namespace FivePRS.Core.Events
         public const string ClientAppearance        = "FivePRS:Client:Appearance";
         public const string ClientPreferences       = "FivePRS:Client:Preferences";
         public const string ClientLastPosition      = "FivePRS:Client:LastPosition";
+        public const string ClientShowCard          = "FivePRS:Client:ShowCard";
+        public const string ClientAdminTeleport     = "FivePRS:Client:AdminTeleport";
 
         public const string ServerPlayerConnected   = "FivePRS:Server:PlayerConnected";
         public const string ServerToggleDuty        = "FivePRS:Server:ToggleDuty";
@@ -59,6 +61,10 @@ namespace FivePRS.Core.Events
         public const string ServerCallClear         = "FivePRS:Server:CallClear";
         public const string ServerAdminRequest      = "FivePRS:Server:AdminRequest";
         public const string ServerAdminRosterSet    = "FivePRS:Server:AdminRosterSet";
+        public const string ServerAdminAction       = "FivePRS:Server:AdminAction";
+        public const string ServerCharacterPhoto    = "FivePRS:Server:CharacterPhoto";
+        public const string ServerShowLicense       = "FivePRS:Server:ShowLicense";
+        public const string ServerSaveSettings      = "FivePRS:Server:SaveSettings";
         public const string ServerAppearanceSave    = "FivePRS:Server:AppearanceSave";
         public const string ServerSetWallpaper      = "FivePRS:Server:SetWallpaper";
         public const string ServerReportPosition    = "FivePRS:Server:ReportPosition";
@@ -74,6 +80,8 @@ namespace FivePRS.Core.Events
         public const string LocalHttpRequest        = "FivePRS:Local:HttpRequest";
         public const string LocalSpawnTarget        = "FivePRS:Local:SpawnTarget";
         public const string LocalSpawnHandled       = "FivePRS:Local:SpawnHandled";
+        public const string LocalCaptureScreenshot  = "FivePRS:Local:CaptureScreenshot";
+        public const string LocalScreenshotTaken    = "FivePRS:Local:ScreenshotTaken";
         public const string LocalHttpResponse       = "FivePRS:Local:HttpResponse";
         public const string LocalDbRequest          = "FivePRS:Local:DbRequest";
         public const string LocalDbResponse         = "FivePRS:Local:DbResponse";

@@ -35,7 +35,7 @@ set fiveprs_max_xp               500        # cap on XP awarded per call
 set fiveprs_xp_multiplier        1.0
 set fiveprs_restrict_departments false      # true limits departments to the ACE below or the admin roster
 set fiveprs_server_icon          true       # use the FivePRS icon unless load_server_icon sets your own
-set fiveprs_debug                false      # true adds full error details to the console
+setr fiveprs_debug               false      # true shows debug messages and full error details (server and F8)
 
 add_ace group.admin fiveprs.admin allow
 add_ace group.police fiveprs.department.police allow
@@ -43,6 +43,8 @@ add_ace resource.fiveprs command.load_server_icon allow   # lets FivePRS set the
 
 ensure fiveprs
 ```
+
+For in-game mugshots of characters, also run [screenshot-basic](https://github.com/citizenfx/screenshot-basic) before FivePRS. Without it, players can still use an image link for their character photo.
 
 ### MySQL and MariaDB
 FivePRS connects to MySQL 8 and MariaDB 10.6+ through [oxmysql](https://github.com/overextended/oxmysql/releases). Install it, then set its connection string and start it before FivePRS:
@@ -156,7 +158,7 @@ On-duty police get a Records app. Search for a person by name or a vehicle by pl
 Every change is stamped with the officer's name and callsign and written to the audit log. If the person's owner is online, they get a notification and their Characters app updates. A character with an active warrant cannot be deleted.
 
 ### Traffic stops
-On duty as police, with your emergency lights on, get behind an AI-driven vehicle and press `Left Shift` to pull it over. Walk up to the driver and press `E` to ask for ID, run the plate, have them step out, search them, issue a warning or citation, serve a warrant, record an arrest or release them. AI drivers get a generated identity (name, date of birth, license status and sometimes a warrant) that is saved the first time it's checked, so citations and arrests show up in Records. Offences and fines are in `config/citations.json`; fines are capped at `maxFine`.
+On duty as police, with your emergency lights on, get behind an AI-driven vehicle and press `Left Shift` to pull it over. Walk up to the driver and press `E` to ask for ID, run the plate, have them step out, search them, issue a warning or citation, serve a warrant, record an arrest or release them. AI drivers get a generated identity (name, date of birth, license status and sometimes a warrant) that is saved the first time it's checked, so citations and arrests show up in Records. Offences and fines are in `config/civilian/citations.json`; fines are capped at `maxFine`.
 
 On foot, face any pedestrian and press `E` to stop them. The same menu opens without the vehicle actions. People and vehicles that belong to an active callout can't be stopped this way.
 
@@ -164,7 +166,7 @@ On foot, face any pedestrian and press `E` to stop them. The same menu opens wit
 Every player has three civilian apps for roleplay records, all for their active character:
 
 - **Characters:** create up to `maxCharacters` characters (name, date of birth, gender) and pick the active one. Deleting a character removes its licenses and vehicles.
-- **Licenses:** license types come from `config/licenses.json`. Types with `"selfService": true` can be applied for from the tab and are issued immediately; others must be issued by law enforcement. Licenses can be valid, suspended or revoked.
+- **Licenses:** license types come from `config/civilian/licenses.json`. Types with `"selfService": true` can be applied for from the tab and are issued immediately; others must be issued by law enforcement. Licenses can be valid, suspended or revoked.
 - **Record:** a read-only history of citations, arrests, warnings and warrants added by law enforcement.
 - **Vehicles:** sit in the driver's seat and register the vehicle; the server reads the plate from the vehicle itself, so registrations always match a real car. Each character can register up to `maxVehiclesPerCharacter` vehicles, plates are unique server-wide, and owners can report a vehicle stolen or recovered.
 
@@ -197,7 +199,7 @@ Fire (LSFD) and EMS (SAMS) are playable departments. Go on duty at a fire statio
 
 - **Fire** callouts (Vehicle Fire, Brush Fire) start real fires that spread until they're put out with the extinguisher or the fire engine's water cannon.
 - **EMS** callouts (Medical Emergency, Traffic Collision) have a patient to treat with `E`, load into the ambulance with `E`, and drive to the nearest hospital.
-- Equipment and vehicles are in `config/fire_loadouts.json`, `fire_vehicles.json`, `ems_loadouts.json` and `ems_vehicles.json`, in the same format as the police files. Uniforms default to GTA's firefighter and paramedic peds; swap in freemode outfits if your server uses custom characters.
+- Equipment and vehicles are in `config/departments/fire/loadouts.json`, `config/departments/fire/vehicles.json`, `config/departments/ems/loadouts.json` and `config/departments/ems/vehicles.json`, in the same format as the police files. Uniforms default to GTA's firefighter and paramedic peds; swap in freemode outfits if your server uses custom characters.
 
 ## Death and revive
 When a player dies they stay down where they fell instead of respawning, and EMS gets an automatic 911 call. On-duty EMS revive them with `E`; after `respawnSeconds` the player can press `E` to respawn at the nearest hospital. Admins can use `fprs_revive <player id>`. Settings are under `death` in `config/settings.json`: `enabled`, `respawnSeconds`, `notifyEms` and `reviveXp`. Turn it off if you use another death script.
@@ -223,7 +225,7 @@ The server icon is downloaded on start and cached in `data/server_icon.png`, whi
 FivePRS hands each joining player's name, agency and rank to the loading screen. The official `fiveprs_loadscreen` addon in the [addons repository](https://github.com/FivePRS/addons) uses it for a welcome back card; any loading screen can read it from `window.nuiHandoverData.fiveprs`.
 
 ## Stations
-`config/stations.json` lists the police stations, fire stations and hospitals. Each has a map blip and a duty point marker. Set `blips` to `always`, `onDuty` (only your own department's stations while on duty) or `off`.
+`config/world/stations.json` lists the police stations, fire stations and hospitals. Each has a map blip and a duty point marker. Set `blips` to `always`, `onDuty` (only your own department's stations while on duty) or `off`.
 
 | Field | Description |
 |---|---|
@@ -237,11 +239,11 @@ FivePRS hands each joining player's name, agency and rank to the loading screen.
 
 Each service has its own marker for on-duty members of the station's department; Mission Row ships with its armory, locker room and garage set. Pressing `E` (FivePRS: Interact) on a marker opens it. On the duty point it opens the Duty app, or the station menu while on duty. The station menu sits on the right of the screen and is used with the arrow keys or mouse wheel, Enter and Backspace:
 
-- **Armory:** rank kits from `police_loadouts.json` (Recruit, Officer at rank 3, Senior Officer at rank 5, Command at rank 8), each weapon on its own, body armour, ammo refills and returning weapons. A weapon can set a `label` to change its menu name.
-- **Locker:** the patrol uniform, the command uniform from rank 8, and your own clothes. Uniforms are freemode clothing; players using a standard GTA ped get `fallbackPedModels` from `police_loadouts.json` (the GTA police officer models by default) instead.
-- **Garage:** every model from `police_vehicles.json` your rank unlocks, parked outside, and returning your vehicle when it is near the garage. You have one vehicle at a time.
+- **Armory:** rank kits from `config/departments/police/loadouts.json` (Recruit, Officer, Senior Officer and Command, unlocked by the tier of your rank in `ranks.json`), each weapon on its own, body armour, ammo refills and returning weapons. A weapon can set a `label` to change its menu name.
+- **Locker:** the patrol uniform, the command uniform for command-tier ranks, and your own clothes. Uniforms are freemode clothing; players using a standard GTA ped get `fallbackPedModels` from `config/departments/police/loadouts.json` (the GTA police officer models by default) instead.
+- **Garage:** every model from `config/departments/police/vehicles.json` your rank unlocks, parked outside, and returning your vehicle when it is near the garage. You have one vehicle at a time.
 
-To get coordinates, stand where you want a point and run `/fprs_coords` for a duty point, or `/fprs_coords armory`, `locker` or `garage`. Sit in a parked vehicle for a parking spot. The values are copied to the clipboard in `stations.json` format and printed to the F8 console.
+To get coordinates, stand where you want a point and run `/fprs_coords` for a duty point, or `/fprs_coords armory`, `locker` or `garage`. Sit in a parked vehicle for a parking spot. The values are copied to the clipboard in `config/world/stations.json` format and printed to the F8 console.
 
 When going on duty, the Duty app asks where to start:
 
@@ -252,10 +254,10 @@ When going on duty, the Duty app asks where to start:
 `dutyEquipment` in `config/settings.json` changes this: `byStart` (the default) works as above, `always` issues gear on every start (with Drive to station, the vehicle appears when you get close), and `station` never issues gear automatically.
 
 ## Jurisdictions
-`config/jurisdictions.json` defines territories as map polygons and the agencies that patrol them. Players choose an agency within their department from the duty menu, and dispatch only offers calls to units inside their agency's territory. An agency with no territories is unrestricted. The bundled split (Los Santos for LSPD, Blaine County for BCSO) is a coarse default; adjust the polygons to suit your server.
+`config/world/jurisdictions.json` defines territories as map polygons and the agencies that patrol them. Players choose an agency within their department from the duty menu, and dispatch only offers calls to units inside their agency's territory. An agency with no territories is unrestricted. The bundled split (Los Santos for LSPD, Blaine County for BCSO) is a coarse default; adjust the polygons to suit your server.
 
 ## Agency Loadouts & Vehicles
-`config/police_loadouts.json` and `config/police_vehicles.json` define the default weapons, uniforms and patrol vehicles per rank tier. Any agency can override individual tiers under `agencies`; anything not overridden falls back to the defaults. BCSO ships with the `sheriff` and `sheriff2` vehicles.
+`config/departments/police/loadouts.json` and `config/departments/police/vehicles.json` define the default weapons, uniforms and patrol vehicles per rank tier. Any agency can override individual tiers under `agencies`; anything not overridden falls back to the defaults. BCSO ships with the `sheriff` and `sheriff2` vehicles.
 
 Vehicles spawn as stock models. A tier can also set `primaryColor`, `secondaryColor`, `livery`, `dirtLevel`, `plateText`, `forcedExtras` and `disabledExtras`; anything left out is not changed.
 

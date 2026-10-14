@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using CitizenFX.Core;
 using CitizenFX.Core.Native;
+using FivePRS.Client.Appearance;
+using FivePRS.Client.Terminal;
 using FivePRS.Core.Civilian;
+using FivePRS.Core.Config;
 using FivePRS.Core.Events;
 using Newtonsoft.Json;
 
@@ -21,9 +24,84 @@ namespace FivePRS.Client.App
         }
     }
 
+    internal sealed class PendingMugshot
+    {
+        public int    CharacterId { get; set; }
+        public string Data        { get; set; } = string.Empty;
+    }
+
     internal static class CivilianPanel
     {
+        private const float ShowCardRangeM = 3f;
+        private const int MaxPlayerSlots = 256;
+
+        private static readonly string[] AppIds = { "characters", "licenses", "vehicles" };
+
         private static CivilianState? _state;
+        private static PendingMugshot? _mugshot;
+
+        public static event Action? AppearanceRequested;
+
+        public static event Action<int>? MugshotRequested;
+
+        public static void RequestAppearance() => AppearanceRequested?.Invoke();
+
+        public static void RequestMugshot(IDictionary<string, object> data)
+        {
+            if (NuiData.TryGetInt(data, "characterId", out var id)) MugshotRequested?.Invoke(id);
+        }
+
+        public static void SetMugshot(int characterId, string data) =>
+            _mugshot = new PendingMugshot { CharacterId = characterId, Data = data };
+
+        public static void DiscardMugshot() => _mugshot = null;
+
+        public static void SetPhotoUrl(IDictionary<string, object> data)
+        {
+            if (NuiData.TryGetInt(data, "characterId", out var id))
+                ClientEvents.TriggerServer(EventNames.ServerCharacterPhoto, id, NuiData.GetString(data, "url").Trim());
+        }
+
+        public static void RemovePhoto(IDictionary<string, object> data)
+        {
+            if (NuiData.TryGetInt(data, "characterId", out var id))
+                ClientEvents.TriggerServer(EventNames.ServerCharacterPhoto, id, string.Empty);
+        }
+
+        public static void ShowLicense(IDictionary<string, object> data)
+        {
+            var me       = Game.PlayerPed.Position;
+            var self     = API.PlayerId();
+            var nearest  = -1;
+            var distance = ShowCardRangeM;
+
+            for (var player = 0; player < MaxPlayerSlots; player++)
+            {
+                if (player == self || !API.NetworkIsPlayerActive(player)) continue;
+
+                var ped = API.GetPlayerPed(player);
+                if (ped == 0) continue;
+
+                var gap = Vector3.Distance(me, API.GetEntityCoords(ped, false));
+                if (gap > distance) continue;
+
+                nearest  = player;
+                distance = gap;
+            }
+
+            if (nearest < 0)
+            {
+                ShowError("Nobody is close enough. Stand next to the person you want to show it to.");
+                return;
+            }
+
+            ClientEvents.TriggerServer(EventNames.ServerShowLicense, API.GetPlayerServerId(nearest), NuiData.GetString(data, "type"));
+        }
+
+        public static void ShowError(string message)
+        {
+            foreach (var id in AppIds) TerminalApps.SendToApp(id, "error", message);
+        }
 
         public static void SetState(string json) => _state = JsonConvert.DeserializeObject<CivilianState>(json);
 
@@ -54,13 +132,16 @@ namespace FivePRS.Client.App
         public static void ApplyLicense(IDictionary<string, object> data) =>
             ClientEvents.TriggerServer(EventNames.ServerLicenseApply, NuiData.GetString(data, "type"));
 
-        public static string? RegisterVehicle()
+        public static void RegisterVehicle()
         {
             var vehicle = CurrentVehicle();
-            if (vehicle is null) return "Get in the driver's seat of the vehicle you want to register.";
+            if (vehicle is null)
+            {
+                ShowError("Get in the driver's seat of the vehicle you want to register.");
+                return;
+            }
 
             ClientEvents.TriggerServer(EventNames.ServerVehicleRegister, vehicle.Model);
-            return null;
         }
 
         public static void RemoveVehicle(IDictionary<string, object> data)
@@ -86,6 +167,10 @@ namespace FivePRS.Client.App
                 Genders        = CivilianRules.Genders,
                 MaxNameLength  = CivilianRules.MaxNameLength,
                 CurrentVehicle = vehicle,
+                Icons          = ConfigManager.Settings.Branding.Departments,
+                StateInfo      = ConfigManager.Licenses.State,
+                CanMugshot     = Mugshot.IsAvailable,
+                Mugshot        = _mugshot,
             };
         }
 

@@ -91,6 +91,8 @@ namespace FivePRS.Client.App
                 Record         = _record,
                 MaxFine        = ConfigManager.Settings.MaxFine,
                 MaxDescription = CivilianRules.MaxDescriptionLength,
+                Offences       = ConfigManager.Citations.Offences,
+                StateInfo      = ConfigManager.Licenses.State,
             };
         }
     }

@@ -8,13 +8,22 @@ using FivePRS.Client.Loadout;
 using FivePRS.Core.Civilian;
 using FivePRS.Core.Config;
 using FivePRS.Core.Events;
+using FivePRS.Core.Logging;
 using Newtonsoft.Json;
 
 namespace FivePRS.Client.Appearance
 {
     public class AppearanceManager : BaseScript
     {
+        private const int CheckIntervalMs = 250;
+        private const int ModelTimeoutMs = 10_000;
+
+        private static readonly Logger Log = Logger.For("Appearance");
+
         private static string _currentJson = string.Empty;
+        private static bool _applying;
+        private static bool _stale;
+        private static int _appliedPed;
 
         public static CharacterAppearance? Current { get; private set; }
 
@@ -23,12 +32,12 @@ namespace FivePRS.Client.Appearance
         public AppearanceManager()
         {
             EventHandlers[EventNames.ClientAppearance] += new Action<int, string>(OnAppearance);
-            EventHandlers["playerSpawned"]             += new Action(OnSpawned);
+            Tick += KeepAppliedAsync;
         }
 
         public static IEnumerable<string> AllowedStandardModels => ConfigManager.Settings.Creator.AllowedStandardModels;
 
-        private static async void OnAppearance(int characterId, string json)
+        private static void OnAppearance(int characterId, string json)
         {
             CharacterId = characterId;
             if (json == _currentJson) return;
@@ -37,22 +46,46 @@ namespace FivePRS.Client.Appearance
             Current = json.Length == 0
                 ? null
                 : AppearanceRules.Sanitize(JsonConvert.DeserializeObject<CharacterAppearance>(json), AllowedStandardModels);
-
-            if (Current is not null && !LoadoutManager.IsInUniform)
-                await ApplyAsync(Current);
+            _stale = true;
         }
 
-        private static async void OnSpawned()
+        private async Task KeepAppliedAsync()
         {
-            if (Current is not null && !LoadoutManager.IsInUniform)
-                await ApplyAsync(Current);
+            await Delay(CheckIntervalMs);
+            if (Current is null || _applying || LoadoutManager.IsInUniform || CharacterCreator.IsOpen) return;
+
+            var ped = Game.PlayerPed;
+            if (!ped.Exists() || ped.IsDead || API.GetIsLoadingScreenActive() || API.IsPlayerSwitchInProgress()) return;
+
+            var wearing = API.GetEntityModel(ped.Handle) == API.GetHashKey(Current.Model);
+            if (!_stale && ped.Handle == _appliedPed && wearing) return;
+
+            Log.Debug($"Applying {Current.Model} to ped {ped.Handle} (stale {_stale}, last ped {_appliedPed}, model matches {wearing}).");
+            _stale = false;
+            await ApplyAsync(Current);
         }
 
         public static Task ApplyCurrentAsync() => Current is null ? Task.FromResult(0) : ApplyAsync(Current);
 
         public static async Task ApplyAsync(CharacterAppearance appearance)
         {
-            await SetModelAsync(appearance.Model);
+            _applying = true;
+            try
+            {
+                if (await ApplyToPedAsync(appearance))
+                    _appliedPed = Game.PlayerPed.Handle;
+                else
+                    Log.Debug($"Couldn't change the player model to {appearance.Model}; trying again shortly.");
+            }
+            finally
+            {
+                _applying = false;
+            }
+        }
+
+        private static async Task<bool> ApplyToPedAsync(CharacterAppearance appearance)
+        {
+            if (!await SetModelAsync(appearance.Model)) return false;
             var ped = Game.PlayerPed.Handle;
 
             if (appearance.IsFreemode)
@@ -86,6 +119,8 @@ namespace FivePRS.Client.Appearance
 
             if (appearance.IsFreemode)
                 API.SetPedHairColor(ped, appearance.HairColor, appearance.HairHighlight);
+
+            return true;
         }
 
         public static void ApplyOverlay(int ped, HeadOverlay overlay)
@@ -111,6 +146,11 @@ namespace FivePRS.Client.Appearance
 
             var model = new Model((int)hash);
             if (!model.IsValid || !model.IsPed) return false;
+
+            model.Request();
+            var deadline = API.GetGameTimer() + ModelTimeoutMs;
+            while (!model.IsLoaded && API.GetGameTimer() < deadline)
+                await Delay(0);
 
             var changed = await Game.Player.ChangeModel(model);
             model.MarkAsNoLongerNeeded();

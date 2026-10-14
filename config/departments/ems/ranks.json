@@ -1,0 +1,15 @@
+{
+    "ranks": [
+        { "name": "EMT Trainee",        "xp": 0,     "tier": "recruit" },
+        { "name": "EMT",                "xp": 100,   "tier": "recruit" },
+        { "name": "Advanced EMT",       "xp": 500,   "tier": "officer" },
+        { "name": "Paramedic",          "xp": 1400,  "tier": "officer" },
+        { "name": "Senior Paramedic",   "xp": 3000,  "tier": "senior" },
+        { "name": "Field Supervisor",   "xp": 5500,  "tier": "senior" },
+        { "name": "Shift Supervisor",   "xp": 9100,  "tier": "senior" },
+        { "name": "Operations Manager", "xp": 14000, "tier": "command" },
+        { "name": "Deputy Director",    "xp": 20400, "tier": "command" },
+        { "name": "EMS Director",       "xp": 28500, "tier": "command" }
+    ],
+    "agencies": {}
+}

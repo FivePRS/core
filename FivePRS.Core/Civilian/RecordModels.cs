@@ -33,6 +33,7 @@ namespace FivePRS.Core.Civilian
         public string DateOfBirth       { get; set; } = string.Empty;
         public string Gender            { get; set; } = string.Empty;
         public bool   HasActiveWarrant  { get; set; }
+        public string? Photo            { get; set; }
     }
 
     public sealed class LookupRecord

@@ -184,6 +184,21 @@ namespace FivePRS.Server.Database
                         `updated_at` DATETIME(6) NOT NULL,
                         PRIMARY KEY (`license`)
                     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci")),
+            new Migration(2, "Photos, service stats and terminal settings",
+                Sql(@"CREATE TABLE IF NOT EXISTS fiveprs_photos (
+                        character_id INTEGER PRIMARY KEY,
+                        data         TEXT NOT NULL,
+                        updated_at   TEXT NOT NULL)",
+                    @"CREATE TABLE IF NOT EXISTS `fiveprs_photos` (
+                        `character_id` INT UNSIGNED NOT NULL,
+                        `data`         MEDIUMTEXT   NOT NULL,
+                        `updated_at`   DATETIME(6)  NOT NULL,
+                        PRIMARY KEY (`character_id`)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"),
+                new AddColumnStep("ers_players", "calls_completed", "INTEGER NOT NULL DEFAULT 0", "INT UNSIGNED NOT NULL DEFAULT 0"),
+                new AddColumnStep("ers_players", "arrests", "INTEGER NOT NULL DEFAULT 0", "INT UNSIGNED NOT NULL DEFAULT 0"),
+                new AddColumnStep("ers_players", "duty_seconds", "INTEGER NOT NULL DEFAULT 0", "INT UNSIGNED NOT NULL DEFAULT 0"),
+                new AddColumnStep("fiveprs_preferences", "settings", "TEXT NOT NULL DEFAULT '{}'", "VARCHAR(2000) NOT NULL DEFAULT '{}'")),
         };
 
         private static SqlStep Sql(string sqlite, string mySql) => new SqlStep(sqlite, mySql);

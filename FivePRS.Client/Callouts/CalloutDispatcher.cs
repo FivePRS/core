@@ -6,6 +6,7 @@ using CitizenFX.Core;
 using CitizenFX.Core.Native;
 using FivePRS.Core.Config;
 using FivePRS.Core.Events;
+using FivePRS.Core.Logging;
 using FivePRS.Core.Models;
 using Newtonsoft.Json;
 
@@ -13,6 +14,8 @@ namespace FivePRS.Client.Callouts
 {
     public sealed class CalloutDispatcher
     {
+        private static readonly Logger Log = Logger.For("Callouts");
+
         private const int RegistrationBatchSize = 5;
 
         internal static volatile bool AcceptPressed;
@@ -74,7 +77,7 @@ namespace FivePRS.Client.Callouts
                 var batch = definitions.Skip(i).Take(RegistrationBatchSize).ToList();
                 ClientEvents.TriggerServer(EventNames.ServerRegisterCallouts, JsonConvert.SerializeObject(batch));
             }
-            Debug.WriteLine($"[CalloutDispatcher] Registered {definitions.Count} {_department} callout(s) with dispatch.");
+            Log.Debug($"Registered {definitions.Count} {_department} callouts with dispatch.");
         }
 
         public void Stop()
@@ -91,7 +94,7 @@ namespace FivePRS.Client.Callouts
             if (callout is null) return;
 
             try { callout.OnCalloutFailed(); }
-            catch (Exception ex) { Debug.WriteLine($"[CalloutDispatcher] OnCalloutFailed threw: {ex.Message}"); }
+            catch (Exception ex) { Log.Error("OnCalloutFailed failed", ex); }
             callout.SetState(CalloutState.Failed);
             callout.Cleanup();
         }
@@ -127,7 +130,7 @@ namespace FivePRS.Client.Callouts
             var entry = _registry.FindByName(data.Name);
             if (entry is null)
             {
-                Debug.WriteLine($"[CalloutDispatcher] No handler registered for '{data.Name}'.");
+                Log.Warn($"No handler registered for '{data.Name}'.");
                 return null;
             }
 
@@ -143,7 +146,7 @@ namespace FivePRS.Client.Callouts
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[CalloutDispatcher] Could not create {entry.Type.Name}: {ex.Message}");
+                Log.Error($"Could not create {entry.Type.Name}", ex);
                 return null;
             }
         }
@@ -170,7 +173,7 @@ namespace FivePRS.Client.Callouts
                 Respond(callout.Data.Id, OfferResponse.Declined, Vector3.Zero);
 
                 try { callout.OnCalloutDeclined(); }
-                catch (Exception ex) { Debug.WriteLine($"[CalloutDispatcher] OnCalloutDeclined threw: {ex.Message}"); }
+                catch (Exception ex) { Log.Error("OnCalloutDeclined failed", ex); }
                 callout.Cleanup();
                 callout.SetState(CalloutState.Declined);
 
@@ -208,7 +211,7 @@ namespace FivePRS.Client.Callouts
             if (callout.State == CalloutState.Active)
             {
                 try { callout.OnCalloutFailed(); }
-                catch (Exception ex) { Debug.WriteLine($"[CalloutDispatcher] OnCalloutFailed threw: {ex.Message}"); }
+                catch (Exception ex) { Log.Error("OnCalloutFailed failed", ex); }
                 callout.SetState(CalloutState.Failed);
                 finalResult = CalloutResult.Failed;
             }
@@ -226,7 +229,7 @@ namespace FivePRS.Client.Callouts
                 }
             }
 
-            Debug.WriteLine($"[CalloutDispatcher] Call #{callout.Data.Id} '{callout.Data.Name}' ended: {finalResult}");
+            Log.Debug($"Call #{callout.Data.Id} '{callout.Data.Name}' ended: {finalResult}.");
         }
 
         private static void Respond(string callId, OfferResponse response, Vector3 location) =>
@@ -268,7 +271,7 @@ namespace FivePRS.Client.Callouts
                 try { callout.OnUpdate(); }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"[CalloutDispatcher] OnUpdate exception in {callout.GetType().Name}: {ex.Message}");
+                    Log.Error($"{callout.GetType().Name}.OnUpdate failed", ex);
                 }
 
                 if (!await Timing.TryWaitAsync(1000, ct)) return;
@@ -286,7 +289,7 @@ namespace FivePRS.Client.Callouts
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[CalloutDispatcher] Unhandled exception in {callout.GetType().Name}.OnCalloutAccepted: {ex}");
+                Log.Error($"{callout.GetType().Name}.OnCalloutAccepted failed", ex);
                 if (callout.State == CalloutState.Active)
                 {
                     callout.SetState(CalloutState.Failed);

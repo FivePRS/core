@@ -85,7 +85,7 @@ namespace FivePRS.Tests
         public async Task InitializeAsync()
         {
             _database = await TestDatabase.CreateAsync();
-            var lookup = new LookupService(_database.Store, () => new ResourceSettings(), () => new LicensesConfig());
+            var lookup = new LookupService(_database.Store, _database.Photos, () => new ResourceSettings(), () => new LicensesConfig());
             _street = new StreetService(_database.Store, lookup);
         }
 

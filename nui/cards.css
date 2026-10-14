@@ -1,0 +1,198 @@
+.idcard {
+  --card-color: #1d3a6e;
+  --card-accent: #f2c94c;
+  --card-image: none;
+  position: relative;
+  width: 40rem;
+  aspect-ratio: 85.6 / 54;
+  overflow: hidden;
+  border-radius: 1.143rem;
+  color: #14213a;
+  background:
+    var(--card-image) center / cover no-repeat,
+    radial-gradient(circle at 78% 62%, rgba(70, 110, 170, 0.16) 0 30%, transparent 31%),
+    repeating-radial-gradient(circle at 78% 62%, #e9eef5 0 5px, #e2e9f2 5px 6px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+  user-select: none;
+}
+
+.idcard-head {
+  display: flex;
+  align-items: center;
+  gap: 0.714rem;
+  height: 16%;
+  padding: 0 1.571rem;
+  background: var(--card-color);
+  color: #ffffff;
+}
+
+.idcard-seal {
+  display: grid;
+  place-items: center;
+  width: 2.429rem;
+  height: 2.429rem;
+  flex: none;
+  border-radius: 50%;
+  border: 2px solid var(--card-accent);
+  color: var(--card-accent);
+  font-family: var(--font-display);
+  font-size: 0.929rem;
+  font-weight: 700;
+}
+
+.idcard-state {
+  font-family: var(--font-display);
+  font-size: 1.857rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.idcard-title {
+  margin-left: auto;
+  font-family: var(--font-display);
+  font-size: 1.214rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  color: var(--card-accent);
+  text-align: right;
+}
+
+.idcard-body {
+  display: grid;
+  grid-template-columns: 27% minmax(0, 1fr);
+  gap: 1.286rem;
+  padding: 1.143rem 1.571rem 0;
+}
+
+.idcard-photo {
+  aspect-ratio: 4 / 5;
+  background: #b8c6d8;
+}
+
+.idcard-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 0.929rem;
+}
+
+.idcard-label {
+  margin-right: 0.286rem;
+  font-size: 0.786rem;
+  color: #64748b;
+}
+
+.idcard-value.emphasis {
+  font-weight: 600;
+  color: #c0262d;
+}
+
+.idcard-value.large {
+  font-size: 1.357rem;
+  letter-spacing: 0.04em;
+}
+
+.idcard-name {
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-display);
+  font-size: 1.857rem;
+  font-weight: 700;
+  line-height: 1.05;
+  color: #14213a;
+}
+
+.idcard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.286rem 0.857rem;
+}
+
+.idcard-sign {
+  font-family: var(--font-sign);
+  font-size: 1.214rem;
+  color: #1c2b4a;
+}
+
+.idcard-ghost {
+  position: absolute;
+  right: 1.571rem;
+  bottom: 2.143rem;
+  width: 3.857rem;
+  height: 4.714rem;
+  background: #c9d4e2;
+  opacity: 0.55;
+}
+
+.idcard-stamp {
+  position: absolute;
+  right: 6.571rem;
+  bottom: 2.714rem;
+  padding: 0.214rem 0.857rem;
+  border: 2px solid currentColor;
+  border-radius: 0.429rem;
+  font-family: var(--font-display);
+  font-size: 1.286rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  transform: rotate(-8deg);
+}
+
+.idcard-stamp.valid {
+  color: #15803d;
+}
+
+.idcard-stamp.suspended {
+  color: #b45309;
+}
+
+.idcard-stamp.revoked {
+  color: #b91c1c;
+}
+
+.idcard-issuer {
+  position: absolute;
+  left: 1.571rem;
+  bottom: 0.714rem;
+  font-family: var(--font-mono);
+  font-size: 0.714rem;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.idcard.small {
+  width: 28rem;
+  font-size: 0.7em;
+}
+
+.card-overlay {
+  position: fixed;
+  right: 2.286rem;
+  top: 50%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.714rem;
+  transform: translateY(-50%);
+  font-size: 12px;
+  animation: card-in calc(var(--speed) * 2) ease-out;
+}
+
+.card-overlay-caption {
+  align-self: flex-start;
+  padding: 0.429rem 0.857rem;
+  border-radius: 999px;
+  background: rgba(10, 15, 25, 0.9);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-weight: 600;
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translate(1.5rem, -50%);
+  }
+}

@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using CitizenFX.Core;
 using FivePRS.Core.Config;
 using FivePRS.Core.Events;
+using FivePRS.Core.Models;
 
 namespace FivePRS.Server
 {
@@ -11,6 +12,7 @@ namespace FivePRS.Server
         private void RegisterTerminalEvents()
         {
             EventHandlers[EventNames.ServerSetWallpaper] += new Action<Player, string>(OnSetWallpaper);
+            EventHandlers[EventNames.ServerSaveSettings] += new Action<Player, string>(OnSaveSettings);
         }
 
         private async void OnSetWallpaper([FromSource] Player player, string value)
@@ -29,18 +31,39 @@ namespace FivePRS.Server
             try
             {
                 await _db.Preferences.SetWallpaperAsync(license, wallpaper);
-                TriggerClientEvent(player, EventNames.ClientPreferences, wallpaper);
+                await SendPreferencesAsync(player, license);
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[FivePRS] Saving the wallpaper failed for {player.Name}: {ex.Message}");
+                Log.Warn($"Could not save {player.Name}'s wallpaper", ex);
+            }
+        }
+
+        private async void OnSaveSettings([FromSource] Player player, string json)
+        {
+            if (!Allow(player, "civilian", l => l.Civilian)) return;
+
+            var license = GetLicense(player);
+            if (license is null || !_db.IsReady) return;
+
+            try
+            {
+                await _db.Preferences.SetSettingsAsync(license, TerminalPreferences.Parse(json).ToJson());
+                await SendPreferencesAsync(player, license);
+            }
+            catch (Exception ex)
+            {
+                Log.Warn($"Could not save {player.Name}'s terminal settings", ex);
             }
         }
 
         private async Task SendPreferencesAsync(Player player, string license)
         {
             if (!_db.IsReady) return;
-            TriggerClientEvent(player, EventNames.ClientPreferences, await _db.Preferences.GetWallpaperAsync(license));
+
+            var wallpaper = await _db.Preferences.GetWallpaperAsync(license);
+            var settings  = TerminalPreferences.Parse(await _db.Preferences.GetSettingsAsync(license));
+            TriggerClientEvent(player, EventNames.ClientPreferences, wallpaper, settings.ToJson());
         }
     }
 }

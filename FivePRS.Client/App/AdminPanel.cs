@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using FivePRS.Core.Config;
 using FivePRS.Core.Events;
 using FivePRS.Core.Models;
 using Newtonsoft.Json;
@@ -32,6 +33,10 @@ namespace FivePRS.Client.App
                 NuiData.GetBool(data, "granted"), _state?.Query ?? string.Empty);
         }
 
+        public static void Act(IDictionary<string, object> data) =>
+            ClientEvents.TriggerServer(EventNames.ServerAdminAction, NuiData.GetString(data, "action"),
+                NuiData.GetString(data, "target"), NuiData.GetString(data, "value"), _state?.Query ?? string.Empty);
+
         public static object? BuildView()
         {
             if (_state is null) return null;
@@ -39,6 +44,9 @@ namespace FivePRS.Client.App
             return new
             {
                 State       = _state,
+                Ranks       = ConfigManager.Departments.ToDictionary(
+                    d => d.ToString(),
+                    d => Enumerable.Range(1, ConfigManager.RanksFor(d).Count).Select(rank => ConfigManager.RanksFor(d).NameFor(rank)).ToList()),
                 Departments = Enum.GetValues(typeof(Department))
                     .Cast<Department>()
                     .Where(d => d != Department.None)
