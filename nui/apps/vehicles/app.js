@@ -77,8 +77,15 @@ function render(next) {
   const state = next.state;
   if (!state.vehicles.some((vehicle) => vehicle.id === selectedId)) selectedId = state.vehicles[0]?.id ?? null;
 
+  const managed = state.managedBy;
+  document.getElementById("current").hidden = Boolean(managed);
+  document.getElementById("remove").hidden = Boolean(managed);
+  const emptyList = document.getElementById("vehicles-empty");
+  emptyList.dataset.text ??= emptyList.textContent;
+  emptyList.textContent = managed ? `No vehicles. The vehicles you own in ${managed} show up here.` : emptyList.dataset.text;
+
   renderCurrent(state, next.currentVehicle);
-  setText("count", `${state.vehicles.length} / ${state.maxVehicles}`);
+  setText("count", managed ? `${state.vehicles.length}` : `${state.vehicles.length} / ${state.maxVehicles}`);
   document.getElementById("vehicles").replaceChildren(...state.vehicles.map(vehicleRow));
   document.getElementById("vehicles-empty").hidden = state.vehicles.length > 0;
   renderDetail(active, state.vehicles.find((vehicle) => vehicle.id === selectedId));

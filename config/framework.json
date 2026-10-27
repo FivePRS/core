@@ -1,0 +1,17 @@
+{
+    "framework": "auto",
+    "fines": {
+        "collect": true,
+        "account": "bank"
+    },
+    "jobs": {
+        "police":    { "department": "Police", "agency": "lspd" },
+        "lspd":      { "department": "Police", "agency": "lspd" },
+        "sheriff":   { "department": "Police", "agency": "bcso" },
+        "bcso":      { "department": "Police", "agency": "bcso" },
+        "ambulance": { "department": "EMS",    "agency": "sams" },
+        "ems":       { "department": "EMS",    "agency": "sams" },
+        "fire":      { "department": "Fire",   "agency": "lsfd" },
+        "lsfd":      { "department": "Fire",   "agency": "lsfd" }
+    }
+}

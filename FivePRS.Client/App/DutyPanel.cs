@@ -68,9 +68,10 @@ namespace FivePRS.Client.App
         private static string? SetStart(IDictionary<string, object> data, Department department, string agencyId)
         {
             var rawMode = NuiData.GetString(data, "start");
-            if (!Enum.TryParse<DutyStartMode>(rawMode, true, out var mode) || mode == DutyStartMode.Here)
+            if (!Enum.TryParse<DutyStartMode>(rawMode, true, out var mode)) mode = DutyStartMode.Current;
+            if (mode == DutyStartMode.Current || mode == DutyStartMode.Here)
             {
-                StationService.SetPendingStart(DutyStartMode.Here, null);
+                StationService.SetPendingStart(mode, null);
                 return null;
             }
 
@@ -117,6 +118,7 @@ namespace FivePRS.Client.App
                 RankCount         = profile.Ladder().Count,
                 Stats             = new { Calls = profile.CallsCompleted, profile.Arrests, Hours = profile.DutySeconds / 3600 },
                 profile.XP,
+                profile.UsesXp,
                 XpToNext          = profile.Ladder().XpToNext(profile.Rank),
                 profile.IsOnDuty,
                 DepartmentId      = (int)profile.Department,

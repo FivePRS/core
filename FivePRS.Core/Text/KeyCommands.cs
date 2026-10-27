@@ -13,5 +13,10 @@ namespace FivePRS.Core.Text
         public const string AiCallouts = "er_aicallouts";
         public const string TrafficStop = "fiveprs_trafficstop";
         public const string Backup      = "fiveprs_request_backup";
+        public const string Radar       = "fiveprs_speed_radar";
+        public const string RadarLock   = "fiveprs_radarlock";
+        public const string RadarRearLock = "fiveprs_radar_rearlock";
+        public const string RadarRemote = "fiveprs_radar_remote";
+        public const string Lidar       = "fiveprs_lidar";
     }
 }

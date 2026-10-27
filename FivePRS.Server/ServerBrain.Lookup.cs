@@ -54,6 +54,7 @@ namespace FivePRS.Server
                 }
 
                 Audit(AuditActions.RecordIssued, player, await OwnerLicenseAsync(characterId), $"{label} character {characterId}");
+                if (type == (int)RecordType.Citation && fine > 0) await CollectFinesAsync(characterId);
                 await NotifyCharacterOwnerAsync(characterId, $"~o~Records update~w~ | A {label} was added to your record by {officer.Callsign}.");
                 return await lookup.GetRecordAsync(characterId);
             });

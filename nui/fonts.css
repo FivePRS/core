@@ -85,3 +85,11 @@
   font-display: swap;
   src: url("fonts/ibm-plex-mono-600.woff2") format("woff2");
 }
+
+@font-face {
+  font-family: "DSEG7 Classic";
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+  src: url("fonts/dseg7-classic-700.woff2") format("woff2");
+}

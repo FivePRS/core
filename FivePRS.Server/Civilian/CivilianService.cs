@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using FivePRS.Core.Civilian;
@@ -27,10 +28,17 @@ namespace FivePRS.Server.Civilian
             _clock    = clock;
         }
 
+        public string? ManagedBy { get; set; }
+
+        private string Managed(string what) => $"{what} are managed by {ManagedBy}.";
+
         public async Task<CivilianState> GetStateAsync(string owner)
         {
             var characters = await _store.GetCharactersAsync(owner);
             var active     = characters.OrderByDescending(c => c.LastUsedAt).ThenByDescending(c => c.Id).FirstOrDefault();
+            if (ManagedBy is not null)
+                characters = active?.ExternalId is null ? new List<CharacterInfo>() : new List<CharacterInfo> { active };
+            if (ManagedBy is not null && active?.ExternalId is null) active = null;
 
             var state = new CivilianState
             {
@@ -38,6 +46,7 @@ namespace FivePRS.Server.Civilian
                 ActiveCharacterId = active?.Id,
                 MaxCharacters     = _settings().MaxCharacters,
                 MaxVehicles       = _settings().MaxVehiclesPerCharacter,
+                ManagedBy         = ManagedBy,
             };
 
             var held = active is null ? null : await _store.GetLicensesAsync(active.Id);
@@ -59,11 +68,13 @@ namespace FivePRS.Server.Civilian
         public async Task<CharacterInfo?> GetActiveCharacterAsync(string owner)
         {
             var characters = await _store.GetCharactersAsync(owner);
-            return characters.OrderByDescending(c => c.LastUsedAt).ThenByDescending(c => c.Id).FirstOrDefault();
+            var active = characters.OrderByDescending(c => c.LastUsedAt).ThenByDescending(c => c.Id).FirstOrDefault();
+            return ManagedBy is not null && active?.ExternalId is null ? null : active;
         }
 
         public async Task<string?> CreateCharacterAsync(string owner, string? firstName, string? lastName, string? dateOfBirth, string? gender)
         {
+            if (ManagedBy is not null) return Managed("Characters");
             if (!CivilianRules.TryNormalizeName(firstName, out var first) || !CivilianRules.TryNormalizeName(lastName, out var last))
                 return $"Names must be 1 to {CivilianRules.MaxNameLength} letters; spaces, hyphens and apostrophes are allowed.";
 
@@ -90,6 +101,7 @@ namespace FivePRS.Server.Civilian
 
         public async Task<string?> SelectCharacterAsync(string owner, int characterId)
         {
+            if (ManagedBy is not null) return Managed("Characters");
             if (await GetOwnedCharacterAsync(owner, characterId) is null) return "Character not found.";
 
             await _store.TouchCharacterAsync(characterId);
@@ -98,6 +110,7 @@ namespace FivePRS.Server.Civilian
 
         public async Task<string?> DeleteCharacterAsync(string owner, int characterId)
         {
+            if (ManagedBy is not null) return Managed("Characters");
             if (await GetOwnedCharacterAsync(owner, characterId) is null) return "Character not found.";
 
             var summary = await _store.GetSummaryAsync(characterId);
@@ -170,6 +183,7 @@ namespace FivePRS.Server.Civilian
 
         public async Task<string?> RegisterVehicleAsync(string owner, string? plate, string? model)
         {
+            if (ManagedBy is not null) return Managed("Vehicles");
             var character = await GetActiveCharacterAsync(owner);
             if (character is null) return "Create a character first.";
 
@@ -204,6 +218,7 @@ namespace FivePRS.Server.Civilian
 
         public async Task<string?> RemoveVehicleAsync(string owner, int vehicleId)
         {
+            if (ManagedBy is not null) return Managed("Vehicles");
             if (await GetOwnedVehicleAsync(owner, vehicleId) is null) return "Vehicle not found.";
 
             await _store.DeleteVehicleAsync(vehicleId);

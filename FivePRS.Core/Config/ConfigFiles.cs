@@ -10,6 +10,7 @@ namespace FivePRS.Core.Config
         public const string Stations      = "config/world/stations.json";
         public const string Licenses      = "config/civilian/licenses.json";
         public const string Citations     = "config/civilian/citations.json";
+        public const string Framework     = "config/framework.json";
 
         public const string Ranks    = "ranks";
         public const string Loadouts = "loadouts";

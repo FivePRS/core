@@ -42,7 +42,9 @@ namespace FivePRS.Client.Agency
             _dispatcher.Start();
 
             var mode    = StationService.TakePendingStart(out var station);
-            var message = ShouldEquip(mode)
+            var message = mode == DutyStartMode.Current
+                ? $"You're on duty as you are. Collect your {EquipmentNoun} at a station when you need them."
+                : ShouldEquip(mode)
                 ? await EquipAsync(player, mode, station)
                 : await ReportToStationAsync(mode, station);
 
@@ -70,7 +72,7 @@ namespace FivePRS.Client.Agency
         {
             DutyEquipmentMode.Always  => true,
             DutyEquipmentMode.Station => false,
-            _                         => mode == DutyStartMode.Here,
+            _                         => mode == DutyStartMode.Here || mode == DutyStartMode.Teleport,
         };
 
         private async Task<string> EquipAsync(PlayerData player, DutyStartMode mode, StationDef? station)
@@ -163,7 +165,7 @@ namespace FivePRS.Client.Agency
             if (result == CalloutResult.Completed)
                 Notify("~g~CALLOUT COMPLETE~w~");
             else if (result == CalloutResult.Failed)
-                Notify("~r~CALLOUT FAILED~w~ | No XP awarded.");
+                Notify(ClientBrain.LocalPlayerData.UsesXp ? "~r~CALLOUT FAILED~w~ | No XP awarded." : "~r~CALLOUT FAILED");
 
             Log.Debug($"Callout '{callout.Data.Name}' ended: {result}.");
         }

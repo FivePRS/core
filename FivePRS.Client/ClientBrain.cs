@@ -82,7 +82,7 @@ namespace FivePRS.Client
                 var agency = ConfigManager.Territories.FindAgency(d.Agency)?.Name ?? d.Department.ToString();
                 ShowNotification(
                     $"~b~{d.Name}~w~ | {agency} | {d.RankName()}~n~~g~" +
-                    (d.Ladder().IsTop(d.Rank) ? "Top rank" : $"XP: {d.XP} / {d.Ladder().XpToNext(d.Rank)}"));
+                    (!d.UsesXp ? d.Department.ToString() : d.Ladder().IsTop(d.Rank) ? "Top rank" : $"XP: {d.XP} / {d.Ladder().XpToNext(d.Rank)}"));
             }), false);
             API.RegisterCommand("er_help", new Action<int, List<object>, string>((_, __, ___) =>
             {

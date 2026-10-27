@@ -13,6 +13,7 @@ using FivePRS.Core.Logging;
 using FivePRS.Core.Models;
 using FivePRS.Server.Civilian;
 using FivePRS.Server.Database;
+using FivePRS.Server.Framework;
 using FivePRS.Server.Http;
 using FivePRS.Server.Logging;
 using FivePRS.Server.Dispatch;
@@ -88,6 +89,7 @@ namespace FivePRS.Server
             RegisterDiagnostics();
             RegisterStreetEvents();
             RegisterReportEvents();
+            RegisterFrameworkEvents();
             RegisterDeathEvents();
 
             _ = ServerIcon.ApplyDefaultAsync(ConfigManager.Settings.Branding.ServerIcon);
@@ -119,6 +121,7 @@ namespace FivePRS.Server
                 await _roster.LoadAsync();
 
                 LogStartup();
+                await DetectFrameworkAsync();
             }
             catch (Exception ex) when (ex is NotSupportedException || ex is DatabaseSetupException)
             {
@@ -180,6 +183,7 @@ namespace FivePRS.Server
             _rateLimiter.Forget(player.Handle);
             ClearDowned(ServerId(player));
             _dispatch.SetOffDuty(ServerId(player));
+            ForgetFrameworkCharacter(player);
 
             var license = GetLicense(player);
             if (license is null) return;
@@ -211,6 +215,7 @@ namespace FivePRS.Server
                 SendPlayerData(player, data);
                 SendEntryOptions(player);
                 SendDownedPlayers(player);
+                await SyncFrameworkAsync(player);
                 await SendAppearanceAsync(player, license);
                 await SendPreferencesAsync(player, license);
 
@@ -229,9 +234,11 @@ namespace FivePRS.Server
             if (!Enum.IsDefined(typeof(Department), departmentId) || departmentId == (int)Department.None) return;
 
             var department = (Department)departmentId;
-            if (!_permissions.CanJoinDepartment(player.Handle, department))
+            if (!CanJoin(player, department))
             {
-                TriggerClientEvent(player, EventNames.ClientEntryRejected, $"You are not authorised to join {department}.");
+                TriggerClientEvent(player, EventNames.ClientEntryRejected, UsesFramework
+                    ? $"Your character's job doesn't let you join {department}."
+                    : $"You are not authorised to join {department}.");
                 Audit(AuditActions.PermissionDenied, player, license, $"department {department}");
                 return;
             }
@@ -251,7 +258,7 @@ namespace FivePRS.Server
 
             try
             {
-                var agency = ConfigManager.Territories.ResolveAgency(department, agencyId)?.Id ?? string.Empty;
+                var agency = ConfigManager.Territories.ResolveAgency(department, FrameworkAgency(player, department) ?? agencyId)?.Id ?? string.Empty;
                 data.Callsign = normalizedCallsign;
 
                 if (data.Department != department)
@@ -284,7 +291,7 @@ namespace FivePRS.Server
             var allowed = new List<int>();
             foreach (Department department in Enum.GetValues(typeof(Department)))
             {
-                if (_permissions.CanJoinDepartment(player.Handle, department))
+                if (CanJoin(player, department))
                     allowed.Add((int)department);
             }
 
@@ -323,7 +330,7 @@ namespace FivePRS.Server
             if (!data.IsOnDuty && data.Department == Department.None) return;
 
             var goingOnDuty = !data.IsOnDuty;
-            if (goingOnDuty && !_permissions.CanJoinDepartment(player.Handle, data.Department))
+            if (goingOnDuty && !CanJoin(player, data.Department))
             {
                 Notify(player, $"~r~You are not authorised to go on duty with {data.Department}.");
                 Audit(AuditActions.PermissionDenied, player, license, $"duty {data.Department}");
@@ -451,8 +458,16 @@ namespace FivePRS.Server
             var player = Players[unitId];
             if (player is null || !TryGetCached(player, out _, out var data)) return;
 
-            var awardedXP = (int)Math.Min(Math.Max(baseAmount * ReadXpMultiplier(), 0), ReadMaxXp());
             data.CallsCompleted++;
+            if (!XpActive)
+            {
+                await _db.SavePlayerAsync(data);
+                SendPlayerData(player, data);
+                Notify(player, $"~g~CALL #{callId} CLOSED");
+                return;
+            }
+
+            var awardedXP = (int)Math.Min(Math.Max(baseAmount * ReadXpMultiplier(), 0), ReadMaxXp());
 
             try
             {
@@ -483,6 +498,7 @@ namespace FivePRS.Server
 
             TriggerClientEvent(player, EventNames.ClientDutyStatusChanged, onDuty, (int)data.Department);
             SendPlayerData(player, data);
+            SyncFrameworkDuty(player, onDuty);
             await _db.SavePlayerAsync(data);
             if (onDuty && ReportService.CanRead(data.Department)) await PushReportsAsync(data.License, null);
 
@@ -511,7 +527,13 @@ namespace FivePRS.Server
 
         private async Task GrantXpAsync(Player player, PlayerData data, int amount)
         {
+            var rank = data.Rank;
             var rankedUp = data.Ladder().AddXp(data, amount);
+            if (UsesFramework)
+            {
+                data.Rank = rank;
+                rankedUp = false;
+            }
             await _db.SavePlayerAsync(data);
             SendPlayerData(player, data);
 
@@ -581,8 +603,14 @@ namespace FivePRS.Server
         private void Notify(Player player, string message) =>
             TriggerClientEvent(player, EventNames.ClientNotify, message);
 
-        private void SendPlayerData(Player player, PlayerData data) =>
+        private bool XpActive => ConfigManager.Settings.XpEnabled && !UsesFramework;
+
+        private void SendPlayerData(Player player, PlayerData data)
+        {
+            data.UsesXp = XpActive;
+            data.Framework = _framework is null ? null : FrameworkBridge.DisplayName(_framework.Info.Name);
             TriggerClientEvent(player, EventNames.ClientReceivePlayerData, JsonConvert.SerializeObject(data));
+        }
 
         private static string? GetLicense(Player player)
         {

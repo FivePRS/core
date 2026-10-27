@@ -11,6 +11,7 @@ namespace FivePRS.Client.Stations
 {
     public enum DutyStartMode
     {
+        Current,
         Here,
         Teleport,
         Drive
@@ -41,10 +42,11 @@ namespace FivePRS.Client.Stations
             var mode = _pendingMode;
             station = ConfigManager.Stations.Find(_pendingStationId);
 
-            _pendingMode      = DutyStartMode.Here;
+            _pendingMode      = DutyStartMode.Current;
             _pendingStationId = null;
 
-            return station is null ? DutyStartMode.Here : mode;
+            if (mode == DutyStartMode.Current || mode == DutyStartMode.Here) return mode;
+            return station is null ? DutyStartMode.Current : mode;
         }
 
         public static Vector3 PositionOf(StationDef station) =>

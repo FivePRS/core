@@ -28,6 +28,7 @@ namespace FivePRS.Core.Civilian
         public DateTime CreatedAt    { get; set; }
         public DateTime LastUsedAt   { get; set; }
         public string?  Photo        { get; set; }
+        public string?  ExternalId   { get; set; }
 
         public string FullName => $"{FirstName} {LastName}";
     }
@@ -59,6 +60,7 @@ namespace FivePRS.Core.Civilian
         public List<RecordInfo>       Records           { get; set; } = new();
         public int                    MaxCharacters     { get; set; }
         public int                    MaxVehicles       { get; set; }
+        public string?                ManagedBy         { get; set; }
     }
 
     public sealed class LicenseCard

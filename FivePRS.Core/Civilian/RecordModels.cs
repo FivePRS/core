@@ -13,6 +13,13 @@ namespace FivePRS.Core.Civilian
         Medical  = 4,
     }
 
+    public enum FineStatus
+    {
+        None   = 0,
+        Unpaid = 1,
+        Paid   = 2,
+    }
+
     public sealed class RecordInfo
     {
         public int        Id              { get; set; }
@@ -25,6 +32,7 @@ namespace FivePRS.Core.Civilian
         public DateTime   CreatedAt       { get; set; }
         public bool       Active          { get; set; }
         public string?    Resolution      { get; set; }
+        public FineStatus FineStatus      { get; set; }
     }
 
     public sealed class CharacterSummary

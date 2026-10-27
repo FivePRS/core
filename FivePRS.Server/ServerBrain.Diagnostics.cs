@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using CitizenFX.Core;
+using FivePRS.Server.Framework;
 using CitizenFX.Core.Native;
 using FivePRS.Core.Config;
 using FivePRS.Core.Models;
@@ -78,6 +79,7 @@ namespace FivePRS.Server
                 new("Platform", $"{Platform()}, runtime {Environment.Version}"),
                 new("OneSync", API.GetConvar("onesync", "off")),
                 new("Database", _db.IsReady ? $"{_databaseType}, schema {_db.SchemaVersion}" : "not ready"),
+                new("Framework", _framework is null ? "standalone" : $"{FrameworkBridge.DisplayName(_framework.Info.Name)} ({_framework.Info.Resource})"),
                 new("Players", $"{players} online, {units} on duty"),
                 new("Dispatch", $"{_dispatch.CatalogCount} callouts, {_dispatch.ActiveCallCount} active calls"),
                 new("Rate limits", ConfigManager.Settings.RateLimits.Enabled ? "on" : "off"),

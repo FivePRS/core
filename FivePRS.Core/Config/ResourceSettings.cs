@@ -42,6 +42,9 @@ namespace FivePRS.Core.Config
         [JsonProperty("maxFine")]
         public int MaxFine { get; set; } = 10000;
 
+        [JsonProperty("xpEnabled")]
+        public bool XpEnabled { get; set; } = true;
+
         [JsonProperty("emergencyCallCooldownSeconds")]
         public int EmergencyCallCooldownSeconds { get; set; } = 60;
 
@@ -69,6 +72,9 @@ namespace FivePRS.Core.Config
 
         [JsonProperty("backup")]
         public BackupSettings Backup { get; set; } = new();
+
+        [JsonProperty("radar")]
+        public RadarSettings Radar { get; set; } = new();
 
         [JsonProperty("terminal")]
         public TerminalSettings Terminal { get; set; } = new();

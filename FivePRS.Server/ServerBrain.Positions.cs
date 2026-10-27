@@ -27,7 +27,7 @@ namespace FivePRS.Server
 
         private void OnReportPosition([FromSource] Player player, float x, float y, float z, float heading)
         {
-            if (!Allow(player, "positions", l => l.Positions)) return;
+            if (!Allow(player, "positions", l => l.Positions) || UsesFramework) return;
 
             var license  = GetLicense(player);
             var position = SavedPosition.Create(x, y, z, heading);
@@ -47,7 +47,7 @@ namespace FivePRS.Server
             SavedPosition? position = null;
             try
             {
-                if (ConfigManager.Settings.Spawn.RestoreLastLocation && _db.IsReady)
+                if (ConfigManager.Settings.Spawn.RestoreLastLocation && _db.IsReady && !UsesFramework)
                     position = _positions.TryGetValue(license, out var cached) ? cached : await _db.Positions.GetAsync(license);
             }
             catch (Exception ex)
@@ -58,7 +58,7 @@ namespace FivePRS.Server
             var model = string.Empty;
             try
             {
-                model = await SpawnModelAsync(license);
+                if (!UsesFramework) model = await SpawnModelAsync(license);
             }
             catch (Exception ex)
             {

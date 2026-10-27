@@ -43,20 +43,21 @@
           <p id="panel-license" class="mono muted panel-license"></p>
         </div>
 
-        <div class="control">
+        <p id="framework-note" class="banner info" hidden></p>
+        <div id="rank-control" class="control">
           <label class="field">Rank<select id="rank" class="input"></select></label>
           <button type="button" class="button" data-act="setrank">Set</button>
         </div>
-        <div class="control">
+        <div id="xp-control" class="control">
           <label class="field">Grant XP<input id="xp" class="input mono" type="number" min="1" value="250"></label>
           <button type="button" class="button" data-act="addxp">Grant</button>
         </div>
-        <div class="control">
+        <div id="department-control" class="control">
           <label class="field">Department<select id="department" class="input"></select></label>
           <button type="button" class="button" data-act="setdept">Set</button>
         </div>
 
-        <div>
+        <div id="roster-control">
           <p class="field-label">Rostered departments</p>
           <div id="roster" class="switches"></div>
         </div>

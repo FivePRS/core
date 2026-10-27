@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+- Framework support for Qbox, QBCore, ESX Legacy, ox_core and ND_Core. `config/framework.json` maps framework jobs to departments and agencies, and job grades to ranks. With a framework, the character's job decides who can go on duty and at what rank, players show by their character's name, and duty stays in step with Qbox and QBCore. Framework characters get FivePRS records, so citations, warrants, licenses and the MDT work with them, their owned vehicles are found by plate, and citation fines come out of the character's bank. Spawning and clothing are left to the framework. FivePRS still runs standalone when no framework is found
+- `xpEnabled` in `config/settings.json` turns XP off, so ranks are only set by admins. The terminal hides XP when it's off
+- Patrol car radar with front and rear antennas that read same-direction or oncoming traffic, separate front (`J`) and rear (`U`) locks, closing and away indicators, an error reading while turning or airborne, a doppler tone and beeps, and a digital display. The operator menu (`F9`) sets each antenna, a fast limit with optional auto-lock, volumes, and the display's size and position, and remembers them. A plate reader checks the vehicles in front and behind against records and flags stolen vehicles, wanted owners, suspended licenses and unregistered plates. A handheld lidar gun measures speed and distance on foot. Settings are under `radar` in `config/settings.json`
+- **As I am** in the Duty app starts your shift with your current look and no vehicle. It's the default, and the Duty app remembers the start you used last
+
+### Fixed
+- Pulled-over vehicles no longer drive off in a loop to a point on another road before stopping. They pull to the side of their own road, or stop where they are
+- Starting a shift at a **Station** now gives you your uniform, loadout and a vehicle parked outside, as the Duty app says. Before, it only teleported you there
+
 ## [0.9.0-ptb.5] - 2026-10-14
 
 ### Added

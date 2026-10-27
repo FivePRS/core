@@ -44,6 +44,8 @@ namespace FivePRS.Client.App
             return new
             {
                 State       = _state,
+                XpEnabled   = ClientBrain.LocalPlayerData.UsesXp,
+                Framework   = ClientBrain.LocalPlayerData.Framework,
                 Ranks       = ConfigManager.Departments.ToDictionary(
                     d => d.ToString(),
                     d => Enumerable.Range(1, ConfigManager.RanksFor(d).Count).Select(rank => ConfigManager.RanksFor(d).NameFor(rank)).ToList()),

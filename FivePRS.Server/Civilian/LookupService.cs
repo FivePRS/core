@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using FivePRS.Core.Civilian;
 using FivePRS.Core.Config;
+using FivePRS.Core.Police;
 using FivePRS.Server.Database;
 
 namespace FivePRS.Server.Civilian
@@ -24,6 +25,10 @@ namespace FivePRS.Server.Civilian
             _licenses = licenses;
         }
 
+        public System.Func<string, Task<bool>>? ExternalPlate { get; set; }
+
+        public bool CollectsFines { get; set; }
+
         public async Task<(LookupResult? Result, string? Error)> SearchByNameAsync(string? term)
         {
             if (!CivilianRules.TryNormalizeSearch(term, out var normalized))
@@ -39,6 +44,8 @@ namespace FivePRS.Server.Civilian
                 return (null, $"Plates are 1 to {CivilianRules.MaxPlateLength} letters and numbers.");
 
             var vehicle = await _store.GetVehicleByPlateAsync(normalized);
+            if (vehicle is null && ExternalPlate is not null && await ExternalPlate(normalized))
+                vehicle = await _store.GetVehicleByPlateAsync(normalized);
             if (vehicle is null) return (null, $"No registration found for {normalized}.");
 
             var record = await BuildRecordAsync(vehicle.CharacterId);
@@ -46,6 +53,16 @@ namespace FivePRS.Server.Civilian
 
             record.MatchedPlate = normalized;
             return (new LookupResult { Record = record, Query = normalized }, null);
+        }
+
+        public async Task<PlateCheck> CheckPlateAsync(string plate)
+        {
+            var vehicle = await _store.GetVehicleByPlateAsync(plate);
+            if (vehicle is null && ExternalPlate is not null && await ExternalPlate(plate))
+                vehicle = await _store.GetVehicleByPlateAsync(plate);
+            if (vehicle is null) return PlateFlags.FromProfile(plate);
+
+            return PlateFlags.FromRecord(plate, vehicle, await BuildRecordAsync(vehicle.CharacterId));
         }
 
         public async Task<(LookupResult? Result, string? Error)> GetRecordAsync(int characterId)
@@ -58,7 +75,8 @@ namespace FivePRS.Server.Civilian
         {
             if (!Enum.IsDefined(typeof(RecordType), type)) return "Unknown record type.";
             if (!RecordAccess.CanIssue(officer.Department, (RecordType)type)) return "Your department can't add that kind of entry.";
-            if (await _store.GetCharacterAsync(characterId) is null) return "Person not found.";
+            var character = await _store.GetCharacterAsync(characterId);
+            if (character is null) return "Person not found.";
 
             if (!CivilianRules.TryNormalizeDescription(description, out var text))
                 return $"Enter a description of up to {CivilianRules.MaxDescriptionLength} characters.";
@@ -82,6 +100,7 @@ namespace FivePRS.Server.Civilian
                 OfficerName     = officer.Name,
                 OfficerCallsign = officer.Callsign,
                 Active          = recordType == RecordType.Warrant,
+                FineStatus      = fine > 0 && CollectsFines && character.ExternalId is not null ? FineStatus.Unpaid : FineStatus.None,
             }, officer.License);
 
             return null;

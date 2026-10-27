@@ -18,6 +18,8 @@ namespace FivePRS.Server
         private void OnAppearanceSave([FromSource] Player player, int characterId, string json) =>
             RunCivilian(player, (_, license) => _appearances is null
                 ? Task.FromResult<string?>("Appearances are not available yet.")
+                : UsesFramework
+                ? Task.FromResult<string?>("Change your look with your server's clothing script.")
                 : _appearances.SaveAsync(license, characterId, json));
 
         private async Task SendAppearanceAsync(Player player, string license)
@@ -25,7 +27,7 @@ namespace FivePRS.Server
             if (_civilians is null || _appearances is null) return;
 
             var active = await _civilians.GetActiveCharacterAsync(license);
-            var json   = active is null ? null : await _appearances.GetAsync(active.Id);
+            var json   = active is null || UsesFramework ? null : await _appearances.GetAsync(active.Id);
             TriggerClientEvent(player, EventNames.ClientAppearance, active?.Id ?? 0, json ?? string.Empty);
         }
     }

@@ -210,7 +210,7 @@ namespace FivePRS.Police.TrafficStops
                         stop.Flee();
                         ClientBrain.ShowNotification($"~r~The driver is fleeing!~w~ Pursue the ~y~{stop.Model}~w~.", Subject);
                     }
-                    else if ((stop.Vehicle!.Speed < 0.5f && elapsed > 2_000) || elapsed > PullOverTimeoutMs)
+                    else if ((stop.Vehicle!.Speed < 0.5f && elapsed > 2_000) || elapsed > PullOverTimeoutMs || stop.StrayedWhilePullingOver)
                     {
                         stop.Hold();
                         ClientBrain.ShowNotification($"Vehicle stopped. Approach the driver and press {Binds.Interact}.", Subject);

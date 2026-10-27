@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using CitizenFX.Core;
 using FivePRS.Core.Civilian;
+using FivePRS.Core.Config;
 using FivePRS.Core.Events;
 using FivePRS.Core.Models;
 using FivePRS.Core.Police;
@@ -23,6 +24,24 @@ namespace FivePRS.Server
             EventHandlers[EventNames.ServerStopPlate]    += new Action<Player, string, string, int, bool>(OnStopPlate);
             EventHandlers[EventNames.ServerRunPlate]     += new Action<Player, string, string, int, bool, bool>(OnRunPlate);
             EventHandlers[EventNames.ServerRunPerson]    += new Action<Player, int, bool>(OnRunPerson);
+            EventHandlers[EventNames.ServerPlateRead]    += new Action<Player, string>(OnPlateRead);
+        }
+
+        private async void OnPlateRead([FromSource] Player player, string plate)
+        {
+            if (!ConfigManager.Settings.Radar.PlateReader || _lookup is null) return;
+            if (!Allow(player, "plateReads", l => l.PlateReads) || !TryGetOfficer(player, out _)) return;
+            if (!CivilianRules.TryNormalizePlate(plate, out var normalized)) return;
+
+            try
+            {
+                var check = await _lookup.CheckPlateAsync(normalized);
+                TriggerClientEvent(player, EventNames.ClientPlateRead, JsonConvert.SerializeObject(check));
+            }
+            catch (Exception ex)
+            {
+                Log.Warn($"Plate read failed for {player.Name}", ex);
+            }
         }
 
         private void OnRunPlate([FromSource] Player player, string plate, string model, int driverSeed, bool driverFemale, bool hasDriver) =>

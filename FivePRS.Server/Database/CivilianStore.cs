@@ -8,12 +8,12 @@ namespace FivePRS.Server.Database
     public sealed class CivilianStore : SqlStore
     {
         private const string CharacterColumns =
-            "id, owner_license, first_name, last_name, date_of_birth, gender, created_at, last_used_at";
+            "id, owner_license, first_name, last_name, date_of_birth, gender, created_at, last_used_at, external_id";
 
         private const string VehicleColumns = "id, character_id, plate, model, status, registered_at";
 
         private const string RecordColumns =
-            "id, character_id, type, description, fine, officer_name, officer_callsign, created_at, active, resolution";
+            "id, character_id, type, description, fine, officer_name, officer_callsign, created_at, active, resolution, fine_status";
 
         private const string ActiveWarrantExists =
             "EXISTS (SELECT 1 FROM fiveprs_records r WHERE r.character_id = c.id AND r.type = 3 AND r.active = 1) AS has_warrant";
@@ -46,12 +46,30 @@ namespace FivePRS.Server.Database
         {
             var now = DateTime.UtcNow;
             var id = await InsertAsync(
-                "INSERT INTO fiveprs_characters (owner_license, first_name, last_name, date_of_birth, gender, created_at, last_used_at) " +
-                "VALUES (@owner, @first, @last, @dob, @gender, @now, @now)",
+                "INSERT INTO fiveprs_characters (owner_license, first_name, last_name, date_of_birth, gender, created_at, last_used_at, external_id) " +
+                "VALUES (@owner, @first, @last, @dob, @gender, @now, @now, @external)",
                 ("@owner", character.OwnerLicense), ("@first", character.FirstName), ("@last", character.LastName),
-                ("@dob", character.DateOfBirth), ("@gender", character.Gender), ("@now", now));
+                ("@dob", character.DateOfBirth), ("@gender", character.Gender), ("@now", now), ("@external", character.ExternalId));
             return Convert.ToInt32(id);
         }
+
+        public async Task<CharacterInfo?> FindByExternalIdAsync(string externalId)
+        {
+            var rows = await QueryAsync($"SELECT {CharacterColumns} FROM fiveprs_characters WHERE external_id = @external",
+                ReadCharacter, ("@external", externalId));
+            return rows.Count > 0 ? rows[0] : null;
+        }
+
+        public Task UpdateLinkedCharacterAsync(CharacterInfo character) =>
+            ExecuteAsync(
+                "UPDATE fiveprs_characters SET owner_license = @owner, first_name = @first, last_name = @last, date_of_birth = @dob, gender = @gender " +
+                "WHERE id = @id",
+                ("@owner", character.OwnerLicense), ("@first", character.FirstName), ("@last", character.LastName),
+                ("@dob", character.DateOfBirth), ("@gender", character.Gender), ("@id", character.Id));
+
+        public Task MoveVehicleAsync(int vehicleId, int characterId, string model) =>
+            ExecuteAsync("UPDATE fiveprs_vehicles SET character_id = @character, model = @model WHERE id = @id",
+                ("@character", characterId), ("@model", model), ("@id", vehicleId));
 
         public Task TouchCharacterAsync(int id) =>
             ExecuteAsync("UPDATE fiveprs_characters SET last_used_at = @now WHERE id = @id",
@@ -150,13 +168,21 @@ namespace FivePRS.Server.Database
         public async Task<int> AddRecordAsync(RecordInfo record, string officerLicense)
         {
             var id = await InsertAsync(
-                "INSERT INTO fiveprs_records (character_id, type, description, fine, officer_license, officer_name, officer_callsign, created_at, active) " +
-                "VALUES (@character, @type, @description, @fine, @officerLicense, @officerName, @callsign, @now, @active)",
+                "INSERT INTO fiveprs_records (character_id, type, description, fine, officer_license, officer_name, officer_callsign, created_at, active, fine_status) " +
+                "VALUES (@character, @type, @description, @fine, @officerLicense, @officerName, @callsign, @now, @active, @fineStatus)",
                 ("@character", record.CharacterId), ("@type", (int)record.Type), ("@description", record.Description),
                 ("@fine", record.Fine), ("@officerLicense", officerLicense), ("@officerName", record.OfficerName),
-                ("@callsign", record.OfficerCallsign), ("@now", DateTime.UtcNow), ("@active", record.Active ? 1 : 0));
+                ("@callsign", record.OfficerCallsign), ("@now", DateTime.UtcNow), ("@active", record.Active ? 1 : 0),
+                ("@fineStatus", (int)record.FineStatus));
             return Convert.ToInt32(id);
         }
+
+        public Task<List<RecordInfo>> GetUnpaidFinesAsync(int characterId) =>
+            QueryAsync($"SELECT {RecordColumns} FROM fiveprs_records WHERE character_id = @id AND fine_status = @unpaid ORDER BY created_at, id",
+                ReadRecord, ("@id", characterId), ("@unpaid", (int)FineStatus.Unpaid));
+
+        public Task SetFineStatusAsync(int recordId, FineStatus status) =>
+            ExecuteAsync("UPDATE fiveprs_records SET fine_status = @status WHERE id = @id", ("@status", (int)status), ("@id", recordId));
 
         public Task ResolveRecordAsync(int id, string resolution) =>
             ExecuteAsync("UPDATE fiveprs_records SET active = 0, resolution = @resolution WHERE id = @id",
@@ -184,6 +210,7 @@ namespace FivePRS.Server.Database
             CreatedAt       = row.GetDateTime("created_at"),
             Active          = row.GetBoolean("active"),
             Resolution      = row.IsNull("resolution") ? null : row.GetString("resolution"),
+            FineStatus      = (FineStatus)row.GetInt32("fine_status"),
         };
 
         private static CharacterInfo ReadCharacter(DbRow row) => new()
@@ -196,6 +223,7 @@ namespace FivePRS.Server.Database
             Gender       = row.GetString("gender"),
             CreatedAt    = row.GetDateTime("created_at"),
             LastUsedAt   = row.GetDateTime("last_used_at"),
+            ExternalId   = row.IsNull("external_id") ? null : row.GetString("external_id"),
         };
 
         private static VehicleInfo ReadVehicle(DbRow row) => new()

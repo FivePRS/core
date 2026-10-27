@@ -66,7 +66,7 @@ namespace FivePRS.Tests
             using var conn = new MySqlConnection(connectionString);
             await conn.OpenAsync();
             using var cmd = conn.CreateCommand();
-            cmd.CommandText = "DROP TABLE IF EXISTS fiveprs_records, fiveprs_licenses, fiveprs_vehicles, fiveprs_characters, fiveprs_roster, fiveprs_appearances, fiveprs_preferences, fiveprs_positions, fiveprs_audit, fiveprs_schema, ers_players;";
+            cmd.CommandText = "DROP TABLE IF EXISTS fiveprs_reports, fiveprs_photos, fiveprs_records, fiveprs_licenses, fiveprs_vehicles, fiveprs_characters, fiveprs_roster, fiveprs_appearances, fiveprs_preferences, fiveprs_positions, fiveprs_audit, fiveprs_schema, ers_players;";
             await cmd.ExecuteNonQueryAsync();
         }
 

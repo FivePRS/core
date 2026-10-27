@@ -32,6 +32,9 @@ namespace FivePRS.Core.Config
         [JsonProperty("lookups")]
         public RateLimit Lookups { get; set; } = new(20, 10);
 
+        [JsonProperty("plateReads")]
+        public RateLimit PlateReads { get; set; } = new(30, 10);
+
         [JsonProperty("records")]
         public RateLimit Records { get; set; } = new(10, 10);
 

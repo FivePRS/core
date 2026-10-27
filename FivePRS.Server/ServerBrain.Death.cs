@@ -68,7 +68,7 @@ namespace FivePRS.Server
             Audit(AuditActions.PlayerRevived, medic, GetLicense(target), $"revived {target.Name}");
 
             var xp = ConfigManager.Settings.Death.ReviveXp;
-            if (isMedic && xp > 0)
+            if (isMedic && xp > 0 && XpActive)
             {
                 try
                 {

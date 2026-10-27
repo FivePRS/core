@@ -36,7 +36,7 @@ namespace FivePRS.Server.Civilian
         {
             if (!CivilianRules.TryNormalizePlate(plate, out var normalized)) return (null, "That plate can't be read.");
 
-            if (await _store.GetVehicleByPlateAsync(normalized) is null)
+            if (await _store.GetVehicleByPlateAsync(normalized) is null && !(_lookup.ExternalPlate is not null && await _lookup.ExternalPlate(normalized)))
             {
                 var vehicle = StreetProfiles.Vehicle(normalized);
                 if (!vehicle.Registered) return (null, $"No registration found for {normalized}.");

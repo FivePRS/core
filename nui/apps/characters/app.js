@@ -11,6 +11,10 @@ let creating = false;
 let pendingCount = null;
 let reviewing = null;
 
+function fineNote(entry) {
+  return entry.fineStatus === 1 ? " unpaid" : entry.fineStatus === 2 ? " paid" : "";
+}
+
 function showCreate(open) {
   creating = open;
   form.hidden = !open;
@@ -39,7 +43,7 @@ const recordDots = ["", "bad", "warn", "bad", "info"];
 
 function recordEntry(entry) {
   const activeWarrant = entry.type === 3 && entry.active;
-  const meta = [formatDate(entry.createdAt), entry.officerCallsign, entry.fine > 0 ? `$${entry.fine}` : null].filter(Boolean).join(" · ");
+  const meta = [formatDate(entry.createdAt), entry.officerCallsign, entry.fine > 0 ? `$${entry.fine}${fineNote(entry)}` : null].filter(Boolean).join(" · ");
   return el("div", { className: "entry" }, [
     el("span", { className: `entry-dot ${recordDots[entry.type] ?? ""}` }),
     el("div", {}, [
@@ -141,6 +145,15 @@ function render(next) {
     form.hidden = true;
   }
 
+  const managed = state.managedBy;
+  newButton.hidden = Boolean(managed);
+  document.getElementById("slots").hidden = Boolean(managed);
+  document.getElementById("managed-note").hidden = !managed;
+  setText("managed-note", managed ? `Your characters come from ${managed}. Create, switch and dress them there.` : "");
+  const noCharacter = document.getElementById("no-character");
+  noCharacter.dataset.text ??= noCharacter.textContent;
+  noCharacter.textContent = managed ? `Load a character in ${managed} and it shows up here.` : noCharacter.dataset.text;
+
   const active = activeCharacter(next);
   document.getElementById("characters").replaceChildren(...state.characters.map((character) => characterButton(character, character.id === state.activeCharacterId)));
   setText("slots", `${state.characters.length} / ${state.maxCharacters}`);
@@ -164,10 +177,12 @@ function render(next) {
   document.getElementById("photo-remove").hidden = !active.photo;
 
   const appearance = document.getElementById("appearance");
+  appearance.hidden = Boolean(managed);
   appearance.disabled = Boolean(next.onDuty);
-  document.getElementById("appearance-note").hidden = !next.onDuty;
+  document.getElementById("appearance-note").hidden = !next.onDuty || Boolean(managed);
 
   const remove = document.getElementById("delete");
+  remove.hidden = Boolean(managed);
   delete remove.dataset.armed;
   remove.disabled = false;
   remove.textContent = "Delete";

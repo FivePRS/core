@@ -24,6 +24,10 @@ const narrative = document.getElementById("report-narrative");
 const medical = () => Boolean(view?.medical);
 const defaultType = () => (medical() ? 4 : 0);
 
+function fineNote(entry) {
+  return entry.fineStatus === 1 ? " unpaid" : entry.fineStatus === 2 ? " paid" : "";
+}
+
 function showToast(message) {
   const toast = document.getElementById("toast");
   toast.textContent = message ?? "";
@@ -147,7 +151,7 @@ function renderVehicles(record) {
 function renderHistory(record) {
   document.getElementById("history").replaceChildren(...record.records.map((entry) => {
     const activeWarrant = entry.type === 3 && entry.active;
-    const meta = [formatDate(entry.createdAt), entry.officerCallsign, entry.fine > 0 ? `$${entry.fine}` : null].filter(Boolean).join(" · ");
+    const meta = [formatDate(entry.createdAt), entry.officerCallsign, entry.fine > 0 ? `$${entry.fine}${fineNote(entry)}` : null].filter(Boolean).join(" · ");
     return el("div", { className: "entry" }, [
       el("span", { className: `entry-dot ${recordDots[entry.type] ?? ""}` }),
       el("div", {}, [

@@ -244,6 +244,12 @@ namespace FivePRS.Server.Database
                         KEY `idx_fiveprs_reports_status` (`status`, `created_at`),
                         KEY `idx_fiveprs_reports_character` (`character_id`)
                     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci")),
+            new Migration(4, "Framework characters",
+                new AddColumnStep("fiveprs_characters", "external_id", "TEXT NULL", "VARCHAR(80) NULL"),
+                Sql("CREATE UNIQUE INDEX IF NOT EXISTS idx_fiveprs_characters_external ON fiveprs_characters(external_id)",
+                    "CREATE UNIQUE INDEX `idx_fiveprs_characters_external` ON `fiveprs_characters` (`external_id`)")),
+            new Migration(5, "Fine payments",
+                new AddColumnStep("fiveprs_records", "fine_status", "INTEGER NOT NULL DEFAULT 0", "TINYINT UNSIGNED NOT NULL DEFAULT 0")),
         };
 
         private static SqlStep Sql(string sqlite, string mySql) => new SqlStep(sqlite, mySql);

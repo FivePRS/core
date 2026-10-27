@@ -9,6 +9,7 @@
     "maxCharacters": 3,
     "maxVehiclesPerCharacter": 5,
     "maxFine": 10000,
+    "xpEnabled": true,
     "emergencyCallCooldownSeconds": 60,
     "emergencyCallTimeoutMinutes": 15,
     "dutyEquipment": "byStart",
@@ -28,6 +29,16 @@
         "respawnSeconds": 180,
         "notifyEms": true,
         "reviveXp": 25
+    },
+    "radar": {
+        "enabled": true,
+        "units": "mph",
+        "range": 150,
+        "speedAlert": 0,
+        "plateReader": true,
+        "plateReaderRange": 35,
+        "lidar": true,
+        "lidarRange": 300
     },
     "backup": {
         "enabled": true,

@@ -1,10 +1,13 @@
 const enterButton = document.getElementById("enter");
 const callsignInput = document.getElementById("callsign");
 
+const startKey = "fiveprs.dutyStart";
+
 const startOptions = [
-  { id: "here", name: "Here", detail: "Gear and car now" },
+  { id: "current", name: "As I am", detail: "Keep your look, no car" },
+  { id: "here", name: "Here", detail: "Uniform, gear and car now" },
   { id: "teleport", name: "Station", detail: "Teleport and gear up" },
-  { id: "drive", name: "Drive there", detail: "GPS route, car waiting" },
+  { id: "drive", name: "Drive there", detail: "GPS route to collect gear" },
 ];
 
 let view = null;
@@ -13,8 +16,21 @@ let entering = false;
 let toastTimer = null;
 let selectedDepartment = null;
 let selectedAgency = null;
-let selectedStart = "here";
+let selectedStart = savedStart();
 let selectedStation = null;
+
+function savedStart() {
+  try {
+    const saved = localStorage.getItem(startKey);
+    return startOptions.some((option) => option.id === saved) ? saved : "current";
+  } catch {
+    return "current";
+  }
+}
+
+function needsStation(start) {
+  return start === "teleport" || start === "drive";
+}
 
 function departmentById(id) {
   return view?.departments.find((department) => department.id === id) ?? null;
@@ -63,16 +79,16 @@ function showToast(message) {
 
 function renderStarts() {
   const stations = availableStations();
-  document.getElementById("start-step").hidden = stations.length === 0;
-  if (stations.length === 0) selectedStart = "here";
+  const options = stations.length === 0 ? startOptions.filter((option) => !needsStation(option.id)) : startOptions;
+  if (!options.some((option) => option.id === selectedStart)) selectedStart = "current";
   if (!stations.some((station) => station.id === selectedStation)) selectedStation = stations[0]?.id ?? null;
 
   document.getElementById("starts").replaceChildren(
-    ...startOptions.map((option) => choice(option.name, option.detail, option.id === selectedStart, { start: option.id }))
+    ...options.map((option) => choice(option.name, option.detail, option.id === selectedStart, { start: option.id }))
   );
 
   const list = document.getElementById("stations");
-  list.hidden = selectedStart === "here";
+  list.hidden = !needsStation(selectedStart);
   list.replaceChildren(...stations.map((station) => {
     const button = el("button", { className: `station${station.id === selectedStation ? " selected" : ""}`, dataset: { station: station.id } }, [
       el("span", { text: station.name }),
@@ -104,7 +120,7 @@ function renderForm() {
 
   const station = availableStations().find((item) => item.id === selectedStation);
   const callsign = callsignInput.value.trim() || callsignInput.placeholder;
-  setText("summary", [agency?.callsignPrefix, callsign, selectedStart === "here" ? "Here" : station?.name].filter(Boolean).join(" · "));
+  setText("summary", [agency?.callsignPrefix, callsign, needsStation(selectedStart) ? station?.name : startOptions.find((option) => option.id === selectedStart)?.name].filter(Boolean).join(" · "));
 
   enterButton.disabled = entering || selectedDepartment === null;
   enterButton.textContent = entering ? "Going on duty…" : "Go on duty";
@@ -116,6 +132,7 @@ function renderProfile() {
   setText("rank-name", view.departmentId === 0 ? "Recruit" : view.rankName);
   setText("rank-detail", view.departmentId === 0 ? "Choose a department to start" : `${view.department} rank ${view.rank} of ${view.rankCount}`);
 
+  document.getElementById("progress").hidden = !view.usesXp;
   const top = view.xpToNext === 0;
   setText("next-rank", top ? "Top rank" : `Next: ${view.nextRankName}`);
   setText("xp", top ? `${view.xp} XP` : `${view.xp} / ${view.xpToNext} XP`);
@@ -170,6 +187,9 @@ document.addEventListener("click", (event) => {
     renderForm();
   } else if (target.dataset.start) {
     selectedStart = target.dataset.start;
+    try {
+      localStorage.setItem(startKey, selectedStart);
+    } catch {}
     renderForm();
   } else if (target.dataset.station) {
     selectedStation = target.dataset.station;

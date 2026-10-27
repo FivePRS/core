@@ -17,6 +17,7 @@ namespace FivePRS.Core.Config
         public static LicensesConfig       Licenses       { get; private set; } = new();
         public static StationsConfig       Stations       { get; private set; } = new();
         public static CitationsConfig      Citations      { get; private set; } = new();
+        public static FrameworkConfig      Framework      { get; private set; } = new();
         public static TerritoryMap         Territories    { get; private set; } = new(new JurisdictionConfig());
 
         public static readonly Department[] Departments = { Department.Police, Department.Fire, Department.EMS };
@@ -67,6 +68,7 @@ namespace FivePRS.Core.Config
             LoadLicenses(Read(ConfigFiles.Licenses));
             LoadStations(Read(ConfigFiles.Stations));
             LoadCitations(Read(ConfigFiles.Citations));
+            LoadFramework(Read(ConfigFiles.Framework));
         }
 
         public static void LoadDepartment(Department department, string? ranksJson, string? loadoutsJson, string? vehiclesJson)
@@ -132,6 +134,28 @@ namespace FivePRS.Core.Config
         public static void LoadLicenses(string? json)       => Licenses       = Load(json, "licenses.json",        Licenses);
         public static void LoadStations(string? json)       => Stations       = Load(json, "stations.json",        Stations);
         public static void LoadCitations(string? json)      => Citations      = Load(json, "citations.json",       Citations);
+
+        public static void LoadFramework(string? json)
+        {
+            if (json is null || string.IsNullOrWhiteSpace(json))
+            {
+                Framework = new FrameworkConfig();
+                return;
+            }
+
+            try
+            {
+                Framework = JsonConvert.DeserializeObject<FrameworkConfig>(json, new JsonSerializerSettings
+                {
+                    ObjectCreationHandling = ObjectCreationHandling.Replace,
+                }) ?? new FrameworkConfig();
+            }
+            catch (Exception ex)
+            {
+                Log.Error("framework.json has an error, using defaults", ex);
+                Framework = new FrameworkConfig();
+            }
+        }
 
         public static void LoadJurisdictions(string? json)
         {

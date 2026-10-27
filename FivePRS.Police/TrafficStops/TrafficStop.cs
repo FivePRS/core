@@ -26,6 +26,10 @@ namespace FivePRS.Police.TrafficStops
         private const float PullOverSpeed = 7f;
         private const float RoadsideOffset = 3.5f;
         private const float AheadDistance = 22f;
+        private const float MinTargetDistance = 8f;
+        private const float MaxTargetDistance = 40f;
+        private const float MinTargetAlignment = 0.5f;
+        private const float MaxPullOverTravel = 50f;
 
         private readonly Blip _blip;
 
@@ -92,14 +96,46 @@ namespace FivePRS.Police.TrafficStops
         public RecordInfo[] ActiveWarrants =>
             Identity?.Records.Where(r => r.Type == RecordType.Warrant && r.Active).ToArray() ?? new RecordInfo[0];
 
+        private Vector3 _pullOverStart;
+        private Vector3 _pullOverHeading;
+
         public void PullOver()
         {
             if (Vehicle is null) return;
 
-            var target = Vehicle.Position + Vehicle.ForwardVector * AheadDistance + Vehicle.RightVector * RoadsideOffset;
+            _pullOverStart   = Vehicle.Position;
+            _pullOverHeading = Vehicle.ForwardVector;
             API.SetVehicleIndicatorLights(Vehicle.Handle, RightIndicator, true);
-            API.TaskVehicleDriveToCoordLongrange(Driver.Handle, Vehicle.Handle, target.X, target.Y, target.Z,
-                PullOverSpeed, NormalDrivingStyle, 2f);
+
+            var ahead  = Vehicle.Position + Vehicle.ForwardVector * AheadDistance;
+            var target = ahead + Vehicle.RightVector * RoadsideOffset;
+            var roadside = Vector3.Zero;
+            if (API.GetRoadSidePointWithHeading(ahead.X, ahead.Y, ahead.Z, Vehicle.Heading, ref roadside) && IsAhead(roadside))
+                target = roadside;
+
+            if (!IsAhead(target))
+            {
+                API.TaskVehicleTempAction(Driver.Handle, Vehicle.Handle, BrakeAction, int.MaxValue);
+                return;
+            }
+
+            API.TaskVehicleDriveToCoord(Driver.Handle, Vehicle.Handle, target.X, target.Y, target.Z,
+                PullOverSpeed, 0, (uint)Vehicle.Model.Hash, NormalDrivingStyle, 2f, 0f);
+        }
+
+        public bool StrayedWhilePullingOver =>
+            Vehicle is not null && Vehicle.Exists() &&
+            (Vector3.Distance(Vehicle.Position, _pullOverStart) > MaxPullOverTravel ||
+             Vector3.Dot(Vehicle.ForwardVector, _pullOverHeading) < MinTargetAlignment);
+
+        private bool IsAhead(Vector3 target)
+        {
+            var offset   = target - Vehicle!.Position;
+            var distance = offset.Length();
+            if (distance < MinTargetDistance || distance > MaxTargetDistance) return false;
+
+            offset.Normalize();
+            return Vector3.Dot(offset, Vehicle.ForwardVector) >= MinTargetAlignment;
         }
 
         public void Hold()

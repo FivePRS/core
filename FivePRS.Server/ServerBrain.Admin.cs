@@ -8,6 +8,7 @@ using FivePRS.Core.Config;
 using FivePRS.Core.Events;
 using FivePRS.Core.Logging;
 using FivePRS.Core.Models;
+using FivePRS.Server.Framework;
 using FivePRS.Server.Database;
 
 namespace FivePRS.Server
@@ -60,6 +61,7 @@ namespace FivePRS.Server
 
         private async Task<CommandResult> SetRankAsync(Player? caller, string[] args)
         {
+            if (UsesFramework) return FrameworkOwnsJobs("rank", "grade");
             if (!TryGetTarget(args[0], out var target, out var data)) return TargetNotFound(args[0]);
             var ladder = data.Ladder();
             if (!int.TryParse(args[1], out var rank) || rank < 1 || rank > ladder.Count)
@@ -78,8 +80,15 @@ namespace FivePRS.Server
             return CommandResult.Done($"{data.Name} is now {name} (rank {rank}).");
         }
 
+        private CommandResult FrameworkOwnsJobs(string what, string frameworkTerm) => CommandResult.Failed(
+            $"{FrameworkBridge.DisplayName(_framework!.Info.Name)} decides the {what}. Change the character's {frameworkTerm} there, or the mapping in config/framework.json.");
+
         private async Task<CommandResult> AddXpAsync(Player? caller, string[] args)
         {
+            if (!XpActive)
+                return CommandResult.Failed(UsesFramework
+                    ? $"XP is off while {FrameworkBridge.DisplayName(_framework!.Info.Name)} decides ranks."
+                    : "XP is turned off. Set xpEnabled to true in config/settings.json to use it.");
             if (!TryGetTarget(args[0], out var target, out var data)) return TargetNotFound(args[0]);
             if (!int.TryParse(args[1], out var amount) || amount < 1 || amount > MaxXpGrant)
                 return CommandResult.Failed($"Amount must be a number from 1 to {MaxXpGrant:N0}.");
@@ -93,6 +102,7 @@ namespace FivePRS.Server
 
         private async Task<CommandResult> SetDepartmentAsync(Player? caller, string[] args)
         {
+            if (UsesFramework) return FrameworkOwnsJobs("department", "job");
             if (!TryGetTarget(args[0], out var target, out var data)) return TargetNotFound(args[0]);
             var department = Enum.GetValues(typeof(Department)).Cast<Department>()
                 .FirstOrDefault(d => d != Department.None && string.Equals(d.ToString(), args[1], StringComparison.OrdinalIgnoreCase));

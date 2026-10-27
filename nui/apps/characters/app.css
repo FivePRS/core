@@ -362,3 +362,9 @@ body {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.571rem;
 }
+
+.managed-note {
+  padding: 0 0.286rem;
+  font-size: 0.857rem;
+  line-height: 1.5;
+}

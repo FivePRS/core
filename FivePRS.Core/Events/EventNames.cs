@@ -17,6 +17,7 @@ namespace FivePRS.Core.Events
         public const string ClientLookupError       = "FivePRS:Client:LookupError";
         public const string ClientStopResult        = "FivePRS:Client:StopResult";
         public const string ClientReports           = "FivePRS:Client:Reports";
+        public const string ClientPlateRead         = "FivePRS:Client:PlateRead";
         public const string ClientPlayerDowned      = "FivePRS:Client:PlayerDowned";
         public const string ClientDownedPlayers     = "FivePRS:Client:DownedPlayers";
         public const string ClientRevived           = "FivePRS:Client:Revived";
@@ -74,6 +75,7 @@ namespace FivePRS.Core.Events
         public const string ServerStopPlate         = "FivePRS:Server:StopPlate";
         public const string ServerRunPlate          = "FivePRS:Server:RunPlate";
         public const string ServerRunPerson         = "FivePRS:Server:RunPerson";
+        public const string ServerPlateRead         = "FivePRS:Server:PlateRead";
         public const string ServerReportDraft       = "FivePRS:Server:ReportDraft";
         public const string ServerReportsRequest    = "FivePRS:Server:ReportsRequest";
         public const string ServerReportSave        = "FivePRS:Server:ReportSave";
@@ -91,6 +93,9 @@ namespace FivePRS.Core.Events
         public const string LocalHttpResponse       = "FivePRS:Local:HttpResponse";
         public const string LocalDbRequest          = "FivePRS:Local:DbRequest";
         public const string LocalDbResponse         = "FivePRS:Local:DbResponse";
+        public const string LocalFrameworkRequest   = "FivePRS:Local:FrameworkRequest";
+        public const string LocalFrameworkResponse  = "FivePRS:Local:FrameworkResponse";
+        public const string LocalFrameworkChanged   = "FivePRS:Local:FrameworkChanged";
 
         public const string PublicAppAction         = "fiveprs:appAction";
         public const string LocalCalloutReceived    = "FivePRS:Local:CalloutReceived";

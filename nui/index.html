@@ -6,6 +6,7 @@
   <link rel="stylesheet" href="theme.css">
   <link rel="stylesheet" href="cards.css">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="radar.css">
 </head>
 <body>
   <div id="app" class="terminal" hidden>
@@ -73,6 +74,43 @@
     <button id="home-key" class="home-key" type="button" aria-label="Home"></button>
   </div>
 
+  <aside id="radar" class="radar" hidden>
+    <div class="radar-unit">
+      <section id="radar-front" class="radar-antenna"></section>
+      <div class="radar-patrol">
+        <span class="radar-window-label">Patrol</span>
+        <span class="radar-seg patrol"><i>888</i><b id="radar-patrol">!!0</b></span>
+        <span class="radar-units"></span>
+        <span id="radar-limit" class="radar-limit"></span>
+      </div>
+      <section id="radar-rear" class="radar-antenna"></section>
+    </div>
+    <div id="radar-plates" class="radar-plates">
+      <p id="radar-plate-front" class="radar-plate"></p>
+      <p id="radar-plate-rear" class="radar-plate"></p>
+    </div>
+  </aside>
+
+  <aside id="radar-remote" class="radar-remote" hidden>
+    <header class="radar-remote-head">
+      <span class="radar-remote-title">Radar operator</span>
+      <button id="radar-remote-done" class="radar-button primary" type="button">Done</button>
+    </header>
+    <div id="radar-remote-body" class="radar-remote-body"></div>
+    <p class="radar-remote-hint">Drag the radar display to move it.</p>
+  </aside>
+
+  <aside id="lidar" class="radar lidar" hidden>
+    <header class="radar-head">
+      <span class="radar-title">Lidar</span>
+      <span id="lidar-hint" class="lidar-hint">Aim and fire to measure</span>
+    </header>
+    <div class="lidar-readings">
+      <span class="radar-cell"><span class="radar-cell-label">Speed</span><b id="lidar-speed" class="radar-digits">---</b><span id="lidar-units" class="radar-units"></span></span>
+      <span class="radar-cell"><span class="radar-cell-label">Range</span><b id="lidar-distance" class="radar-digits range">---</b><span id="lidar-distance-units" class="radar-units"></span></span>
+    </div>
+  </aside>
+
   <aside id="card-overlay" class="card-overlay" hidden>
     <p id="card-caption" class="card-overlay-caption"></p>
     <div id="card-slot"></div>
@@ -126,5 +164,6 @@
   <script src="menu.js"></script>
   <script src="creator.js"></script>
   <script src="app.js"></script>
+  <script src="radar.js"></script>
 </body>
 </html>

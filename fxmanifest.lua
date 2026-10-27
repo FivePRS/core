@@ -13,6 +13,7 @@ lua54 'yes'
 server_scripts {
     'scripts/http.lua',
     'scripts/db.lua',
+    'scripts/framework.lua',
     'server/FivePRS.Server.net.dll',
 }
 
@@ -43,6 +44,8 @@ files {
     'nui/kit.js',
     'nui/common.js',
     'nui/capture.js',
+    'nui/radar.js',
+    'nui/radar.css',
     'nui/appview.js',
     'nui/app-sdk.js',
     'nui/menu.js',

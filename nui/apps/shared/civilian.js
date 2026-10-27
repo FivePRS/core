@@ -34,7 +34,10 @@ function renderCivilianFrame(view) {
   const active = activeCharacter(view);
 
   document.getElementById("loading").hidden = Boolean(state);
-  document.getElementById("no-character").hidden = !state || Boolean(active);
+  const empty = document.getElementById("no-character");
+  empty.dataset.text ??= empty.textContent;
+  empty.textContent = state?.managedBy ? `Load a character in ${state.managedBy} and it shows up here.` : empty.dataset.text;
+  empty.hidden = !state || Boolean(active);
   document.getElementById("content").hidden = !active;
   return active;
 }

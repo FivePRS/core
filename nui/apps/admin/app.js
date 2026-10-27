@@ -166,6 +166,11 @@ function showSection(next) {
 
 function render(next) {
   view = next;
+  const framework = Boolean(next.framework);
+  document.getElementById("framework-note").hidden = !framework;
+  setText("framework-note", framework ? `${next.framework} decides jobs and ranks. Change them there.` : "");
+  for (const id of ["rank-control", "department-control", "roster-control"]) document.getElementById(id).hidden = framework;
+  document.getElementById("xp-control").hidden = !next.xpEnabled;
   if (!filled) {
     filled = true;
     query.value = next.state.query ?? "";
